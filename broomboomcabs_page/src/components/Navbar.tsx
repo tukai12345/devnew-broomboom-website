@@ -107,24 +107,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
           {/* ======================================================== */}
           {/* LOGO ON LEFT (BroomBoom Cabs) */}
           {/* ======================================================== */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
             <Link
               href="/"
               aria-label="BroomBoom Cabs — home"
-              className="flex items-center gap-2.5 group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
+              className="flex items-center gap-2 sm:gap-2.5 group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 min-w-0"
             >
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-md shadow-amber-400/20 transition-transform group-hover:scale-105 shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-md shadow-amber-400/20 transition-transform group-hover:scale-105 shrink-0">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Cabs"
                   className="w-full h-full object-contain rounded-full"
                 />
               </div>
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-2xl font-black tracking-tight text-white">
-                  broom<span className="text-amber-400">boom</span>
+              <div className="flex items-center gap-1 sm:gap-1.5 leading-none min-w-0">
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-white truncate">
+                  Broom<span className="text-amber-400">Boom</span>
                 </span>
-                <span className="text-[10px] font-black uppercase bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-mono shadow-sm">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-mono shadow-sm shrink-0">
                   CABS
                 </span>
               </div>
@@ -281,7 +281,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               </div>
               <div className="leading-tight">
                 <div className="font-bold text-[11px]">24x7 Helpline</div>
-                <div className="text-[10px] text-slate-400">+91 8240765449</div>
+                <div className="text-[10px] text-slate-400">+91 8240765499</div>
               </div>
             </a>
 
@@ -362,15 +362,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
           {/* ======================================================== */}
           {/* MOBILE ACTIONS (Install App + Menu Toggle) */}
           {/* ======================================================== */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Install App Button (Mobile View - Always Visible in Header) */}
             <button
               type="button"
               onClick={() => setInstallModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-sm active:scale-95 transition"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-sm active:scale-95 transition whitespace-nowrap"
             >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Install App</span>
+              <Smartphone className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Install </span><span>App</span>
             </button>
 
             <button
@@ -379,9 +379,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-menu"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              className="p-2 text-slate-300 hover:text-white rounded-lg flex items-center gap-1.5 bg-white/10"
+              className="p-2 text-slate-300 hover:text-white rounded-lg flex items-center gap-1 bg-white/10"
             >
-              <span className="text-xs font-bold">Menu</span>
+              <span className="hidden sm:inline text-xs font-bold">Menu</span>
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -484,7 +484,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               <PhoneCall className="w-4 h-4 text-emerald-400" />
               <div>
                 <div className="font-bold text-white text-[11px]">24x7 Helpline</div>
-                <div className="text-[9px] text-slate-400">+91 8240765449</div>
+                <div className="text-[9px] text-slate-400">+91 8240765499</div>
               </div>
             </a>
 
@@ -495,7 +495,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                   setMobileMenuOpen(false);
                   handleLogout();
                 }}
-                className="p-3 bg-red-600/90 hover:bg-red-600 rounded-xl text-center text-white font-bold"
+                className="p-3 bg-red-600/90 hover:bg-red-600 rounded-xl text-center text-white font-bold truncate"
               >
                 Sign Out ({currentUser.name || currentUser.identifier.slice(0, 8)})
               </button>

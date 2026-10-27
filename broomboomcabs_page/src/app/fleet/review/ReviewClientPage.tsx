@@ -290,38 +290,38 @@ export const ReviewClientPage: React.FC = () => {
     <div className="min-h-screen bg-[#edf2f7] text-slate-800 flex flex-col font-sans relative selection:bg-amber-400 selection:text-slate-950">
       {/* Top Header Banner matching Reference Screenshot (Image 2) */}
       <header className="bg-[#0b1f38] text-white py-3.5 px-4 sm:px-8 shadow-sm sticky top-0 z-40 border-b border-slate-900">
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link
               href="/fleet"
-              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-bold"
+              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition flex items-center gap-1 text-xs font-bold shrink-0"
             >
               <ChevronLeft className="w-4 h-4" />
-              <span>Back</span>
+              <span className="hidden xs:inline">Back</span>
             </Link>
-            <span className="text-slate-600">|</span>
-            <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">
+            <span className="text-slate-600 hidden xs:inline">|</span>
+            <h1 className="text-sm sm:text-lg font-bold tracking-tight text-white truncate">
               Review booking
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               type="button"
               onClick={() => setIsMyBookingsOpen(true)}
-              className="text-xs font-bold text-amber-400 hover:text-amber-300 transition"
+              className="hidden sm:inline text-xs font-bold text-amber-400 hover:text-amber-300 transition"
             >
               My Bookings
             </button>
             <Link
               href="/"
-              className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider transition shadow-sm"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider transition shadow-sm shrink-0"
               title="Back to BroomBoom Home"
             >
               <img
                 src="/logo.png"
                 alt="BroomBoom Logo"
-                className="w-5 h-5 rounded-full object-contain"
+                className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-contain"
               />
               <span>BROOMBOOM</span>
             </Link>

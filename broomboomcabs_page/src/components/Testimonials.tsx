@@ -89,7 +89,7 @@ export const Testimonials: React.FC = () => {
         {/* ======================================================== */}
         {/* REVIEW SECTION BACKGROUND BOX (Matches Screenshot Exactly) */}
         {/* ======================================================== */}
-        <div className="bg-[#f0f4f9] rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 lg:p-10 relative transition-all">
+        <div className="bg-[#f0f4f9] rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-8 lg:p-10 relative transition-all">
           
           {/* Section Heading */}
           <div className="flex flex-col items-center justify-center gap-2.5 mb-8 sm:mb-10 text-center">
@@ -132,7 +132,7 @@ export const Testimonials: React.FC = () => {
               {reviews.map((item) => (
                 <div
                   key={item.id}
-                  className="w-[300px] sm:w-[350px] lg:w-[calc(33.333%-16px)] shrink-0 snap-start bg-white rounded-2xl p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-100/90 flex flex-col justify-between transition-all hover:shadow-md"
+                  className="w-[82vw] max-w-[320px] sm:max-w-none sm:w-[350px] lg:w-[calc(33.333%-16px)] shrink-0 snap-start bg-white rounded-2xl p-4 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-100/90 flex flex-col justify-between transition-all hover:shadow-md"
                 >
                   <div>
                     {/* Top: Avatar, Name & 5 Stars */}

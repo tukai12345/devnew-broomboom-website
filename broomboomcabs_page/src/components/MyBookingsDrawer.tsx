@@ -285,7 +285,7 @@ export const MyBookingsDrawer: React.FC<MyBookingsDrawerProps> = ({ isOpen, onCl
                     </div>
 
                     <a
-                      href="tel:+918240765449"
+                      href="tel:+918240765499"
                       className="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 font-bold transition flex items-center gap-1 border border-amber-200 text-xs"
                     >
                       <Phone className="w-3 h-3" />
@@ -302,7 +302,7 @@ export const MyBookingsDrawer: React.FC<MyBookingsDrawerProps> = ({ isOpen, onCl
         <div className="p-4 border-t border-slate-100 bg-slate-50 text-center">
           <div className="text-xs text-slate-500 flex items-center justify-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>24x7 Trip Support Hotline: +91 8240765449</span>
+            <span>24x7 Trip Support Hotline: +91 8240765499</span>
           </div>
         </div>
       </div>

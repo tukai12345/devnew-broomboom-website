@@ -89,7 +89,7 @@ export const WhyChooseUs: React.FC = () => {
             return (
               <div
                 key={idx}
-                className={`p-6 rounded-2xl border bg-gradient-to-br ${pillar.bgGradient} shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group`}
+                className={`p-4 sm:p-6 rounded-2xl border bg-gradient-to-br ${pillar.bgGradient} shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">

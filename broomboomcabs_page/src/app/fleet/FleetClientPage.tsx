@@ -846,10 +846,10 @@ const FleetPageContent: React.FC = () => {
         <div className="relative max-w-[1200px] mx-auto px-4 sm:px-6 py-1.5">
           <div
             ref={searchStripRef}
-            className="rounded-xl bg-slate-50 border border-slate-200 shadow-sm p-1.5 flex flex-wrap lg:flex-nowrap items-center w-full gap-0"
+            className="rounded-2xl lg:rounded-xl bg-slate-50 border border-slate-200 shadow-sm p-2 sm:p-1.5 grid grid-cols-2 md:grid-cols-4 lg:flex lg:flex-nowrap items-center w-full gap-1.5 lg:gap-0"
           >
             {/* 1. TRIP TYPE */}
-            <div className="flex-1 min-w-[145px] border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-lg hover:bg-white transition-colors relative">
+            <div className="col-span-2 md:col-span-2 lg:flex-1 min-w-0 lg:min-w-[145px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
               <FieldLabel>TRIP TYPE</FieldLabel>
               <div className="relative flex items-center justify-between gap-1 font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
                 <span className="truncate">{tripType}</span>
@@ -870,7 +870,7 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 2. FROM */}
-            <div className="flex-1 min-w-[110px] border-r border-slate-200 px-3.5 py-2 rounded-lg hover:bg-white transition-colors relative">
+            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
               <FieldLabel>FROM</FieldLabel>
               <input
                 type="text"
@@ -888,7 +888,7 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 3. TO */}
-            <div className="flex-1 min-w-[110px] border-r border-slate-200 px-3.5 py-2 rounded-lg hover:bg-white transition-colors relative">
+            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
               <FieldLabel>TO</FieldLabel>
               <input
                 type="text"
@@ -906,7 +906,7 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 4. ADD STOPS */}
-            <div className="shrink-0 px-3 py-2 border-r border-slate-200 flex items-center justify-center relative self-center">
+            <div className="col-span-2 md:col-span-4 lg:col-span-1 lg:shrink-0 px-3 py-1.5 lg:py-2 lg:border-r border-slate-200 flex items-center justify-center relative self-center">
               <span className="absolute -top-1 left-2.5 px-1.5 py-px rounded-full bg-pink-600 text-white text-[8px] font-black uppercase shadow-sm z-10">
                 new
               </span>
@@ -920,7 +920,7 @@ const FleetPageContent: React.FC = () => {
               </button>
 
               {showAddStopModal && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-white text-slate-900 rounded-xl shadow-2xl ring-1 ring-slate-200/80 z-50 p-3.5 text-xs animate-in fade-in duration-150">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 mt-2 w-64 bg-white text-slate-900 rounded-xl shadow-2xl ring-1 ring-slate-200/80 z-50 p-3.5 text-xs animate-in fade-in duration-150">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <span className="font-bold text-slate-900">Add Via Stops</span>
                     <button
@@ -974,7 +974,7 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 5. PICK-UP DATE */}
-            <div className="flex-1 min-w-[125px] border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-lg hover:bg-white transition-colors relative">
+            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
               <FieldLabel>PICK-UP DATE</FieldLabel>
               <div className="relative font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
                 <span>{formatDisplayDate(pickupDateIso)}</span>
@@ -992,7 +992,7 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 6. DROP DATE */}
-            <div className="flex-1 min-w-[125px] border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-lg hover:bg-white transition-colors relative">
+            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
               <FieldLabel>DROP DATE</FieldLabel>
               <div className="relative font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
                 <span>{formatDisplayDate(dropDateIso)}</span>
@@ -1008,7 +1008,7 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 7. PICK-UP TIME */}
-            <div className="flex-1 min-w-[120px] border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-lg hover:bg-white transition-colors relative">
+            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[120px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
               <FieldLabel icon={<Clock className="w-2.5 h-2.5 text-amber-500" />}>
                 PICK-UP TIME
               </FieldLabel>
@@ -1028,7 +1028,7 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 8. DROP TIME */}
-            <div className="flex-1 min-w-[130px] px-3.5 py-2 cursor-pointer group rounded-lg hover:bg-white transition-colors relative pr-2">
+            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[130px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative pr-2">
               <FieldLabel icon={<Clock className="w-2.5 h-2.5 text-amber-500" />}>
                 DROP TIME
               </FieldLabel>
@@ -1048,14 +1048,16 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 9. SEARCH */}
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="shrink-0 ml-2 self-center px-7 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-amber-400/20 transition active:scale-95 border border-amber-300 flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
-            >
-              <span>SEARCH</span>
-              <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
+            <div className="col-span-2 md:col-span-4 lg:col-span-1 lg:shrink-0 w-full lg:w-auto mt-1 lg:mt-0">
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="w-full lg:w-auto lg:ml-2 py-3 px-7 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-amber-400/20 transition active:scale-95 border border-amber-300 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+              >
+                <span>SEARCH</span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
+              </button>
+            </div>
           </div>
         </div>
       </section>

@@ -116,7 +116,7 @@ export const Footer: React.FC = () => {
                   className="h-4 w-4 shrink-0 text-amber-400"
                   aria-hidden="true"
                 />
-                <span>+91 8240765449</span>
+                <span>+91 8240765499</span>
               </a>
 
               <a
