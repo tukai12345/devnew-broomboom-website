@@ -38,6 +38,8 @@ export interface SearchParams {
   flightNumber?: string;
   distanceKm?: number;
   durationMinutes?: number;
+  fromCoords?: { lat: number; lng: number };
+  toCoords?: { lat: number; lng: number };
 }
 
 interface HeroSearchProps {
@@ -247,60 +249,68 @@ const PopoverShell: React.FC<{
   onClose?: () => void;
 }> = ({ children, align = "left", width = "w-80", title, onClose }) => {
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  return (
-    <>
-      {/* Desktop Popover */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`hidden md:block absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-2xl border border-amber-200/90 z-50 p-3 animate-in fade-in zoom-in-95 duration-150`}
-      >
-        {children}
-      </div>
+  if (!mounted) return null;
 
-      {/* Mobile Drawer Overlay via Portal */}
-      {mounted &&
-        createPortal(
-          <div className="md:hidden fixed inset-0 z-[9999] flex flex-col justify-end">
-            <div
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
-              onClick={onClose}
-            />
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="relative z-10 w-full max-h-[85vh] bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-4 pb-8 flex flex-col animate-in slide-in-from-bottom duration-200"
-            >
-              <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3" />
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-4 bg-amber-400 rounded-full" />
-                  <h3 className="font-black text-slate-900 text-sm tracking-tight">
-                    {title || "Select Option"}
-                  </h3>
-                </div>
-                {onClose && (
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
-                    aria-label="Close"
-                  >
-                    <X className="w-4 h-4 stroke-[2.5]" />
-                  </button>
-                )}
-              </div>
-              <div className="overflow-y-auto max-h-[calc(85vh-5rem)]">
-                {children}
-              </div>
+  if (isMobile) {
+    return createPortal(
+      <div
+        data-popover-shell
+        className="fixed inset-0 z-[9999] flex flex-col justify-end"
+      >
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={onClose}
+        />
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="relative z-10 w-full max-h-[85vh] bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-4 pb-8 flex flex-col animate-in slide-in-from-bottom duration-200"
+        >
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3" />
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-4 bg-amber-400 rounded-full" />
+              <h3 className="font-black text-slate-900 text-sm tracking-tight">
+                {title || "Select Option"}
+              </h3>
             </div>
-          </div>,
-          document.body
-        )}
-    </>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            )}
+          </div>
+          <div className="overflow-y-auto max-h-[calc(85vh-5rem)]">
+            {children}
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
+  return (
+    <div
+      data-popover-shell
+      onClick={(e) => e.stopPropagation()}
+      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-amber-300 ring-1 ring-black/5 z-[70] p-3 animate-in fade-in zoom-in-95 duration-150`}
+    >
+      {children}
+    </div>
   );
 };
 
@@ -361,7 +371,8 @@ const CityPopover: React.FC<{
   const displayItems = React.useMemo(() => {
     if (query.trim().length >= 2 && mapResults.length > 0) {
       return mapResults.map((m) => {
-        const primary = m.name || (m.displayName || "").split(",")[0].trim();
+        const parts = (m.name || m.displayName || "").split(",");
+        const primary = parts[0]?.trim() || m.name;
         return {
           id: m.placeId || m.id || `${m.lat}_${m.lon}_${primary}`,
           name: primary,
@@ -401,6 +412,21 @@ const CityPopover: React.FC<{
           placeholder={placeholder}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (displayItems.length > 0) {
+                const item = displayItems[0];
+                onSelect(
+                  item.name,
+                  item.state,
+                  item.lat && item.lng ? { lat: item.lat, lng: item.lng } : undefined
+                );
+              } else if (query.trim()) {
+                onSelect(query.trim());
+              }
+            }
+          }}
           className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
         />
       </div>
@@ -412,10 +438,16 @@ const CityPopover: React.FC<{
         </div>
       )}
 
-      <div className="max-h-60 sm:max-h-72 overflow-y-auto space-y-0.5 divide-y divide-slate-100">
-        {displayItems.length === 0 ? (
+      <div className="max-h-56 sm:max-h-64 overflow-y-auto space-y-0.5 divide-y divide-slate-100">
+        {isSearching && displayItems.length === 0 ? (
+          <div className="py-8 flex flex-col items-center justify-center gap-2 text-center text-slate-500">
+            <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+            <p className="text-xs font-bold text-slate-700">Connecting to OpenStreetMap...</p>
+            <p className="text-[10px] text-slate-400">Searching all cities, towns &amp; places in India</p>
+          </div>
+        ) : displayItems.length === 0 ? (
           <p className="text-[11px] text-slate-400 text-center py-4">
-            {isSearching ? "Searching map..." : "No places found. Type city, town, airport or PIN"}
+            No places found. Type city, town, landmark or PIN
           </p>
         ) : (
           displayItems.map((item) => (
@@ -676,9 +708,16 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null);
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest("[data-popover-shell]") ||
+        target.closest("[data-field-trigger]") ||
+        target.closest(".fixed")
+      ) {
+        return;
       }
+      setOpenDropdown(null);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -686,7 +725,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   useEffect(() => {
     if (openDropdown === "from" || openDropdown === "to") {
-      const t = setTimeout(() => searchInputRef.current?.focus(), 50);
+      const t = setTimeout(() => {
+        searchInputRef.current?.focus({ preventScroll: true });
+      }, 50);
       return () => clearTimeout(t);
     }
   }, [openDropdown]);
@@ -793,7 +834,53 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     setToCoords(tempCoords);
   };
 
-  const handleSearchSubmit = () => {
+  const [isSubmittingSearch, setIsSubmittingSearch] = useState(false);
+
+  const handleSearchSubmit = async () => {
+    setIsSubmittingSearch(true);
+    let finalDist = routeDistance;
+    let finalDur = routeDurationMinutes;
+
+    if (
+      !finalDist &&
+      fromCity &&
+      toCity &&
+      fromCity.trim().toLowerCase() !== toCity.trim().toLowerCase()
+    ) {
+      try {
+        const payload: {
+          from: string;
+          to: string;
+          pickupLat?: number;
+          pickupLng?: number;
+          dropLat?: number;
+          dropLng?: number;
+        } = {
+          from: fromCity.trim(),
+          to: toCity.trim(),
+        };
+        if (fromCoords) {
+          payload.pickupLat = fromCoords.lat;
+          payload.pickupLng = fromCoords.lng;
+        }
+        if (toCoords) {
+          payload.dropLat = toCoords.lat;
+          payload.dropLng = toCoords.lng;
+        }
+
+        // Fast race with 1.2s timeout so the button never freezes
+        const distPromise = api.calculateDistance(payload);
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200));
+        const res = await Promise.race([distPromise, timeoutPromise]);
+        if (res && res.distance > 0) {
+          finalDist = res.distance;
+          finalDur = res.durationMinutes;
+          setRouteDistance(res.distance);
+          setRouteDurationMinutes(res.durationMinutes);
+        }
+      } catch {}
+    }
+
     onSearch({
       tripType,
       fromCity,
@@ -804,9 +891,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       returnTime: dropTime,
       dropTime,
       hourlyPackage,
-      distanceKm: routeDistance ?? undefined,
-      durationMinutes: routeDurationMinutes ?? undefined,
+      distanceKm: finalDist ?? undefined,
+      durationMinutes: finalDur ?? undefined,
+      fromCoords: fromCoords || undefined,
+      toCoords: toCoords || undefined,
     });
+
+    setIsSubmittingSearch(false);
   };
 
   const prevMonth = (e: React.MouseEvent) => {
@@ -879,22 +970,22 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   return (
     <div
-      className="relative pt-2 sm:pt-2.5 pb-8 md:pb-12 bg-cover bg-center bg-no-repeat overflow-visible"
+      className="relative pt-6 sm:pt-8 md:pt-10 pb-16 sm:pb-20 md:pb-24 bg-cover bg-center bg-no-repeat overflow-visible"
       style={{
         backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.65), rgba(10, 16, 26, 0.80)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80')`,
       }}
     >
-      <div className="max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 relative z-20" ref={containerRef}>
+      <div className={`max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 relative ${openDropdown ? "z-40" : "z-20"}`} ref={containerRef}>
         
         {/* =============================== HEADER (SHOWN ON ALL) ==================================== */}
-        <div className="mb-2 sm:mb-2.5 hidden sm:flex items-center justify-center animate-in fade-in duration-200">
+        <div className="mb-2 sm:mb-3 hidden sm:flex items-center justify-center animate-in fade-in duration-200">
           <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 text-[10px] sm:text-xs md:text-[13px] font-black uppercase tracking-wider text-center leading-tight shadow-md shadow-amber-400/25 border border-amber-300 max-w-[calc(100vw-2rem)]">
             <img src="/logo.png" alt="BroomBoom Logo" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full object-contain shrink-0" />
             <span>India&apos;s #1 Most Trusted Cab Booking Service</span>
           </div>
         </div>
 
-        <div className="mb-4 sm:mb-4 text-white text-center flex flex-col items-center animate-in fade-in duration-200 px-2">
+        <div className="mb-4 sm:mb-6 text-white text-center flex flex-col items-center animate-in fade-in duration-200 px-2">
           <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-[32px] font-black text-white tracking-tight leading-tight max-w-4xl mx-auto drop-shadow-md">
             {activeTitle}
           </h1>
@@ -1125,10 +1216,19 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
               {/* Search Button (Compact) */}
               <button
+                type="button"
                 onClick={handleSearchSubmit}
-                className="w-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:via-yellow-300 hover:to-amber-400 text-slate-950 font-bold text-[14px] tracking-wide py-2.5 rounded-lg shadow-md transition-colors"
+                disabled={isSubmittingSearch}
+                className="w-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:via-yellow-300 hover:to-amber-400 text-slate-950 font-bold text-[14px] tracking-wide py-2.5 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
               >
-                SEARCH CABS
+                {isSubmittingSearch ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>SEARCHING CABS...</span>
+                  </>
+                ) : (
+                  <span>SEARCH CABS</span>
+                )}
               </button>
             </div>
           </div>
@@ -1152,7 +1252,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         {/* ================================================================================= */}
         <div className="hidden md:block">
           {/* Main card */}
-          <div className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-amber-200/90 pt-3 sm:pt-4 pb-10 sm:pb-8 px-2.5 sm:px-6 lg:px-8 transition-all">
+          <div className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-amber-200/90 pt-3 sm:pt-4 pb-12 sm:pb-10 px-2.5 sm:px-6 lg:px-8 transition-all ${openDropdown ? "z-40" : "z-20"}`}>
             {/* Trip tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 sm:pb-5 gap-2.5 sm:gap-3 border-b border-amber-100/80 mb-3.5 sm:mb-5">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 w-full sm:w-auto">
@@ -1198,8 +1298,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ ROUND TRIP ============ */}
             {tripType === "outstation-round" && (
-              <div className="border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] overflow-hidden shadow-sm transition-colors">
-                <div onClick={() => toggle("from")} className={`w-[21%] ${field}`}>
+              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
+                <div data-field-trigger onClick={() => toggle("from")} className={`w-[21%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>From</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1223,7 +1323,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("to")} className={`w-[21%] ${field} pl-5`}>
+                <div data-field-trigger onClick={() => toggle("to")} className={`w-[21%] ${openDropdown === "to" ? "relative z-[60]" : ""} ${field} pl-5`}>
                   <button
                     type="button"
                     onClick={handleSwap}
@@ -1256,7 +1356,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("pickupDate")} className={`w-[15%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[15%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Departure <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1278,7 +1378,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("returnDate")} className={`w-[15%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("returnDate")} className={`w-[15%] ${openDropdown === "returnDate" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Return <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1313,7 +1413,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("pickupTime")} className={`w-[14%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[14%] ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Pickup <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1332,7 +1432,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("dropTime")} className={`w-[14%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("dropTime")} className={`w-[14%] rounded-r-xl ${openDropdown === "dropTime" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>Drop Time</div>
                   <div className={timeLine}>
                     <span className="text-3xl font-black text-slate-400">{dropTimeParts.time}</span>
@@ -1353,8 +1453,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ ONE-WAY ============ */}
             {tripType === "outstation-oneway" && (
-              <div className="border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] overflow-hidden shadow-sm transition-colors">
-                <div onClick={() => toggle("from")} className={`w-[28%] ${field}`}>
+              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
+                <div data-field-trigger onClick={() => toggle("from")} className={`w-[28%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>From</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1378,7 +1478,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("to")} className={`w-[28%] ${field} pl-5`}>
+                <div data-field-trigger onClick={() => toggle("to")} className={`w-[28%] pl-5 ${openDropdown === "to" ? "relative z-[60]" : ""} ${field}`}>
                   <button
                     type="button"
                     onClick={handleSwap}
@@ -1411,7 +1511,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("pickupDate")} className={`w-[18%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[18%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Departure <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1434,11 +1534,12 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 </div>
 
                 <div
+                  data-field-trigger
                   onClick={() => {
                     changeTripType("outstation-round");
                     setOpenDropdown("returnDate");
                   }}
-                  className={`w-[16%] ${field}`}
+                  className={`w-[16%] ${openDropdown === "returnDate" ? "relative z-[60]" : ""} ${field}`}
                 >
                   <div className={label}>
                     Return <ChevronDown className="w-3 h-3 text-amber-500" />
@@ -1448,7 +1549,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   </div>
                 </div>
 
-                <div onClick={() => toggle("pickupTime")} className={`w-[10%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[10%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Pickup <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1471,8 +1572,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ HOURLY ============ */}
             {tripType === "hourly" && (
-              <div className="border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] overflow-hidden shadow-sm transition-colors">
-                <div onClick={() => toggle("from")} className={`w-[40%] ${field}`}>
+              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
+                <div data-field-trigger onClick={() => toggle("from")} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>Pickup Location</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1496,7 +1597,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("pickupDate")} className={`w-[25%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[25%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Pickup Date <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1518,7 +1619,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("pickupTime")} className={`w-[15%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[15%] ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Pickup <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1537,7 +1638,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("package")} className={`w-[20%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("package")} className={`w-[20%] rounded-r-xl ${openDropdown === "package" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>Select Package</div>
                   <div className="text-2xl font-black text-slate-950 tracking-tight leading-none truncate">
                     {hourlyPackage}
@@ -1585,8 +1686,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ AIRPORT ============ */}
             {tripType === "airport" && (
-              <div className="border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] overflow-hidden shadow-sm transition-colors">
-                <div onClick={() => toggle("from")} className={`w-[40%] ${field}`}>
+              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
+                <div data-field-trigger onClick={() => toggle("from")} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>Pickup Location</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1610,7 +1711,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("to")} className={`w-[40%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("to")} className={`w-[40%] ${openDropdown === "to" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>Drop Location</div>
                   <div className={value}>{toCity}</div>
                   <div className={sub}>{toState}</div>
@@ -1635,7 +1736,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("pickupDate")} className={`w-[10%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[10%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Date <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1657,7 +1758,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div onClick={() => toggle("pickupTime")} className={`w-[10%] ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[10%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
                   <div className={label}>
                     Time <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1692,13 +1793,21 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
             </div>
 
             {/* Centered Search pill */}
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-30">
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-20">
               <button
                 type="button"
                 onClick={handleSearchSubmit}
-                className="px-20 py-4 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:via-yellow-300 hover:to-amber-400 text-slate-950 text-lg font-extrabold tracking-widest uppercase border border-amber-500/40 shadow-[0_8px_26px_rgba(245,158,11,0.45)] hover:shadow-[0_10px_32px_rgba(245,158,11,0.6)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer whitespace-nowrap"
+                disabled={isSubmittingSearch}
+                className="px-16 sm:px-20 py-4 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:via-yellow-300 hover:to-amber-400 text-slate-950 text-base sm:text-lg font-extrabold tracking-widest uppercase border border-amber-500/40 shadow-[0_8px_26px_rgba(245,158,11,0.45)] hover:shadow-[0_10px_32px_rgba(245,158,11,0.6)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap disabled:opacity-75"
               >
-                SEARCH
+                {isSubmittingSearch ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
+                    <span>SEARCHING...</span>
+                  </>
+                ) : (
+                  <span>SEARCH</span>
+                )}
               </button>
             </div>
           </div>
@@ -1719,7 +1828,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       </div>
 
       {/* =============================== REVIEWS/RATING PILL (SHOWN ON ALL) ==================================== */}
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-30 w-full px-2 sm:px-4 pointer-events-none flex justify-center">
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-10 w-full px-2 sm:px-4 pointer-events-none flex justify-center">
         <div className="pointer-events-auto bg-white rounded-2xl sm:rounded-full px-2.5 sm:px-8 py-2 sm:py-3 shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 flex items-center justify-between sm:justify-center gap-1 sm:gap-8 md:gap-11 w-full sm:w-auto max-w-[96vw] sm:max-w-fit overflow-hidden">
           
           {/* App Store */}

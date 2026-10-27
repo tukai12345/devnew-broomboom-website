@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "BroomBoom Cabs - Outstation, Airport & Hourly Rental Cabs Booking",
   description: "Book verified outstation cabs, airport taxi & local hourly rentals with BroomBoom Cabs. Zero cancellation fee, clean AC cars, instant booking & transparent lowest fares across India.",
-  keywords: "cabs booking, outstation taxi, one way cabs, airport transfer, car rental, BroomBoom, make my trip cabs, taxi service",
+  keywords: "cabs booking, outstation taxi, one way cabs, airport transfer, car rental, BroomBoom, Motu Cabs, taxi service",
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",

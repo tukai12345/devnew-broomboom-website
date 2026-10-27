@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { api } from "@/services/api";
+import { setStoredUser } from "@/utils/auth";
 import {
   X,
   Car,
@@ -16,9 +17,7 @@ import {
   Building2,
   User as UserIcon,
   Mail,
-  Phone,
   Coins,
-  CheckCircle2,
 } from "lucide-react";
 
 interface LoginModalProps {
@@ -87,15 +86,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [selectedCountry, setSelectedCountry] = useState<CountryCodeOption>(COUNTRY_CODES[0]); // Default +91 India
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
-
-  // OTP State
-  const [otpStep, setOtpStep] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", ""]);
-  const [timer, setTimer] = useState(30);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -174,15 +166,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     return () => clearInterval(interval);
   }, [isOpen, slides.length]);
 
-  // OTP Countdown Timer
-  useEffect(() => {
-    if (!otpStep || timer <= 0) return;
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [otpStep, timer]);
-
   // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -199,37 +182,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     email.trim().includes("@") &&
     email.trim().includes(".");
 
-  const handleContinue = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid) return;
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setOtpStep(true);
-      setTimer(30);
-    }, 400);
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
-
-    // Auto-advance to next input
-    if (value && index < 3) {
-      otpInputsRef.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpInputsRef.current[index - 1]?.focus();
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (!isFormValid || isSubmitting) return;
     setIsSubmitting(true);
     const fullPhone = `${selectedCountry.code} ${phoneNumber.trim()}`;
     const cleanPhone = `${selectedCountry.code}${phoneNumber.trim()}`.replace(/\s+/g, "");
@@ -258,9 +213,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       email: email.trim(),
     };
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("broomboom_user", JSON.stringify(loggedUser));
-    }
+    // Save to session-scoped auth storage (auto logout when user leaves the website)
+    setStoredUser(loggedUser);
+
     if (onSuccess) {
       onSuccess(loggedUser);
     }
@@ -417,255 +372,149 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   id="login-modal-title"
                   className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight"
                 >
-                  {otpStep ? "Verify Your Number" : "Login or Sign Up"}
+                  Login or Sign Up
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  {otpStep
-                    ? "Enter the 4-digit code sent to your phone and email to continue"
-                    : "Enter your contact details to access fares, cabs & discounts"}
+                  Enter your contact details to access fares, cabs & discounts
                 </p>
               </div>
             </div>
 
-            {/* ==================================================== */}
-            {/* STEP 1: ENTER NAME, NUMBER WITH COUNTRY CODE & EMAIL */}
-            {/* ==================================================== */}
-            {!otpStep ? (
-              <form onSubmit={handleContinue} className="space-y-4">
-                {/* 1. Full Name Field */}
-                <div>
-                  <label
-                    htmlFor="login-fullname"
-                    className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
-                  >
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id="login-fullname"
-                      type="text"
-                      placeholder="Enter Your Full Name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-sm font-medium outline-none transition placeholder:text-slate-400"
-                      required
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Phone Number with Country Code Dropdown */}
-                <div>
-                  <label
-                    htmlFor="login-phone"
-                    className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
-                  >
-                    Mobile Number <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex rounded-xl border border-slate-300 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-100 transition bg-white overflow-hidden shadow-2xs">
-                    {/* Country Code Picker Dropdown */}
-                    <div className="relative flex items-center bg-slate-50 border-r border-slate-200 px-3 cursor-pointer hover:bg-slate-100 shrink-0 transition">
-                      <span className="text-lg mr-1.5">{selectedCountry.flag}</span>
-                      <span className="text-xs font-black text-slate-800 tracking-tight">
-                        {selectedCountry.code}
-                      </span>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1.5 pointer-events-none" />
-                      <select
-                        aria-label="Select Country Code"
-                        value={`${selectedCountry.iso}_${selectedCountry.code}`}
-                        onChange={(e) => {
-                          const [iso, code] = e.target.value.split("_");
-                          const found = COUNTRY_CODES.find(
-                            (c) => c.iso === iso && c.code === code
-                          );
-                          if (found) setSelectedCountry(found);
-                        }}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      >
-                        {COUNTRY_CODES.map((c, i) => (
-                          <option
-                            key={`${c.iso}-${c.code}-${i}`}
-                            value={`${c.iso}_${c.code}`}
-                          >
-                            {c.flag} {c.country} ({c.code})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Phone Input */}
-                    <input
-                      id="login-phone"
-                      type="tel"
-                      placeholder={
-                        selectedCountry.code === "+91"
-                          ? "Enter 10-digit mobile number"
-                          : "Enter phone number"
-                      }
-                      value={phoneNumber}
-                      onChange={(e) =>
-                        setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))
-                      }
-                      maxLength={selectedCountry.code === "+91" ? 10 : 15}
-                      className="flex-1 px-3.5 py-3 text-sm font-medium outline-none bg-transparent placeholder:text-slate-400"
-                      required
-                    />
-                  </div>
-                  {selectedCountry.code === "+91" ? (
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      🇮🇳 India selected as default (+91). Click flag to change country.
-                    </p>
-                  ) : (
-                    <p className="text-[11px] text-amber-700 font-semibold mt-1">
-                      {selectedCountry.flag} International code {selectedCountry.code} ({selectedCountry.country}) selected.
-                    </p>
-                  )}
-                </div>
-
-                {/* 3. Email Address Field */}
-                <div>
-                  <label
-                    htmlFor="login-email"
-                    className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
-                  >
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id="login-email"
-                      type="email"
-                      placeholder="e.g. yourname@gmail.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-sm font-medium outline-none transition placeholder:text-slate-400"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Continue Button (Disabled / Grey when incomplete) */}
-                <button
-                  type="submit"
-                  disabled={!isFormValid || isSubmitting}
-                  className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-sm flex items-center justify-center gap-2 mt-2 ${
-                    isFormValid
-                      ? "bg-amber-400 hover:bg-amber-300 text-slate-950 active:scale-[0.99] cursor-pointer shadow-md shadow-amber-400/20 border border-amber-300"
-                      : "bg-[#94a3b8] text-white/90 cursor-not-allowed opacity-90"
-                  }`}
+            {/* Contact Details Form (Direct Login / Registration without OTP) */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* 1. Full Name Field */}
+              <div>
+                <label
+                  htmlFor="login-fullname"
+                  className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Sending OTP...</span>
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="login-fullname"
+                    type="text"
+                    placeholder="Enter Your Full Name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-sm font-medium outline-none transition placeholder:text-slate-400"
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {/* 2. Phone Number with Country Code Dropdown */}
+              <div>
+                <label
+                  htmlFor="login-phone"
+                  className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+                >
+                  Mobile Number <span className="text-red-500">*</span>
+                </label>
+                <div className="flex rounded-xl border border-slate-300 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-100 transition bg-white overflow-hidden shadow-2xs">
+                  {/* Country Code Picker Dropdown */}
+                  <div className="relative flex items-center bg-slate-50 border-r border-slate-200 px-3 cursor-pointer hover:bg-slate-100 shrink-0 transition">
+                    <span className="text-lg mr-1.5">{selectedCountry.flag}</span>
+                    <span className="text-xs font-black text-slate-800 tracking-tight">
+                      {selectedCountry.code}
                     </span>
-                  ) : (
-                    <span>Continue</span>
-                  )}
-                </button>
-              </form>
-            ) : (
-              /* ==================================================== */
-              /* STEP 2: ENTER OTP */
-              /* ==================================================== */
-              <form
-                onSubmit={handleVerifyOtp}
-                className="space-y-4 animate-in fade-in duration-200"
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1.5 pointer-events-none" />
+                    <select
+                      aria-label="Select Country Code"
+                      value={`${selectedCountry.iso}_${selectedCountry.code}`}
+                      onChange={(e) => {
+                        const [iso, code] = e.target.value.split("_");
+                        const found = COUNTRY_CODES.find(
+                          (c) => c.iso === iso && c.code === code
+                        );
+                        if (found) setSelectedCountry(found);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    >
+                      {COUNTRY_CODES.map((c, i) => (
+                        <option
+                          key={`${c.iso}-${c.code}-${i}`}
+                          value={`${c.iso}_${c.code}`}
+                        >
+                          {c.flag} {c.country} ({c.code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Phone Input */}
+                  <input
+                    id="login-phone"
+                    type="tel"
+                    placeholder={
+                      selectedCountry.code === "+91"
+                        ? "Enter 10-digit mobile number"
+                        : "Enter phone number"
+                    }
+                    value={phoneNumber}
+                    onChange={(e) =>
+                      setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))
+                    }
+                    maxLength={selectedCountry.code === "+91" ? 10 : 15}
+                    className="flex-1 px-3.5 py-3 text-sm font-medium outline-none bg-transparent placeholder:text-slate-400"
+                    required
+                  />
+                </div>
+                {selectedCountry.code === "+91" ? (
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    🇮🇳 India selected as default (+91). Click flag to change country.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-amber-700 font-semibold mt-1">
+                    {selectedCountry.flag} International code {selectedCountry.code} ({selectedCountry.country}) selected.
+                  </p>
+                )}
+              </div>
+
+              {/* 3. Email Address Field */}
+              <div>
+                <label
+                  htmlFor="login-email"
+                  className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+                >
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="login-email"
+                    type="email"
+                    placeholder="e.g. yourname@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-sm font-medium outline-none transition placeholder:text-slate-400"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Direct Login Button */}
+              <button
+                type="submit"
+                disabled={!isFormValid || isSubmitting}
+                className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-sm flex items-center justify-center gap-2 mt-2 ${
+                  isFormValid
+                    ? "bg-amber-400 hover:bg-amber-300 text-slate-950 active:scale-[0.99] cursor-pointer shadow-md shadow-amber-400/20 border border-amber-300"
+                    : "bg-[#94a3b8] text-white/90 cursor-not-allowed opacity-90"
+                }`}
               >
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                      OTP Sent To
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setOtpStep(false)}
-                      className="text-xs font-bold text-amber-600 hover:underline"
-                    >
-                      Edit Info
-                    </button>
-                  </div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex items-center gap-2 text-slate-800 font-bold">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
-                      <span>
-                        {selectedCountry.code} {phoneNumber}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Mail className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{email}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold text-slate-900">Enter 4-Digit OTP</span>
-                    <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Test OTP: <strong>1234</strong>
-                    </span>
-                  </div>
-
-                  {/* 4 Digit Boxes */}
-                  <div className="flex items-center gap-3 justify-center py-2">
-                    {otp.map((digit, i) => (
-                      <input
-                        key={i}
-                        ref={(el) => {
-                          otpInputsRef.current[i] = el;
-                        }}
-                        type="text"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleOtpChange(i, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                        className="w-12 h-13 text-center text-xl font-black rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none transition bg-slate-50"
-                        autoFocus={i === 0}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Verify Button */}
-                <button
-                  type="submit"
-                  disabled={otp.join("").length < 4 || isSubmitting}
-                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 ${
-                    otp.join("").length === 4
-                      ? "bg-amber-400 hover:bg-amber-300 text-slate-950 font-black cursor-pointer shadow-md shadow-amber-400/20 border border-amber-300"
-                      : "bg-[#94a3b8] text-white/90 cursor-not-allowed"
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Verifying...</span>
-                    </span>
-                  ) : (
-                    <span>Verify & Continue to Cabs</span>
-                  )}
-                </button>
-
-                {/* Resend OTP Timer */}
-                <div className="text-center text-xs text-slate-500 pt-1">
-                  {timer > 0 ? (
-                    <span>
-                      Resend OTP in <strong className="text-slate-800">{timer}s</strong>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setTimer(30)}
-                      className="font-bold text-amber-600 hover:underline cursor-pointer"
-                    >
-                      Resend OTP Now
-                    </button>
-                  )}
-                </div>
-              </form>
-            )}
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Signing in...</span>
+                  </span>
+                ) : (
+                  <span>Login / Sign Up</span>
+                )}
+              </button>
+            </form>
 
             {/* App Store & Google Play Badges Row */}
             <div className="grid grid-cols-2 gap-3 pt-6">

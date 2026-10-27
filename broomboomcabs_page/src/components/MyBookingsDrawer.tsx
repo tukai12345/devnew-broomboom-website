@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Search, Car, ShieldCheck, Phone, RefreshCw, Calendar, MapPin } from "lucide-react";
 import { api, BackendBooking } from "@/services/api";
+import { getStoredUser } from "@/utils/auth";
 
 interface MyBookingsDrawerProps {
   isOpen: boolean;
@@ -35,14 +36,11 @@ export const MyBookingsDrawer: React.FC<MyBookingsDrawerProps> = ({ isOpen, onCl
 
     // 1. Get logged-in user phone
     let phone = "";
-    try {
-      const stored = localStorage.getItem("broomboom_user");
-      if (stored) {
-        const u = JSON.parse(stored);
-        phone = u.phone || u.identifier || "";
-        setCurrentUserPhone(phone);
-      }
-    } catch {}
+    const user = getStoredUser();
+    if (user) {
+      phone = user.phone || user.identifier || "";
+      setCurrentUserPhone(phone);
+    }
 
     // 2. Fetch from BroomBoom Backend
     try {

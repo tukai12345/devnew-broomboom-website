@@ -22,6 +22,7 @@ import { CabVehicle } from "@/data/cabsData";
 import { SearchParams } from "./HeroSearch";
 import { api } from "@/services/api";
 import { triggerCashfreePayment } from "@/utils/cashfree";
+import { getStoredUser } from "@/utils/auth";
 
 interface BookingModalProps {
   cab: CabVehicle | null;
@@ -53,17 +54,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   // Auto-populate from logged-in user if available
   useEffect(() => {
-    if (typeof window !== "undefined" && isOpen) {
-      try {
-        const stored = localStorage.getItem("broomboom_user");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.name && !name) setName(parsed.name);
-          if (parsed.phone && !phone) setPhone(parsed.phone);
-          if (parsed.email && !email) setEmail(parsed.email);
-        }
-      } catch (e) {
-        // ignore
+    if (isOpen) {
+      const user = getStoredUser();
+      if (user) {
+        if (user.name && !name) setName(user.name);
+        if (user.phone && !phone) setPhone(user.phone);
+        if (user.email && !email) setEmail(user.email);
       }
     }
   }, [isOpen]);

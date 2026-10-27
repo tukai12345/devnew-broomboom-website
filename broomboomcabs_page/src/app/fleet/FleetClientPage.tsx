@@ -20,12 +20,15 @@ import {
   Snowflake,
   Route,
   SlidersHorizontal,
+  RefreshCw,
+  MapPin,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { BookingModal } from "@/components/BookingModal";
 import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { SearchParams } from "@/components/HeroSearch";
-import { api } from "@/services/api";
+import { CitySearchPopover } from "@/components/CitySearchPopover";
+import { api, PricingCalculationResult } from "@/services/api";
 
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
@@ -49,6 +52,9 @@ interface VehicleItem {
   taxAndFee: number;
   roofCarrierFee?: number;
   imageType: "hatchback" | "sedan" | "suv" | "minibus" | "tempo";
+  extraKmRate?: number;
+  advanceAmount?: number;
+  dueAmount?: number;
 }
 
 type FilterGroup = "cab" | "model" | "fuel";
@@ -62,10 +68,6 @@ interface ActiveFilterChip {
 /*                                 CONSTANTS                                  */
 /* -------------------------------------------------------------------------- */
 
-const POPULAR_CITIES = [
-  "Mumbai", "Delhi", "Kolkata", "Bengaluru", "Pune", "Hyderabad", "Chennai",
-  "Jaipur", "Agra", "Ahmedabad", "Chandigarh", "Goa", "Digha", "Siliguri", "Puri",
-];
 
 const TIME_OPTIONS = [
   "06:00 AM", "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
@@ -227,6 +229,17 @@ const FleetPageContent: React.FC = () => {
   const [fromCity, setFromCity] = useState<string>(searchParams.get("from") || "Mumbai");
   const [toCity, setToCity] = useState<string>(searchParams.get("to") || "Pune");
 
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(() => {
+    const lat = searchParams.get("pickupLat");
+    const lng = searchParams.get("pickupLng");
+    return lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
+  });
+  const [dropCoords, setDropCoords] = useState<{ lat: number; lng: number } | null>(() => {
+    const lat = searchParams.get("dropLat");
+    const lng = searchParams.get("dropLng");
+    return lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
+  });
+
   const [pickupDateIso, setPickupDateIso] = useState<string>(
     searchParams.get("date") || searchParams.get("pickupDate") || "2026-10-27"
   );
@@ -268,11 +281,17 @@ const FleetPageContent: React.FC = () => {
   /* --------------------- Close popovers on outside click ----------------- */
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
-      if (!searchStripRef.current) return;
-      if (!searchStripRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null);
-        setShowAddStopModal(false);
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        searchStripRef.current?.contains(target) ||
+        target.closest("[data-popover-shell]") ||
+        target.closest(".fixed")
+      ) {
+        return;
       }
+      setOpenDropdown(null);
+      setShowAddStopModal(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
@@ -296,32 +315,66 @@ const FleetPageContent: React.FC = () => {
   });
 
   const [backendPrices, setBackendPrices] = useState<
-    Record<string, { fare: number; advance: number; dueFare: number }>
+    Record<string, PricingCalculationResult>
   >({});
+  const [isCalculatingPrices, setIsCalculatingPrices] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchBackendData() {
       if (!fromCity || !toCity) return;
+      setIsCalculatingPrices(true);
 
-      // 1. Calculate road distance & duration via Nominatim / OSRM
+      let currentDistance = 0;
+      let currentDuration = 0;
+
+      // 1. Calculate road distance & duration via map API (Nominatim / OSRM / Backend)
       try {
         const distRes = await api.calculateDistance({
-          source: fromCity,
-          destination: toCity,
+          from: fromCity.trim(),
+          to: toCity.trim(),
+          source: fromCity.trim(),
+          destination: toCity.trim(),
+          pickupLat: pickupCoords?.lat,
+          pickupLng: pickupCoords?.lng,
+          dropLat: dropCoords?.lat,
+          dropLng: dropCoords?.lng,
         });
-        if (!cancelled && distRes && distRes.distance > 0) {
-          setBackendRoute({
-            distance: distRes.distance,
-            durationMinutes: distRes.durationMinutes,
-          });
+        if (distRes && distRes.distance > 0) {
+          currentDistance = distRes.distance;
+          currentDuration = distRes.durationMinutes;
+          if (!cancelled) {
+            setBackendRoute({
+              distance: currentDistance,
+              durationMinutes: currentDuration,
+            });
+          }
         }
       } catch (err) {
         console.warn("Backend distance fetch error:", err);
       }
 
-      // 2. Calculate dynamic fares per category from Pricing Service
+      // If map didn't return or was blocked, and query matches current cities
+      if (currentDistance === 0 && queryDist && parseFloat(queryDist) > 0) {
+        const initialFrom = searchParams.get("from");
+        const initialTo = searchParams.get("to");
+        if (
+          (!initialFrom || initialFrom.toLowerCase() === fromCity.toLowerCase()) &&
+          (!initialTo || initialTo.toLowerCase() === toCity.toLowerCase())
+        ) {
+          currentDistance = parseFloat(queryDist);
+          currentDuration = queryDur ? parseInt(queryDur, 10) : Math.round(currentDistance * 0.8);
+          if (!cancelled) {
+            setBackendRoute({
+              distance: currentDistance,
+              durationMinutes: currentDuration,
+            });
+          }
+        }
+      }
+
+      // 2. Calculate dynamic fares per category from Backend Pricing Engine
       try {
         const tLower = tripType.toLowerCase();
         const isRound = tLower.includes("round");
@@ -338,18 +391,29 @@ const FleetPageContent: React.FC = () => {
           days = Math.max(1, diffDays || 1);
         }
 
-        const categories = ["Hatchback", "Sedan", "SUV", "SUV+", "13 Seater Traveller"];
-        const prices: Record<string, { fare: number; advance: number; dueFare: number }> = {};
+        const calcDistance = isRound ? currentDistance * 2 : currentDistance;
+
+        const categories = [
+          "Hatchback",
+          "Sedan",
+          "SUV",
+          "SUV+",
+          "13 Seater Traveller",
+          "17 Seater Traveller",
+          "25 Seater Traveller",
+        ];
+        const prices: Record<string, PricingCalculationResult> = {};
 
         await Promise.all(
           categories.map(async (cat) => {
             try {
               const res = await api.calculatePrice({
                 rideType: rideTypeParam,
-                sourceCity: fromCity,
-                destinationCity: toCity,
+                sourceCity: fromCity.trim(),
+                destinationCity: toCity.trim(),
                 category: cat,
-                distance: backendRoute?.distance || (queryDist ? parseFloat(queryDist) : undefined),
+                distance: calcDistance > 0 ? calcDistance : undefined,
+                oneWayDistance: currentDistance > 0 ? currentDistance : undefined,
                 days: isRound ? days : 1,
                 pickupDate: pickupDateIso,
                 pickupTime,
@@ -357,21 +421,21 @@ const FleetPageContent: React.FC = () => {
                 returnTime: dropTime,
               });
               if (res && res.fare > 0) {
-                prices[cat] = {
-                  fare: res.fare,
-                  advance: res.advance,
-                  dueFare: res.dueFare,
-                };
+                prices[cat] = res;
               }
             } catch {}
           })
         );
 
-        if (!cancelled && Object.keys(prices).length > 0) {
-          setBackendPrices(prices);
+        if (!cancelled) {
+          if (Object.keys(prices).length > 0) {
+            setBackendPrices(prices);
+          }
+          setIsCalculatingPrices(false);
         }
       } catch (err) {
         console.warn("Backend price calculation error:", err);
+        if (!cancelled) setIsCalculatingPrices(false);
       }
     }
 
@@ -379,72 +443,91 @@ const FleetPageContent: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [fromCity, toCity, tripType, pickupDateIso, dropDateIso, pickupTime, dropTime]);
+  }, [
+    fromCity,
+    toCity,
+    tripType,
+    pickupDateIso,
+    dropDateIso,
+    pickupTime,
+    dropTime,
+    pickupCoords,
+    dropCoords,
+  ]);
 
   /* --------------------------- Route metadata ---------------------------- */
   const routeMeta = useMemo(() => {
     const isRound = tripType.toLowerCase().includes("round");
 
-    if (backendRoute && backendRoute.distance > 0) {
-      const kms = isRound ? Math.round(backendRoute.distance * 2) : Math.round(backendRoute.distance);
+    const effectiveDistance = backendRoute?.distance || (queryDist ? parseFloat(queryDist) : 0);
+    const effectiveDuration = backendRoute?.durationMinutes || (queryDur ? parseInt(queryDur, 10) : 0);
+
+    if (effectiveDistance > 0) {
+      const kms = isRound ? Math.round(effectiveDistance * 2) : Math.round(effectiveDistance);
       const hours = isRound
-        ? Number(((backendRoute.durationMinutes * 2) / 60).toFixed(1))
-        : Number((backendRoute.durationMinutes / 60).toFixed(1));
-      return { kms, hours };
+        ? Number(((effectiveDuration * 2) / 60).toFixed(1))
+        : Number((effectiveDuration / 60).toFixed(1));
+      return {
+        kms,
+        oneWayKms: Math.round(effectiveDistance),
+        hours,
+        durationMinutes: isRound ? effectiveDuration * 2 : effectiveDuration,
+        hasDistance: true,
+      };
     }
 
-    const from = fromCity.toLowerCase().trim();
-    const to = toCity.toLowerCase().trim();
-
-    const match = (a: string, b: string) =>
-      (from.includes(a) && to.includes(b)) || (from.includes(b) && to.includes(a));
-
-    if (match("mumbai", "delhi"))
-      return { kms: isRound ? 2758 : 1420, hours: isRound ? 44 : 22 };
-    if (match("mumbai", "pune"))
-      return { kms: isRound ? 300 : 150, hours: isRound ? 7 : 3.5 };
-    if (match("delhi", "agra"))
-      return { kms: isRound ? 460 : 230, hours: isRound ? 7 : 3.5 };
-    if (match("delhi", "jaipur"))
-      return { kms: isRound ? 560 : 280, hours: isRound ? 9 : 4.5 };
-    if (match("kolkata", "digha"))
-      return { kms: isRound ? 370 : 185, hours: isRound ? 8.5 : 4 };
-    if (match("kolkata", "siliguri"))
-      return { kms: isRound ? 1120 : 560, hours: isRound ? 23 : 11.5 };
-    if (match("bengaluru", "mysuru") || match("bangalore", "mysore"))
-      return { kms: isRound ? 290 : 145, hours: isRound ? 6 : 3 };
-
+    // Default while live map distance is resolving (no arbitrary city fallbacks)
     return {
-      kms: isRound ? 300 : 150,
-      hours: isRound ? 6 : 3,
+      kms: 0,
+      oneWayKms: 0,
+      hours: 0,
+      durationMinutes: 0,
+      hasDistance: false,
     };
-  }, [fromCity, toCity, tripType, backendRoute]);
+  }, [tripType, backendRoute, queryDist, queryDur]);
 
   /* ----------------------------- Fleet data ------------------------------ */
   const allVehicles: VehicleItem[] = useMemo(() => {
-    const kms = routeMeta.kms;
+    const kms = routeMeta.kms > 0 ? routeMeta.kms : 100;
     const roundTo10 = (n: number) => Math.round(n / 10) * 10;
-
-    // Realistic rate-based fallbacks (e.g. ₹12/km hatch, ₹15/km sedan, ₹20/km SUV)
-    const baseHatchRate = Math.max(1200, roundTo10(kms * 12));
-    const baseSedanRate = Math.max(1500, roundTo10(kms * 15));
-    const baseSuvRate = Math.max(2200, roundTo10(kms * 20));
-    const baseSuvPlusRate = Math.max(2800, roundTo10(kms * 25));
-    const baseTravellerRate = Math.max(4500, roundTo10(kms * 40));
-
-    // Priority: Live dynamic prices from Backend Pricing Engine
-    const sedanPrice = backendPrices["Sedan"]?.fare ?? baseSedanRate;
-    const hatchbackPrice =
-      backendPrices["Hatchback"]?.fare ??
-      (backendPrices["Sedan"]?.fare
-        ? Math.round((backendPrices["Sedan"].fare * 0.85) / 10) * 10
-        : baseHatchRate);
-    const suvPrice = backendPrices["SUV"]?.fare ?? baseSuvRate;
-    const suvPlusPrice = backendPrices["SUV+"]?.fare ?? baseSuvPlusRate;
-    const travellerPrice = backendPrices["13 Seater Traveller"]?.fare ?? baseTravellerRate;
-
-    const calcOriginal = (discPrice: number) => Math.round((discPrice * 1.15) / 10) * 10;
     const calcTax = (discPrice: number) => Math.round((discPrice * 0.05) / 10) * 10;
+
+    // Helper to get true backend price with fallback per-km rate
+    const getVehiclePricing = (
+      categoryName: string,
+      perKmFallback: number,
+      defaultDiscount: number = 12
+    ) => {
+      const live = backendPrices[categoryName];
+      if (live && live.fare > 0) {
+        return {
+          discountedPrice: live.fare,
+          originalPrice: live.originalFare || Math.round((live.fare * 1.15) / 10) * 10,
+          discountPercent: live.discountPercent || defaultDiscount,
+          advance: live.advance,
+          dueFare: live.dueFare,
+          extraKmRate: (live.details as any)?.extraKmRate || perKmFallback,
+        };
+      }
+
+      // If backend price is still loading, calculate directly using actual map road distance
+      const fallbackFare = Math.max(1200, roundTo10(kms * perKmFallback));
+      return {
+        discountedPrice: fallbackFare,
+        originalPrice: Math.round((fallbackFare * 1.15) / 10) * 10,
+        discountPercent: defaultDiscount,
+        advance: Math.round(fallbackFare * 0.2),
+        dueFare: Math.round(fallbackFare * 0.8),
+        extraKmRate: perKmFallback,
+      };
+    };
+
+    const hatchPricing = getVehiclePricing("Hatchback", 11, 14);
+    const sedanPricing = getVehiclePricing("Sedan", 15, 14);
+    const suvPricing = getVehiclePricing("SUV", 20, 12);
+    const suvPlusPricing = getVehiclePricing("SUV+", 25, 14);
+    const traveller13Pricing = getVehiclePricing("13 Seater Traveller", 40, 0);
+    const traveller17Pricing = getVehiclePricing("17 Seater Traveller", 45, 0);
 
     return [
       {
@@ -459,10 +542,13 @@ const FleetPageContent: React.FC = () => {
         seats: 4,
         ac: true,
         includedKms: routeMeta.kms,
-        discountPercent: 14,
-        originalPrice: calcOriginal(hatchbackPrice),
-        discountedPrice: hatchbackPrice,
-        taxAndFee: calcTax(hatchbackPrice),
+        discountPercent: hatchPricing.discountPercent,
+        originalPrice: hatchPricing.originalPrice,
+        discountedPrice: hatchPricing.discountedPrice,
+        taxAndFee: calcTax(hatchPricing.discountedPrice),
+        advanceAmount: hatchPricing.advance,
+        dueAmount: hatchPricing.dueFare,
+        extraKmRate: hatchPricing.extraKmRate,
         roofCarrierFee: 157,
         imageType: "hatchback",
       },
@@ -478,10 +564,13 @@ const FleetPageContent: React.FC = () => {
         seats: 4,
         ac: true,
         includedKms: routeMeta.kms,
-        discountPercent: 14,
-        originalPrice: calcOriginal(sedanPrice),
-        discountedPrice: sedanPrice,
-        taxAndFee: calcTax(sedanPrice),
+        discountPercent: sedanPricing.discountPercent,
+        originalPrice: sedanPricing.originalPrice,
+        discountedPrice: sedanPricing.discountedPrice,
+        taxAndFee: calcTax(sedanPricing.discountedPrice),
+        advanceAmount: sedanPricing.advance,
+        dueAmount: sedanPricing.dueFare,
+        extraKmRate: sedanPricing.extraKmRate,
         roofCarrierFee: 157,
         imageType: "sedan",
       },
@@ -497,10 +586,13 @@ const FleetPageContent: React.FC = () => {
         seats: 6,
         ac: true,
         includedKms: routeMeta.kms,
-        discountPercent: 14,
-        originalPrice: calcOriginal(suvPlusPrice),
-        discountedPrice: suvPlusPrice,
-        taxAndFee: calcTax(suvPlusPrice),
+        discountPercent: suvPlusPricing.discountPercent,
+        originalPrice: suvPlusPricing.originalPrice,
+        discountedPrice: suvPlusPricing.discountedPrice,
+        taxAndFee: calcTax(suvPlusPricing.discountedPrice),
+        advanceAmount: suvPlusPricing.advance,
+        dueAmount: suvPlusPricing.dueFare,
+        extraKmRate: suvPlusPricing.extraKmRate,
         roofCarrierFee: 262,
         imageType: "suv",
       },
@@ -516,10 +608,13 @@ const FleetPageContent: React.FC = () => {
         seats: 7,
         ac: true,
         includedKms: routeMeta.kms,
-        discountPercent: 12,
-        originalPrice: calcOriginal(suvPrice),
-        discountedPrice: suvPrice,
-        taxAndFee: calcTax(suvPrice),
+        discountPercent: suvPricing.discountPercent,
+        originalPrice: suvPricing.originalPrice,
+        discountedPrice: suvPricing.discountedPrice,
+        taxAndFee: calcTax(suvPricing.discountedPrice),
+        advanceAmount: suvPricing.advance,
+        dueAmount: suvPricing.dueFare,
+        extraKmRate: suvPricing.extraKmRate,
         roofCarrierFee: 262,
         imageType: "suv",
       },
@@ -535,10 +630,13 @@ const FleetPageContent: React.FC = () => {
         seats: 20,
         ac: true,
         includedKms: routeMeta.kms,
-        discountPercent: 0,
-        originalPrice: calcOriginal(travellerPrice),
-        discountedPrice: travellerPrice,
-        taxAndFee: calcTax(travellerPrice),
+        discountPercent: traveller17Pricing.discountPercent,
+        originalPrice: traveller17Pricing.originalPrice,
+        discountedPrice: traveller17Pricing.discountedPrice,
+        taxAndFee: calcTax(traveller17Pricing.discountedPrice),
+        advanceAmount: traveller17Pricing.advance,
+        dueAmount: traveller17Pricing.dueFare,
+        extraKmRate: traveller17Pricing.extraKmRate,
         imageType: "minibus",
       },
       {
@@ -553,10 +651,13 @@ const FleetPageContent: React.FC = () => {
         seats: 12,
         ac: true,
         includedKms: routeMeta.kms,
-        discountPercent: 0,
-        originalPrice: calcOriginal(travellerPrice),
-        discountedPrice: travellerPrice,
-        taxAndFee: calcTax(travellerPrice),
+        discountPercent: traveller13Pricing.discountPercent,
+        originalPrice: traveller13Pricing.originalPrice,
+        discountedPrice: traveller13Pricing.discountedPrice,
+        taxAndFee: calcTax(traveller13Pricing.discountedPrice),
+        advanceAmount: traveller13Pricing.advance,
+        dueAmount: traveller13Pricing.dueFare,
+        extraKmRate: traveller13Pricing.extraKmRate,
         imageType: "tempo",
       },
       {
@@ -571,10 +672,13 @@ const FleetPageContent: React.FC = () => {
         seats: 16,
         ac: true,
         includedKms: routeMeta.kms,
-        discountPercent: 0,
-        originalPrice: calcOriginal(Math.round((travellerPrice * 1.1) / 10) * 10),
-        discountedPrice: Math.round((travellerPrice * 1.1) / 10) * 10,
-        taxAndFee: calcTax(Math.round((travellerPrice * 1.1) / 10) * 10),
+        discountPercent: traveller17Pricing.discountPercent,
+        originalPrice: traveller17Pricing.originalPrice,
+        discountedPrice: traveller17Pricing.discountedPrice,
+        taxAndFee: calcTax(traveller17Pricing.discountedPrice),
+        advanceAmount: traveller17Pricing.advance,
+        dueAmount: traveller17Pricing.dueFare,
+        extraKmRate: traveller17Pricing.extraKmRate,
         imageType: "tempo",
       },
     ];
@@ -663,6 +767,30 @@ const FleetPageContent: React.FC = () => {
   const handleSearch = () => {
     setOpenDropdown(null);
     setShowAddStopModal(false);
+
+    // Sync new cities/times into URL parameters so state persists cleanly
+    const params = new URLSearchParams({
+      tripType,
+      from: fromCity.trim(),
+      to: toCity.trim(),
+      pickupDate: pickupDateIso,
+      pickupTime,
+      dropDate: dropDateIso,
+      dropTime,
+    });
+    if (backendRoute?.distance) {
+      params.set("distance", backendRoute.distance.toString());
+      params.set("duration", backendRoute.durationMinutes.toString());
+    }
+    if (pickupCoords) {
+      params.set("pickupLat", pickupCoords.lat.toString());
+      params.set("pickupLng", pickupCoords.lng.toString());
+    }
+    if (dropCoords) {
+      params.set("dropLat", dropCoords.lat.toString());
+      params.set("dropLng", dropCoords.lng.toString());
+    }
+    router.replace(`/fleet?${params.toString()}`, { scroll: false });
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -687,8 +815,13 @@ const FleetPageContent: React.FC = () => {
       imageType: vehicle.imageType,
       modelType: vehicle.modelType,
       modelBadgeText: vehicle.modelBadgeText || "",
-      extraKmRate: "15",
+      extraKmRate: (vehicle.extraKmRate || 15).toString(),
+      distance: (routeMeta.kms || "").toString(),
+      duration: (routeMeta.durationMinutes || "").toString(),
     });
+    if (vehicle.advanceAmount) params.set("advance", vehicle.advanceAmount.toString());
+    if (vehicle.dueAmount) params.set("dueFare", vehicle.dueAmount.toString());
+
     router.push(`/fleet/review?${params.toString()}`);
   };
 
@@ -870,39 +1003,55 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 2. FROM */}
-            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
+            <div
+              onClick={() => setOpenDropdown((prev) => (prev === "from" ? null : "from"))}
+              className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative cursor-pointer"
+            >
               <FieldLabel>FROM</FieldLabel>
-              <input
-                type="text"
-                list="popular-cities-from"
-                value={fromCity}
-                onChange={(e) => setFromCity(e.target.value)}
-                placeholder="From City"
-                className="bg-transparent font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 outline-none focus:text-amber-600 w-full border-b border-transparent focus:border-amber-400 transition placeholder:text-slate-400 truncate"
-              />
-              <datalist id="popular-cities-from">
-                {POPULAR_CITIES.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
+              <div className="flex items-center justify-between font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
+                <span className="truncate">{fromCity || "Select City"}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-1" />
+              </div>
+              {openDropdown === "from" && (
+                <CitySearchPopover
+                  title="Select Pickup Location"
+                  placeholder="Search city, town, landmark across India..."
+                  selected={fromCity}
+                  align="left"
+                  onSelect={(name, _st, coords) => {
+                    setFromCity(name);
+                    if (coords) setPickupCoords(coords);
+                    else setPickupCoords(null);
+                  }}
+                  onClose={() => setOpenDropdown(null)}
+                />
+              )}
             </div>
 
             {/* 3. TO */}
-            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
+            <div
+              onClick={() => setOpenDropdown((prev) => (prev === "to" ? null : "to"))}
+              className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative cursor-pointer"
+            >
               <FieldLabel>TO</FieldLabel>
-              <input
-                type="text"
-                list="popular-cities-to"
-                value={toCity}
-                onChange={(e) => setToCity(e.target.value)}
-                placeholder="To City"
-                className="bg-transparent font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 outline-none focus:text-amber-600 w-full border-b border-transparent focus:border-amber-400 transition placeholder:text-slate-400 truncate"
-              />
-              <datalist id="popular-cities-to">
-                {POPULAR_CITIES.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
+              <div className="flex items-center justify-between font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
+                <span className="truncate">{toCity || "Select City"}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-1" />
+              </div>
+              {openDropdown === "to" && (
+                <CitySearchPopover
+                  title="Select Destination Location"
+                  placeholder="Search destination city, town or place..."
+                  selected={toCity}
+                  align="left"
+                  onSelect={(name, _st, coords) => {
+                    setToCity(name);
+                    if (coords) setDropCoords(coords);
+                    else setDropCoords(null);
+                  }}
+                  onClose={() => setOpenDropdown(null)}
+                />
+              )}
             </div>
 
             {/* 4. ADD STOPS */}
@@ -1199,9 +1348,31 @@ const FleetPageContent: React.FC = () => {
 
           {/* Route summary + active filter chips */}
           <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-            <p className="text-xs text-slate-500 font-medium">
-              Rates as per included kilometers | <span className="font-bold text-slate-800">{routeMeta.hours} hr(s) approx time</span>
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-xs text-slate-800 font-bold flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>{fromCity} → {toCity}</span>
+              </p>
+              <span className="text-slate-300">•</span>
+              <p className="text-xs text-slate-600 font-medium">
+                {routeMeta.hasDistance ? (
+                  <>
+                    <strong className="text-slate-900 font-extrabold">{routeMeta.kms.toLocaleString("en-IN")} km</strong> road distance
+                    {tripType.toLowerCase().includes("round") ? " (Round-Trip)" : " (One-Way)"}
+                    {" • "}
+                    <span className="font-bold text-slate-800">{routeMeta.hours} hr(s) approx time</span>
+                  </>
+                ) : (
+                  <span>Rates as per included kilometers</span>
+                )}
+              </p>
+              {isCalculatingPrices && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                  Calculating live route &amp; fares...
+                </span>
+              )}
+            </div>
 
             {viaStops.length > 0 && (
               <div className="text-[11px] text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">

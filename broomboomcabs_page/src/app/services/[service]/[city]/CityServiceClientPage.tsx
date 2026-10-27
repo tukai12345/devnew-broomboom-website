@@ -13,6 +13,7 @@ import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { CityServiceInfo, ServiceMeta } from "@/data/cityServicesData";
 import { FAQS } from "@/data/cabsData";
+import { isUserLoggedIn } from "@/utils/auth";
 
 interface CityServiceClientPageProps {
   cityData: CityServiceInfo;
@@ -52,19 +53,36 @@ export const CityServiceClientPage: React.FC<CityServiceClientPageProps> = ({
 
   const proceedWithSearch = (params: SearchParams) => {
     setCurrentSearchParams(params);
-    const query = new URLSearchParams({
+    const queryObj: Record<string, string> = {
       from: params.fromCity,
       to: params.toCity,
+      tripType: params.tripType,
       type: params.tripType,
+      pickupDate: params.pickupDate,
       date: params.pickupDate,
+      pickupTime: params.pickupTime,
       time: params.pickupTime,
-    }).toString();
+    };
+    if (params.returnDate) queryObj.dropDate = params.returnDate;
+    if (params.returnTime) queryObj.dropTime = params.returnTime;
+    if (params.hourlyPackage) queryObj.package = params.hourlyPackage;
+    if (params.distanceKm) queryObj.distance = String(params.distanceKm);
+    if (params.durationMinutes) queryObj.duration = String(params.durationMinutes);
+    if (params.fromCoords) {
+      queryObj.pickupLat = String(params.fromCoords.lat);
+      queryObj.pickupLng = String(params.fromCoords.lng);
+    }
+    if (params.toCoords) {
+      queryObj.dropLat = String(params.toCoords.lat);
+      queryObj.dropLng = String(params.toCoords.lng);
+    }
+
+    const query = new URLSearchParams(queryObj).toString();
     router.push(`/fleet?${query}`);
   };
 
   const handleSearch = (params: SearchParams) => {
-    const isLoggedIn =
-      typeof window !== "undefined" && Boolean(localStorage.getItem("broomboom_user"));
+    const isLoggedIn = isUserLoggedIn();
 
     if (!isLoggedIn) {
       setPendingSearchParams(params);

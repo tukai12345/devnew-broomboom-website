@@ -83,8 +83,13 @@ export interface DistanceCalculationResult {
 export interface PricingCalculationResult {
   success: boolean;
   fare: number;
+  originalFare?: number;
+  discountPercent?: number;
   advance: number;
   dueFare: number;
+  advanceType?: string;
+  advanceValue?: number;
+  advancePercentage?: number;
   distance: number;
   durationMinutes: number;
   details?: {
@@ -94,6 +99,11 @@ export interface PricingCalculationResult {
     baseFare?: number;
     distance?: number;
     durationMinutes?: number;
+    originalFare?: number;
+    discountPercent?: number;
+    advanceType?: string;
+    advanceValue?: number;
+    advancePercentage?: number;
     addons?: Record<string, number>;
     addonTotal?: number;
   };
@@ -383,31 +393,159 @@ export const api = {
         },
         7000
       );
-      if (!res.ok) return null;
-      return (await res.json()) as DistanceCalculationResult;
-    } catch {
-      return null;
+      if (res.ok) {
+        const data = (await res.json()) as DistanceCalculationResult;
+        if (data && data.distance > 0) return data;
+      }
+    } catch (err) {
+      console.warn("Backend distance calculation notice:", err);
     }
+
+    // Direct OpenStreetMap OSRM Routing Fallback
+    let pLat = params.pickupLat;
+    let pLng = params.pickupLng;
+    let dLat = params.dropLat;
+    let dLng = params.dropLng;
+
+    const fromText = (params.from || params.source || "").trim();
+    const toText = (params.to || params.destination || "").trim();
+
+    if ((!pLat || !pLng) && fromText) {
+      try {
+        const geoRes = await fetchWithTimeout(
+          `https://nominatim.openstreetmap.org/search?format=json&countrycodes=in&q=${encodeURIComponent(
+            fromText
+          )}&limit=1`,
+          {
+            headers: { "User-Agent": "BroomBoomCabsWeb/1.0", Accept: "application/json" },
+          },
+          4000
+        );
+        if (geoRes.ok) {
+          const list = await geoRes.json();
+          if (Array.isArray(list) && list.length > 0) {
+            pLat = parseFloat(list[0].lat);
+            pLng = parseFloat(list[0].lon);
+          }
+        }
+      } catch {}
+    }
+
+    if ((!dLat || !dLng) && toText) {
+      try {
+        const geoRes = await fetchWithTimeout(
+          `https://nominatim.openstreetmap.org/search?format=json&countrycodes=in&q=${encodeURIComponent(
+            toText
+          )}&limit=1`,
+          {
+            headers: { "User-Agent": "BroomBoomCabsWeb/1.0", Accept: "application/json" },
+          },
+          4000
+        );
+        if (geoRes.ok) {
+          const list = await geoRes.json();
+          if (Array.isArray(list) && list.length > 0) {
+            dLat = parseFloat(list[0].lat);
+            dLng = parseFloat(list[0].lon);
+          }
+        }
+      } catch {}
+    }
+
+    if (pLat && pLng && dLat && dLng) {
+      try {
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pLng},${pLat};${dLng},${dLat}?overview=false`;
+        const osrmRes = await fetchWithTimeout(osrmUrl, {}, 5000);
+        if (osrmRes.ok) {
+          const osrmData = await osrmRes.json();
+          if (osrmData.routes && osrmData.routes.length > 0) {
+            const meters = osrmData.routes[0].distance;
+            const seconds = osrmData.routes[0].duration;
+            return {
+              success: true,
+              distance: parseFloat((meters / 1000).toFixed(1)),
+              durationMinutes: Math.round(seconds / 60),
+              source: "OSRM Public",
+              pickupCoords: { lat: pLat, lng: pLng },
+              dropCoords: { lat: dLat, lng: dLng },
+            };
+          }
+        }
+      } catch {}
+    }
+
+    return null;
   },
 
   /**
-   * Real-time map location search / autocomplete via Nominatim & DB
+   * Real-time map location search / autocomplete via BroomBoom Backend & OpenStreetMap
    */
   async searchCities(query: string): Promise<CityItem[]> {
     if (!query || query.trim().length < 2) return [];
+    const cleanQ = query.trim();
+
+    // 1. Try BroomBoom User Backend first (has custom DB places + Nominatim integration)
     try {
       const baseUrl = getApiBaseUrl();
       const res = await fetchWithTimeout(
-        `${baseUrl}/cities/search?q=${encodeURIComponent(query.trim())}`,
+        `${baseUrl}/cities/search?q=${encodeURIComponent(cleanQ)}`,
         {},
-        5000
+        4000
       );
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn("Backend city search notice:", err);
     }
+
+    // 2. Direct OpenStreetMap Nominatim Fallback for any location in India
+    try {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=in&q=${encodeURIComponent(
+        cleanQ
+      )}&limit=10&addressdetails=1`;
+      const res = await fetchWithTimeout(
+        nominatimUrl,
+        {
+          headers: {
+            "User-Agent": "BroomBoomCabsWeb/1.0",
+            Accept: "application/json",
+          },
+        },
+        4000
+      );
+      if (res.ok) {
+        const rawList = await res.json();
+        if (Array.isArray(rawList)) {
+          return rawList.map((item: any) => {
+            const parts = (item.display_name || "").split(",");
+            const cleanName = item.name || parts[0]?.trim() || cleanQ;
+            const state =
+              item.address?.state ||
+              item.address?.state_district ||
+              parts[parts.length - 2]?.trim() ||
+              "India";
+
+            return {
+              id: String(item.place_id || `${item.lat}_${item.lon}`),
+              name: cleanName,
+              displayName: item.display_name || `${cleanName}, ${state}`,
+              lat: item.lat,
+              lon: item.lon,
+              state: state,
+              country: "India",
+              placeId: String(item.place_id || ""),
+              source: "Nominatim",
+            };
+          });
+        }
+      }
+    } catch {}
+
+    return [];
   },
 
   /**

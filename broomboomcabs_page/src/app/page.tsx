@@ -16,6 +16,7 @@ import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
 import { CabVehicle, RentalPackage } from "@/data/cabsData";
+import { isUserLoggedIn } from "@/utils/auth";
 
 export default function Home() {
   const router = useRouter();
@@ -57,23 +58,24 @@ export default function Home() {
       date: params.pickupDate,
       time: params.pickupTime,
     };
+    if (params.returnDate) queryObj.dropDate = params.returnDate;
+    if (params.dropTime || params.returnTime) queryObj.dropTime = params.dropTime || params.returnTime;
     if (params.distanceKm) queryObj.distance = String(params.distanceKm);
     if (params.durationMinutes) queryObj.duration = String(params.durationMinutes);
+    if (params.fromCoords) {
+      queryObj.pickupLat = String(params.fromCoords.lat);
+      queryObj.pickupLng = String(params.fromCoords.lng);
+    }
+    if (params.toCoords) {
+      queryObj.dropLat = String(params.toCoords.lat);
+      queryObj.dropLng = String(params.toCoords.lng);
+    }
 
     const query = new URLSearchParams(queryObj).toString();
     router.push(`/fleet?${query}`);
   };
 
   const handleSearch = (params: SearchParams) => {
-    const isLoggedIn =
-      typeof window !== "undefined" && Boolean(localStorage.getItem("broomboom_user"));
-
-    if (!isLoggedIn) {
-      setPendingSearchParams(params);
-      setIsLoginModalOpen(true);
-      return;
-    }
-
     proceedWithSearch(params);
   };
 

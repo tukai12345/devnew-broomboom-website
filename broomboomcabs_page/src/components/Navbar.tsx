@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { InstallAppModal } from "./InstallAppModal";
 import { LoginModal } from "./LoginModal";
+import { getStoredUser, removeStoredUser } from "@/utils/auth";
 import {
   TOP_10_CITIES_SERVICES,
   SERVICES_LIST,
@@ -45,20 +46,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("broomboom_user");
-      if (saved) {
-        try {
-          setCurrentUser(JSON.parse(saved));
-        } catch {}
-      }
-    }
+    const syncUser = () => {
+      setCurrentUser(getStoredUser());
+    };
+    syncUser();
+    window.addEventListener("broomboom_auth_change", syncUser);
+    return () => window.removeEventListener("broomboom_auth_change", syncUser);
   }, []);
 
   const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("broomboom_user");
-    }
+    removeStoredUser();
     setCurrentUser(null);
     setUserDropdownOpen(false);
   };

@@ -26,6 +26,7 @@ import { Navbar } from "@/components/Navbar";
 import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { api } from "@/services/api";
 import { triggerCashfreePayment } from "@/utils/cashfree";
+import { getStoredUser } from "@/utils/auth";
 
 export const ReviewClientPage: React.FC = () => {
   const searchParams = useSearchParams();
@@ -99,23 +100,20 @@ export const ReviewClientPage: React.FC = () => {
   /* ------------------------------- State -------------------------------- */
   // User Form
   const [pickupAddress, setPickupAddress] = useState("");
-  const [fullName, setFullName] = useState("Partha Sarkar");
+  const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("Male");
-  const [mobileNumber, setMobileNumber] = useState("8583992978");
-  const [emailId, setEmailId] = useState("sakarpartha222@gmail.com");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [emailId, setEmailId] = useState("");
   const [useAsBillingAddress, setUseAsBillingAddress] = useState(true);
 
-  // Auto-fill from localStorage if logged in
+  // Auto-fill from authenticated user session
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("broomboom_current_user");
-      if (stored) {
-        const u = JSON.parse(stored);
-        if (u.name) setFullName(u.name);
-        if (u.phone) setMobileNumber(u.phone.replace(/[^0-9]/g, ""));
-        if (u.email) setEmailId(u.email);
-      }
-    } catch {}
+    const user = getStoredUser();
+    if (user) {
+      if (user.name) setFullName(user.name);
+      if (user.phone) setMobileNumber(user.phone.replace(/[^0-9]/g, ""));
+      if (user.email) setEmailId(user.email);
+    }
   }, []);
 
   // Add-ons
@@ -403,20 +401,45 @@ export const ReviewClientPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Partner Banner */}
-              <div className="bg-[#f8fafc] border-b border-slate-100 px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="text-xs">
-                  <div className="font-extrabold text-slate-900">Our Top Rated Partner</div>
-                  <div className="text-[11px] text-slate-500">
-                    India&apos;s Leading Outstation Cab Rentals Since 2006
+              {/* MOTU CABS Partner Banner */}
+              <div className="bg-gradient-to-r from-amber-50/70 via-slate-50 to-amber-50/40 border-b border-amber-200/50 px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-300/60 flex items-center justify-center shrink-0 shadow-2xs">
+                    <ShieldCheck className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <div className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-900">Our Top Rated Fleet Partner</span>
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-extrabold">
+                        ★ 4.9 / 5
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      100% Verified Commercial Chauffeurs &amp; GPS Tracked Cabs
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-1 rounded bg-[#0b254d] text-white text-[10px] font-black uppercase tracking-wider">
-                    SAVAARI
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
-                    make my trip Group Company
+
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  {/* MOTU CABS Brand Logo Badge */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 text-white shadow-sm border border-slate-800">
+                    <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0">
+                      <Car className="w-3.5 h-3.5 fill-slate-950 stroke-[2.5]" />
+                    </div>
+                    <div className="flex flex-col leading-none text-left">
+                      <span className="font-black text-xs tracking-wider uppercase">
+                        MOTU <span className="text-amber-400">CABS</span>
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                        Fleet Partner
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Group Company Pill */}
+                  <span className="text-[10px] font-extrabold text-amber-950 bg-amber-100/90 px-2.5 py-1.5 rounded-xl border border-amber-300/80 shadow-2xs flex items-center gap-1.5 shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>BroomBoom Group Company</span>
                   </span>
                 </div>
               </div>
