@@ -26,11 +26,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!cityData || !serviceMeta) {
     return {
+      robots: 'noindex, nofollow',
       title: "Outstation Cabs | BroomBoom Cabs",
     };
   }
 
   return {
+      robots: 'noindex, nofollow',
     title: `Outstation Cabs in ${cityData.cityName} | Lowest Fares & Zero Return Fare — BroomBoom Cabs`,
     description: `Book verified one-way & round-trip outstation cabs in ${cityData.cityName}, ${cityData.state}. Zero return fare, 100% AC cars, GPS live tracking, and 24x7 customer support.`,
     alternates: {

@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     type: "website",
   },
+  robots: 'noindex, nofollow',
 };
 
 export default function OutstationCategoryPage() {
@@ -43,7 +44,8 @@ export default function OutstationCategoryPage() {
     shortDesc: "One-Way & Round-Trip highway intercity cabs",
     tripType: "outstation-oneway",
     badge: "Zero Return Fare",
-  };
+    robots: 'noindex, nofollow',
+};
   const defaultCity = TOP_10_CITIES_SERVICES[0];
 
   return (
