@@ -27,6 +27,7 @@ import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { api } from "@/services/api";
 import { triggerCashfreePayment } from "@/utils/cashfree";
 import { getStoredUser } from "@/utils/auth";
+import { CITIES } from "@/data/cabsData";
 
 export const ReviewClientPage: React.FC = () => {
   const searchParams = useSearchParams();
@@ -44,22 +45,32 @@ export const ReviewClientPage: React.FC = () => {
   const toCity = searchParams.get("to") || "Delhi";
   const pickupDate = searchParams.get("pickupDate") || "2026-10-25";
   const dropDate = searchParams.get("dropDate") || "2026-10-27";
+  const pickupDateDisplay = searchParams.get("pickupDateDisplay") || pickupDate;
+  const dropDateDisplay = searchParams.get("dropDateDisplay") || dropDate;
   const pickupTime = searchParams.get("pickupTime") || "11:00 AM";
   const dropTime = searchParams.get("dropTime") || "till 09:45 PM";
   const baseFareParam = parseInt(
     searchParams.get("baseFare") || searchParams.get("discountedPrice") || "0",
     10
   );
+  const advanceParam = parseInt(searchParams.get("advance") || "0", 10);
+  const dueFareParam = parseInt(searchParams.get("dueFare") || "0", 10);
+  const distanceParam = parseFloat(searchParams.get("distance") || "0");
+  const oneWayDistanceParam = parseFloat(searchParams.get("oneWayDistance") || "0");
   const includedKmsParam = parseInt(searchParams.get("includedKms") || "0", 10);
   const imageType = searchParams.get("imageType") || "hatchback";
   const extraKmRate = searchParams.get("extraKmRate") || "15";
 
   const [liveBaseFare, setLiveBaseFare] = useState<number>(baseFareParam || 2499);
+  const [liveAdvance, setLiveAdvance] = useState<number>(advanceParam || 0);
+  const [liveDueFare, setLiveDueFare] = useState<number>(dueFareParam || 0);
   const [liveKms, setLiveKms] = useState<number>(includedKmsParam || 150);
 
   useEffect(() => {
     if (baseFareParam > 0) {
       setLiveBaseFare(baseFareParam);
+      if (advanceParam > 0) setLiveAdvance(advanceParam);
+      if (dueFareParam > 0) setLiveDueFare(dueFareParam);
       if (includedKmsParam > 0) setLiveKms(includedKmsParam);
       return;
     }
@@ -73,17 +84,37 @@ export const ReviewClientPage: React.FC = () => {
         const rideTypeParam: "Oneway" | "Roundtrip" | "Rental" | "Airport" =
           isRound ? "Roundtrip" : isRental ? "Rental" : isAirport ? "Airport" : "Oneway";
 
+        const sourceState = CITIES.find(
+          (c) =>
+            c.name.toLowerCase() === fromCity.trim().toLowerCase() ||
+            c.id.toLowerCase() === fromCity.trim().toLowerCase()
+        )?.state;
+
+        const effectiveTotalDist = distanceParam > 0 ? distanceParam : undefined;
+        const effectiveOneWayDist = oneWayDistanceParam > 0
+          ? oneWayDistanceParam
+          : (distanceParam > 0 ? (isRound ? Math.round(distanceParam / 2) : distanceParam) : undefined);
+
         const res = await api.calculatePrice({
           rideType: rideTypeParam,
           sourceCity: fromCity,
           destinationCity: toCity,
           category: cabCategory || "Sedan",
+          state: sourceState,
+          distance: effectiveTotalDist,
+          oneWayDistance: effectiveOneWayDist,
+          pickupDate,
+          pickupTime,
+          returnDate: dropDate,
+          returnTime: dropTime,
         });
 
         if (res && res.fare > 0) {
           setLiveBaseFare(res.fare);
+          if (res.advance > 0) setLiveAdvance(res.advance);
+          if (res.dueFare > 0) setLiveDueFare(res.dueFare);
           if (res.distance > 0) {
-            setLiveKms(Math.round(isRound ? res.distance * 2 : res.distance));
+            setLiveKms(Math.round(res.distance));
           }
         }
       } catch (e) {
@@ -92,7 +123,7 @@ export const ReviewClientPage: React.FC = () => {
     }
 
     fetchLiveFare();
-  }, [baseFareParam, includedKmsParam, tripType, fromCity, toCity, cabCategory]);
+  }, [baseFareParam, advanceParam, dueFareParam, includedKmsParam, tripType, fromCity, toCity, cabCategory, distanceParam, oneWayDistanceParam, pickupDate, pickupTime, dropDate, dropTime]);
 
   const baseFare = liveBaseFare;
   const includedKms = liveKms;
@@ -154,8 +185,10 @@ export const ReviewClientPage: React.FC = () => {
   // Total Fare: Base Fare + GST (5%) + Gateway Charges (2%) + Add-ons
   const finalTotal = baseFare + gstAmount + gatewayCharges + addonsTotal;
 
-  // Part Pay: 20% token of total fare
-  const partPayAmount = Math.round(finalTotal * 0.2);
+  // Part Pay: Use backend advance token (or proportional token)
+  const partPayAmount = liveAdvance > 0
+    ? Math.round(liveAdvance + (gstAmount + gatewayCharges + addonsTotal) * (liveAdvance / Math.max(1, baseFare)))
+    : Math.round(finalTotal * 0.2);
 
   const payableNow = paymentOption === "part" ? partPayAmount : finalTotal;
 
@@ -178,20 +211,22 @@ export const ReviewClientPage: React.FC = () => {
     let finalId = `BB-${Math.floor(100000 + Math.random() * 900000)}`;
 
     try {
+      const sourceState = CITIES.find((c) => c.name.toLowerCase() === fromCity.trim().toLowerCase())?.state || "West Bengal";
+
       // Connect to BroomBoom User Backend
       const backendBooking = await api.createBooking({
         customerName: fullName.trim(),
         customerMobile: mobileNumber.trim(),
         customerEmail: emailId.trim(),
         serviceType:
-          tripType === "outstation-oneway"
+          tripType.toLowerCase().includes("oneway") || tripType.toLowerCase().includes("one-way")
             ? "Outstation oneway"
-            : tripType === "outstation-round"
+            : tripType.toLowerCase().includes("round")
             ? "Outstation roundtrip"
-            : tripType === "hourly"
+            : tripType.toLowerCase().includes("hourly") || tripType.toLowerCase().includes("rental")
             ? "Hourly"
             : "Airport",
-        state: "Maharashtra",
+        state: sourceState,
         pickupAddress: pickupAddress.trim(),
         dropAddress: `${toCity}, India`,
         pickupDate: pickupDate || new Date().toISOString().split("T")[0],
@@ -355,16 +390,16 @@ export const ReviewClientPage: React.FC = () => {
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1">
-                  <span>{fromCity}, Maharashtra</span>
-                  <span>{toCity}, Delhi</span>
+                  <span>{fromCity}</span>
+                  <span>{toCity}</span>
                   {tripType.toLowerCase().includes("round") && (
-                    <span>{fromCity}, Maharashtra</span>
+                    <span>{fromCity}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-2 text-xs font-bold text-slate-800">
                   <Calendar className="w-3.5 h-3.5 text-slate-600" />
                   <span>
-                    {pickupDate}, {pickupTime} - {dropDate}
+                    {pickupDateDisplay}, {pickupTime}{dropDate ? ` - ${dropDateDisplay}, ${dropTime}` : ""}
                   </span>
                 </div>
               </div>

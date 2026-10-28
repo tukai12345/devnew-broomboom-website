@@ -40,6 +40,13 @@ const config: Config = {
           "sans-serif",
         ],
       },
+      zIndex: {
+        "60": "60",
+        "70": "70",
+        "80": "80",
+        "90": "90",
+        "100": "100",
+      },
       boxShadow: {
         mmt: "0 1px 7px 0 rgba(0, 0, 0, 0.15)",
         card: "0 4px 20px -2px rgba(0, 0, 0, 0.08)",

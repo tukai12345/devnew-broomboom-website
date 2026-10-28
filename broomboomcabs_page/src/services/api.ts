@@ -98,6 +98,7 @@ export interface PricingCalculationResult {
     drop?: string;
     baseFare?: number;
     distance?: number;
+    oneWayDistance?: number;
     durationMinutes?: number;
     originalFare?: number;
     discountPercent?: number;
@@ -106,6 +107,22 @@ export interface PricingCalculationResult {
     advancePercentage?: number;
     addons?: Record<string, number>;
     addonTotal?: number;
+    slab?: string;
+    ratePerKm?: number;
+    extraKmRate?: number;
+    distanceFare?: number;
+    hourlyFare?: number;
+    adminSetPrice?: number;
+    selectedBaseFare?: number;
+    totalHours?: number;
+    hourlyRate?: number;
+    nightAllowance?: number;
+    comparison?: {
+      distanceFare?: number;
+      hourlyFare?: number;
+      adminSetPrice?: number;
+      selected?: string;
+    };
   };
   multiplier?: number;
   appliedRule?: string;
@@ -240,7 +257,7 @@ export const api = {
     const payload = {
       name: userData.name || "Customer",
       phone: userData.phone.trim(),
-      email: userData.email?.trim() || "",
+      email: userData.email?.trim() || undefined,
       status: userData.status || "Active",
       leadType: userData.leadType || "New",
     };
@@ -557,9 +574,16 @@ export const api = {
     destinationCity?: string;
     category: string;
     state?: string;
+    city?: string;
+    pickupLat?: number;
+    pickupLng?: number;
+    dropLat?: number;
+    dropLng?: number;
     distance?: number;
     oneWayDistance?: number;
     days?: number;
+    bookingDuration?: number;
+    hours?: number;
     pickupDate?: string;
     pickupTime?: string;
     returnDate?: string;

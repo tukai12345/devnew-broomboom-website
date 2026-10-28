@@ -5,13 +5,13 @@ import Link from "next/link";
 import { Car, PhoneCall, Mail, MapPin, ShieldCheck } from "lucide-react";
 
 const cityLinks = [
-  "Cabs in Bangalore",
-  "Cabs in Kolkata",
-  "Cabs in Delhi NCR",
-  "Cabs in Mumbai",
-  "Cabs in Pune",
-  "Cabs in Jaipur",
-  "Cabs in Siliguri",
+  { label: "Cabs in Kolkata", href: "/outstation-cabs/kolkata" },
+  { label: "Cabs in Bangalore", href: "/outstation-cabs/bangalore" },
+  { label: "Cabs in Delhi NCR", href: "/outstation-cabs/delhi" },
+  { label: "Cabs in Mumbai", href: "/outstation-cabs/mumbai" },
+  { label: "Cabs in Pune", href: "/outstation-cabs/pune" },
+  { label: "Cabs in Jaipur", href: "/outstation-cabs/jaipur" },
+  { label: "Cabs in Siliguri", href: "/outstation-cabs/siliguri" },
 ];
 
 const routeLinks = [
@@ -78,9 +78,9 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2">
               {cityLinks.map((item) => (
-                <li key={item}>
-                  <Link href="/services" className={linkClass}>
-                    {item}
+                <li key={item.label}>
+                  <Link href={item.href} className={linkClass}>
+                    {item.label}
                   </Link>
                 </li>
               ))}
@@ -144,7 +144,7 @@ export const Footer: React.FC = () => {
         {/* Bottom copyright */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 p-4 text-[11px] text-slate-500 sm:flex-row sm:p-6 lg:px-8">
           <div className="text-center sm:text-left">
-            © {year} BroomBoom Cabs India Private Limited. All rights reserved.
+            © {year} BroomBoom Transportation Services Private Limited. All rights reserved.
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-end">

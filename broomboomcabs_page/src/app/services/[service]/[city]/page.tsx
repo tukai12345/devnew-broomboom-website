@@ -1,5 +1,5 @@
 import React from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
 import {
   TOP_10_CITIES_SERVICES,
@@ -50,6 +50,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default function ServiceCityPage({ params }: PageProps) {
+  if (params.service === "outstation") {
+    redirect(`/outstation-cabs/${params.city}`);
+  }
+  if (params.service === "airport") {
+    redirect(`/airport-cabs/${params.city}`);
+  }
+  if (params.service === "rental") {
+    redirect(`/hourly-rentals/${params.city}`);
+  }
+
   const cityData = getCityServiceData(params.city);
   const serviceMeta = getServiceMeta(params.service);
 

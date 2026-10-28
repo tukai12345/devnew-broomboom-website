@@ -307,7 +307,8 @@ const PopoverShell: React.FC<{
     <div
       data-popover-shell
       onClick={(e) => e.stopPropagation()}
-      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-amber-300 ring-1 ring-black/5 z-[70] p-3 animate-in fade-in zoom-in-95 duration-150`}
+      style={{ zIndex: 100 }}
+      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-amber-300 ring-1 ring-black/5 z-50 p-3 animate-in fade-in zoom-in-95 duration-150`}
     >
       {children}
     </div>
@@ -970,12 +971,17 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   return (
     <div
-      className="relative pt-6 sm:pt-8 md:pt-10 pb-16 sm:pb-20 md:pb-24 bg-cover bg-center bg-no-repeat overflow-visible"
+      className="relative pt-6 sm:pt-8 md:pt-10 pb-10 sm:pb-12 md:pb-14 bg-cover bg-center bg-no-repeat overflow-visible"
       style={{
+        zIndex: openDropdown ? 50 : 20,
         backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.65), rgba(10, 16, 26, 0.80)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80')`,
       }}
     >
-      <div className={`max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 relative ${openDropdown ? "z-40" : "z-20"}`} ref={containerRef}>
+      <div
+        ref={containerRef}
+        style={{ zIndex: openDropdown ? 50 : 20 }}
+        className={`max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 relative ${openDropdown ? "z-40" : "z-20"}`}
+      >
         
         {/* =============================== HEADER (SHOWN ON ALL) ==================================== */}
         <div className="mb-2 sm:mb-3 hidden sm:flex items-center justify-center animate-in fade-in duration-200">
@@ -1252,7 +1258,10 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         {/* ================================================================================= */}
         <div className="hidden md:block">
           {/* Main card */}
-          <div className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-amber-200/90 pt-3 sm:pt-4 pb-12 sm:pb-10 px-2.5 sm:px-6 lg:px-8 transition-all ${openDropdown ? "z-40" : "z-20"}`}>
+          <div
+            style={{ zIndex: openDropdown ? 50 : 20 }}
+            className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-amber-200/90 pt-3 sm:pt-4 pb-12 sm:pb-10 px-2.5 sm:px-6 lg:px-8 transition-all ${openDropdown ? "z-40" : "z-20"}`}
+          >
             {/* Trip tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 sm:pb-5 gap-2.5 sm:gap-3 border-b border-amber-100/80 mb-3.5 sm:mb-5">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 w-full sm:w-auto">
@@ -1298,8 +1307,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ ROUND TRIP ============ */}
             {tripType === "outstation-round" && (
-              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
-                <div data-field-trigger onClick={() => toggle("from")} className={`w-[21%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
+              <div
+                style={{ zIndex: openDropdown ? 60 : 10 }}
+                className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
+              >
+                <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[21%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>From</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1323,7 +1335,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("to")} className={`w-[21%] ${openDropdown === "to" ? "relative z-[60]" : ""} ${field} pl-5`}>
+                <div data-field-trigger onClick={() => toggle("to")} style={{ zIndex: openDropdown === "to" ? 80 : 1 }} className={`w-[21%] ${openDropdown === "to" ? "relative z-40" : ""} ${field} !pl-8`}>
                   <button
                     type="button"
                     onClick={handleSwap}
@@ -1356,7 +1368,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[15%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} style={{ zIndex: openDropdown === "pickupDate" ? 80 : 1 }} className={`w-[15%] ${openDropdown === "pickupDate" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Departure <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1378,7 +1390,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("returnDate")} className={`w-[15%] ${openDropdown === "returnDate" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("returnDate")} style={{ zIndex: openDropdown === "returnDate" ? 80 : 1 }} className={`w-[15%] ${openDropdown === "returnDate" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Return <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1413,7 +1425,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[14%] ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} style={{ zIndex: openDropdown === "pickupTime" ? 80 : 1 }} className={`w-[14%] ${openDropdown === "pickupTime" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Pickup <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1432,7 +1444,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("dropTime")} className={`w-[14%] rounded-r-xl ${openDropdown === "dropTime" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("dropTime")} style={{ zIndex: openDropdown === "dropTime" ? 80 : 1 }} className={`w-[14%] rounded-r-xl ${openDropdown === "dropTime" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Drop Time</div>
                   <div className={timeLine}>
                     <span className="text-3xl font-black text-slate-400">{dropTimeParts.time}</span>
@@ -1453,8 +1465,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ ONE-WAY ============ */}
             {tripType === "outstation-oneway" && (
-              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
-                <div data-field-trigger onClick={() => toggle("from")} className={`w-[28%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
+              <div
+                style={{ zIndex: openDropdown ? 60 : 10 }}
+                className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
+              >
+                <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[28%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>From</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1478,7 +1493,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("to")} className={`w-[28%] pl-5 ${openDropdown === "to" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("to")} style={{ zIndex: openDropdown === "to" ? 80 : 1 }} className={`w-[28%] ${openDropdown === "to" ? "relative z-40" : ""} ${field} !pl-8`}>
                   <button
                     type="button"
                     onClick={handleSwap}
@@ -1511,7 +1526,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[18%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} style={{ zIndex: openDropdown === "pickupDate" ? 80 : 1 }} className={`w-[18%] ${openDropdown === "pickupDate" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Departure <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1539,7 +1554,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     changeTripType("outstation-round");
                     setOpenDropdown("returnDate");
                   }}
-                  className={`w-[16%] ${openDropdown === "returnDate" ? "relative z-[60]" : ""} ${field}`}
+                  style={{ zIndex: openDropdown === "returnDate" ? 80 : 1 }}
+                  className={`w-[16%] ${openDropdown === "returnDate" ? "relative z-40" : ""} ${field}`}
                 >
                   <div className={label}>
                     Return <ChevronDown className="w-3 h-3 text-amber-500" />
@@ -1549,7 +1565,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   </div>
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[10%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} style={{ zIndex: openDropdown === "pickupTime" ? 80 : 1 }} className={`w-[10%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Pickup <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1572,8 +1588,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ HOURLY ============ */}
             {tripType === "hourly" && (
-              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
-                <div data-field-trigger onClick={() => toggle("from")} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
+              <div
+                style={{ zIndex: openDropdown ? 60 : 10 }}
+                className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
+              >
+                <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Pickup Location</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1597,7 +1616,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[25%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} style={{ zIndex: openDropdown === "pickupDate" ? 80 : 1 }} className={`w-[25%] ${openDropdown === "pickupDate" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Pickup Date <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1619,7 +1638,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[15%] ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} style={{ zIndex: openDropdown === "pickupTime" ? 80 : 1 }} className={`w-[15%] ${openDropdown === "pickupTime" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Pickup <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1638,7 +1657,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("package")} className={`w-[20%] rounded-r-xl ${openDropdown === "package" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("package")} style={{ zIndex: openDropdown === "package" ? 80 : 1 }} className={`w-[20%] rounded-r-xl ${openDropdown === "package" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Select Package</div>
                   <div className="text-2xl font-black text-slate-950 tracking-tight leading-none truncate">
                     {hourlyPackage}
@@ -1686,8 +1705,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
             {/* ============ AIRPORT ============ */}
             {tripType === "airport" && (
-              <div className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}>
-                <div data-field-trigger onClick={() => toggle("from")} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-[60]" : ""} ${field}`}>
+              <div
+                style={{ zIndex: openDropdown ? 60 : 10 }}
+                className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
+              >
+                <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Pickup Location</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
@@ -1711,7 +1733,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("to")} className={`w-[40%] ${openDropdown === "to" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("to")} style={{ zIndex: openDropdown === "to" ? 80 : 1 }} className={`w-[40%] ${openDropdown === "to" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Drop Location</div>
                   <div className={value}>{toCity}</div>
                   <div className={sub}>{toState}</div>
@@ -1736,7 +1758,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupDate")} className={`w-[10%] ${openDropdown === "pickupDate" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupDate")} style={{ zIndex: openDropdown === "pickupDate" ? 80 : 1 }} className={`w-[10%] ${openDropdown === "pickupDate" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Date <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1758,7 +1780,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupTime")} className={`w-[10%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-[60]" : ""} ${field}`}>
+                <div data-field-trigger onClick={() => toggle("pickupTime")} style={{ zIndex: openDropdown === "pickupTime" ? 80 : 1 }} className={`w-[10%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>
                     Time <ChevronDown className="w-3 h-3 text-amber-500" />
                   </div>
@@ -1793,7 +1815,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
             </div>
 
             {/* Centered Search pill */}
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-20">
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-20" style={{ zIndex: 20 }}>
               <button
                 type="button"
                 onClick={handleSearchSubmit}
@@ -1813,7 +1835,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
           </div>
 
           {/* Laurel pill: "India's Top Rated Car Rental Service" */}
-          <div className="mt-6 sm:mt-8 mb-3 sm:mb-4 flex items-center justify-center gap-2 text-white text-[11px] sm:text-[13px] font-semibold tracking-wide drop-shadow-sm select-none">
+          <div className="mt-6 sm:mt-8 mb-3 sm:mb-2 flex items-center justify-center gap-2 text-white text-[11px] sm:text-[13px] font-semibold tracking-wide drop-shadow-sm select-none">
             <svg className="w-4 h-5 sm:w-5 sm:h-6 text-white fill-current drop-shadow-sm" viewBox="0 0 24 32" aria-hidden="true">
               <path d="M18 2C16 5 13 7 9 7C11 9 12 11 11 14C8 13 6 11 5 8C5 11 4 14 2 16C4 16 6 15 8 13C8 17 7 20 5 22C7 21 9 19 10 17C11 20 11 23 9 26C11 24 13 21 14 18C16 21 17 24 16 28C18 25 19 22 19 19C21 21 23 23 24 25C24 22 23 19 21 17C23 18 25 18 26 18C24 15 22 14 20 13C22 13 24 12 25 10C22 10 20 10 18 11C19 8 20 5 18 2Z" />
             </svg>
@@ -1828,7 +1850,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       </div>
 
       {/* =============================== REVIEWS/RATING PILL (SHOWN ON ALL) ==================================== */}
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-10 w-full px-2 sm:px-4 pointer-events-none flex justify-center">
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-10 w-full px-2 sm:px-4 pointer-events-none flex justify-center" style={{ zIndex: 10 }}>
         <div className="pointer-events-auto bg-white rounded-2xl sm:rounded-full px-2.5 sm:px-8 py-2 sm:py-3 shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 flex items-center justify-between sm:justify-center gap-1 sm:gap-8 md:gap-11 w-full sm:w-auto max-w-[96vw] sm:max-w-fit overflow-hidden">
           
           {/* App Store */}

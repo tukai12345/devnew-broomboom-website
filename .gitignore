@@ -1,0 +1,29 @@
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next.js generated files
+.next/
+**/.next/
+out/
+**/out/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+**/dist/
+build/
+**/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*

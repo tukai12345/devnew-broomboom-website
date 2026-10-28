@@ -523,3 +523,18 @@ export function getServiceMeta(serviceId: string): ServiceMeta | undefined {
     (s) => s.id.toLowerCase() === serviceId.toLowerCase()
   );
 }
+
+export function getServiceUrl(serviceId: string, cityId?: string): string {
+  const srv = serviceId.toLowerCase();
+  const base =
+    srv === "outstation" || srv === "outstation-cabs"
+      ? "/outstation-cabs"
+      : srv === "airport" || srv === "airport-cabs"
+      ? "/airport-cabs"
+      : srv === "rental" || srv === "hourly-rentals"
+      ? "/hourly-rentals"
+      : `/services/${serviceId}`;
+
+  if (!cityId) return base;
+  return `${base}/${cityId.toLowerCase()}`;
+}

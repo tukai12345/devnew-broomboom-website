@@ -25,6 +25,7 @@ import {
   TOP_10_CITIES_SERVICES,
   SERVICES_LIST,
   ServiceType,
+  getServiceUrl,
 } from "@/data/cityServicesData";
 
 interface NavbarProps {
@@ -240,7 +241,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                         {TOP_10_CITIES_SERVICES.map((city) => (
                           <Link
                             key={city.cityId}
-                            href={`/services/${activeMenuService}/${city.cityId}`}
+                            href={getServiceUrl(activeMenuService, city.cityId)}
                             onClick={() => setServicesDropdownOpen(false)}
                             className="p-2.5 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200/80 hover:border-amber-300 text-slate-800 hover:text-slate-950 transition flex items-center justify-between group"
                           >
@@ -430,7 +431,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               {TOP_10_CITIES_SERVICES.map((city) => (
                 <Link
                   key={city.cityId}
-                  href={`/services/${mobileActiveService}/${city.cityId}`}
+                  href={getServiceUrl(mobileActiveService, city.cityId)}
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2.5 bg-white/5 hover:bg-amber-400 hover:text-slate-950 text-white rounded-xl text-xs font-bold border border-white/10 flex items-center justify-between transition"
                 >

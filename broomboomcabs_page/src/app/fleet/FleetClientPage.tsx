@@ -29,6 +29,7 @@ import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { SearchParams } from "@/components/HeroSearch";
 import { CitySearchPopover } from "@/components/CitySearchPopover";
 import { api, PricingCalculationResult } from "@/services/api";
+import { CITIES, FLEET_CABS } from "@/data/cabsData";
 
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
@@ -223,12 +224,18 @@ const FleetPageContent: React.FC = () => {
   const router = useRouter();
 
   /* ----------------------------- Search state ----------------------------- */
-  const [tripType, setTripType] = useState<string>(
-    searchParams.get("type") || searchParams.get("tripType") || "Outstation One-Way"
-  );
+  const rawTripType = searchParams.get("type") || searchParams.get("tripType") || "Outstation One-Way";
+  const [tripType, setTripType] = useState<string>(() => {
+    const lower = rawTripType.toLowerCase();
+    if (lower.includes("round")) return "Outstation Round-Trip";
+    if (lower.includes("hourly") || lower.includes("rental")) return "Hourly Rentals";
+    if (lower.includes("airport")) return "Airport Transfers";
+    return "Outstation One-Way";
+  });
   const [fromCity, setFromCity] = useState<string>(searchParams.get("from") || "Mumbai");
   const [toCity, setToCity] = useState<string>(searchParams.get("to") || "Pune");
 
+  const [sourceState, setSourceState] = useState<string>('');
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(() => {
     const lat = searchParams.get("pickupLat");
     const lng = searchParams.get("pickupLng");
@@ -239,6 +246,14 @@ const FleetPageContent: React.FC = () => {
     const lng = searchParams.get("dropLng");
     return lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
   });
+
+  // Update sourceState based on fromCity (name or slug)
+  useEffect(() => {
+    const lower = fromCity.trim().toLowerCase();
+    const byName = CITIES.find((c) => c.name.toLowerCase() === lower);
+    const byId = CITIES.find((c) => c.id.toLowerCase() === lower);
+    setSourceState(byName?.state ?? byId?.state ?? '');
+  }, [fromCity]);
 
   const [pickupDateIso, setPickupDateIso] = useState<string>(
     searchParams.get("date") || searchParams.get("pickupDate") || "2026-10-27"
@@ -268,6 +283,16 @@ const FleetPageContent: React.FC = () => {
   const [isModelOpen, setIsModelOpen] = useState(true);
   const [isFuelOpen, setIsFuelOpen] = useState(true);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  // Resolve state from city name or id
+  const resolveState = (city: string) => {
+    const lower = city.trim().toLowerCase();
+    const byName = CITIES.find((c) => c.name.toLowerCase() === lower);
+    if (byName) return byName.state;
+    const byId = CITIES.find((c) => c.id.toLowerCase() === lower);
+    if (byId) return byId.state;
+    return "";
+  };
+
 
   /* ------------------------------ Booking -------------------------------- */
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleItem | null>(null);
@@ -355,7 +380,30 @@ const FleetPageContent: React.FC = () => {
         console.warn("Backend distance fetch error:", err);
       }
 
-      // If map didn't return or was blocked, and query matches current cities
+      // If still no distance, try to use static popular routes data as fallback
+        if (currentDistance === 0) {
+          // Import POPULAR_ROUTES lazily to avoid circular deps
+          const { POPULAR_ROUTES } = await import("@/data/cabsData");
+          const route = POPULAR_ROUTES.find(
+            (r) =>
+              r.from.toLowerCase() === fromCity.trim().toLowerCase() &&
+              r.to.toLowerCase() === toCity.trim().toLowerCase()
+          );
+          if (route) {
+            // distance string like "185 km"
+            const match = route.distance.match(/(\d+\.?\d*)/);
+            if (match) {
+              currentDistance = parseFloat(match[1]);
+              currentDuration = Math.round(currentDistance * 0.8);
+              if (!cancelled) {
+                setBackendRoute({
+                  distance: currentDistance,
+                  durationMinutes: currentDuration,
+                });
+              }
+            }
+          }
+        }
       if (currentDistance === 0 && queryDist && parseFloat(queryDist) > 0) {
         const initialFrom = searchParams.get("from");
         const initialTo = searchParams.get("to");
@@ -392,6 +440,10 @@ const FleetPageContent: React.FC = () => {
         }
 
         const calcDistance = isRound ? currentDistance * 2 : currentDistance;
+        const cleanPickupTime = pickupTime ? pickupTime.trim() : "";
+        const cleanDropTime = dropTime ? dropTime.replace(/^till\s+/i, "").trim() : "";
+        const currentSourceState = resolveState(fromCity) || sourceState;
+
 
         const categories = [
           "Hatchback",
@@ -400,28 +452,61 @@ const FleetPageContent: React.FC = () => {
           "SUV+",
           "13 Seater Traveller",
           "17 Seater Traveller",
-          "25 Seater Traveller",
         ];
+
         const prices: Record<string, PricingCalculationResult> = {};
 
         await Promise.all(
           categories.map(async (cat) => {
             try {
-              const res = await api.calculatePrice({
+              console.log('Pricing request params', {
+            rideType: rideTypeParam,
+            sourceCity: fromCity.trim(),
+            destinationCity: toCity.trim(),
+            category: cat,
+            state: currentSourceState || undefined,
+            pickupLat: pickupCoords?.lat,
+            pickupLng: pickupCoords?.lng,
+            dropLat: dropCoords?.lat,
+            dropLng: dropCoords?.lng,
+            distance: calcDistance > 0 ? calcDistance : undefined,
+            oneWayDistance: currentDistance > 0 ? currentDistance : undefined,
+            days: isRound ? days : 1,
+            pickupDate: pickupDateIso,
+            pickupTime: cleanPickupTime,
+            returnDate: dropDateIso,
+            returnTime: cleanDropTime,
+          });
+          const res = await api.calculatePrice({
                 rideType: rideTypeParam,
                 sourceCity: fromCity.trim(),
                 destinationCity: toCity.trim(),
                 category: cat,
+                state: currentSourceState || undefined,
+                pickupLat: pickupCoords?.lat,
+                pickupLng: pickupCoords?.lng,
+                dropLat: dropCoords?.lat,
+                dropLng: dropCoords?.lng,
                 distance: calcDistance > 0 ? calcDistance : undefined,
                 oneWayDistance: currentDistance > 0 ? currentDistance : undefined,
                 days: isRound ? days : 1,
                 pickupDate: pickupDateIso,
-                pickupTime,
+                pickupTime: cleanPickupTime,
                 returnDate: dropDateIso,
-                returnTime: dropTime,
+                returnTime: cleanDropTime,
               });
               if (res && res.fare > 0) {
                 prices[cat] = res;
+                // If map distance wasn't resolved initially, update backendRoute from backend's map resolver
+                if (currentDistance === 0 && res.distance > 0 && !cancelled) {
+                  const resolvedOneWay = isRound ? Math.round((res.distance / 2) * 10) / 10 : res.distance;
+                  currentDistance = resolvedOneWay;
+                  currentDuration = res.durationMinutes || Math.round(resolvedOneWay * 0.8);
+                  setBackendRoute({
+                    distance: resolvedOneWay,
+                    durationMinutes: currentDuration,
+                  });
+                }
               }
             } catch {}
           })
@@ -506,19 +591,23 @@ const FleetPageContent: React.FC = () => {
           discountPercent: live.discountPercent || defaultDiscount,
           advance: live.advance,
           dueFare: live.dueFare,
-          extraKmRate: (live.details as any)?.extraKmRate || perKmFallback,
+          extraKmRate: (live.details as any)?.ratePerKm || (live.details as any)?.extraKmRate || perKmFallback,
         };
       }
 
+      // Use admin‑set per‑km rate for West Bengal if applicable
+      const perKmRate = sourceState === "West Bengal" ? 10 : perKmFallback;
       // If backend price is still loading, calculate directly using actual map road distance
-      const fallbackFare = Math.max(1200, roundTo10(kms * perKmFallback));
+      const isRoundTrip = tripType.toLowerCase().includes("round");
+      const fallbackAdvancePct = isRoundTrip ? 0.25 : 0.2;
+      const fallbackFare = Math.max(1200, roundTo10(kms * perKmRate));
       return {
         discountedPrice: fallbackFare,
         originalPrice: Math.round((fallbackFare * 1.15) / 10) * 10,
         discountPercent: defaultDiscount,
-        advance: Math.round(fallbackFare * 0.2),
-        dueFare: Math.round(fallbackFare * 0.8),
-        extraKmRate: perKmFallback,
+        advance: Math.round(fallbackFare * fallbackAdvancePct),
+        dueFare: Math.round(fallbackFare * (1 - fallbackAdvancePct)),
+        extraKmRate: perKmRate,
       };
     };
 
@@ -805,8 +894,10 @@ const FleetPageContent: React.FC = () => {
       tripType,
       from: fromCity,
       to: toCity,
-      pickupDate: formatDisplayDate(pickupDateIso),
-      dropDate: formatDisplayDate(dropDateIso),
+      pickupDate: pickupDateIso,
+      pickupDateDisplay: formatDisplayDate(pickupDateIso),
+      dropDate: dropDateIso,
+      dropDateDisplay: formatDisplayDate(dropDateIso),
       pickupTime,
       dropTime,
       baseFare: vehicle.discountedPrice.toString(),
@@ -817,6 +908,7 @@ const FleetPageContent: React.FC = () => {
       modelBadgeText: vehicle.modelBadgeText || "",
       extraKmRate: (vehicle.extraKmRate || 15).toString(),
       distance: (routeMeta.kms || "").toString(),
+      oneWayDistance: (routeMeta.oneWayKms || "").toString(),
       duration: (routeMeta.durationMinutes || "").toString(),
     });
     if (vehicle.advanceAmount) params.set("advance", vehicle.advanceAmount.toString());
@@ -1465,6 +1557,17 @@ const FleetPageContent: React.FC = () => {
                         <div className="text-[11px] text-slate-600 font-medium mt-0.5">
                           {cab.includedKms.toLocaleString("en-IN")} kms included
                         </div>
+                        {cab.extraKmRate && (
+                          <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                            Extra fare: ₹{cab.extraKmRate}/km
+                          </div>
+                        )}
+                        {cab.advanceAmount != null && cab.advanceAmount > 0 && (
+                          <div className="text-[10px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                            Pay ₹{cab.advanceAmount.toLocaleString("en-IN")} advance now
+                          </div>
+                        )}
                       </div>
                     </div>
 

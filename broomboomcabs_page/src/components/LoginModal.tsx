@@ -190,16 +190,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     const cleanPhone = `${selectedCountry.code}${phoneNumber.trim()}`.replace(/\s+/g, "");
 
     let backendId = "";
+    let finalName = fullName.trim() || `User ${phoneNumber.slice(-4)}`;
     try {
-      // Connect to BroomBoom User Backend
+      // Connect to BroomBoom User Backend (creates or updates user lead in Admin)
       const backendUser = await api.createUser({
-        name: fullName.trim() || `User ${phoneNumber.slice(-4)}`,
+        name: finalName,
         phone: cleanPhone,
         email: email.trim(),
         status: "Active",
         leadType: "New",
       });
       backendId = backendUser.id || backendUser._id || "";
+      if (backendUser.name) {
+        finalName = backendUser.name;
+      }
     } catch (err) {
       console.warn("Backend user sync notice:", err);
     }
@@ -208,7 +212,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       id: backendId,
       identifier: fullPhone,
       role: "user",
-      name: fullName.trim() || `User ${phoneNumber.slice(-4)}`,
+      name: finalName,
       phone: fullPhone,
       email: email.trim(),
     };
