@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     icon: "/logo.png",
     apple: "/logo.png",
   },
+  robots: 'noindex, nofollow',
 };
 
 export const viewport: Viewport = {
