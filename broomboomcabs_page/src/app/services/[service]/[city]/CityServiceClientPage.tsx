@@ -37,13 +37,23 @@ export const CityServiceClientPage: React.FC<CityServiceClientPageProps> = ({
       ? cityData.airportName
       : cityData.cityName;
 
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const getTomorrowStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
   const [currentSearchParams, setCurrentSearchParams] = useState<SearchParams>({
     tripType: serviceMeta.tripType,
     fromCity: cityData.cityName,
     toCity: initialToCity,
-    pickupDate: "2026-10-25",
+    pickupDate: getTodayStr(),
     pickupTime: "10:00 AM",
-    returnDate: "2026-10-26",
+    returnDate: getTomorrowStr(),
     returnTime: "08:00 PM",
     dropTime: "09:45 PM",
     hourlyPackage: "4 hrs 40 kms",

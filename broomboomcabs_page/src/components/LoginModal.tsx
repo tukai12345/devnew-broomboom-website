@@ -222,10 +222,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     if (onSuccess) {
       onSuccess(loggedUser);
+    } else {
+      router.push("/fleet");
     }
     setIsSubmitting(false);
     onClose();
-    router.push("/fleet");
   };
 
   if (!isOpen || !mounted) return null;

@@ -67,10 +67,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   if (!isOpen || !cab || !mounted) return null;
 
   const basePrice = Math.round(cab.discountedPrice);
-  const gstAmount = Math.round(basePrice * 0.05);
-  const gatewayCharges = Math.round(basePrice * 0.02);
-  const finalPayable = basePrice + gstAmount + gatewayCharges;
+  // Total Fare shown on web: Base Fare
+  const finalPayable = basePrice; 
   const advanceToken = Math.round(finalPayable * 0.2);
+
+  // Hidden GST (5%) & Gateway (2%) added when redirecting to Cashfree
+  const gstCharge = Math.round(finalPayable * 0.05);
+  const gatewayCharge = Math.round(finalPayable * 0.02);
+  const totalExtraCharges = gstCharge + gatewayCharge; // 7% extra
+
+  const cashfreePayable = paymentChoice === "advance"
+    ? Math.round(advanceToken + totalExtraCharges * (advanceToken / Math.max(1, finalPayable)))
+    : finalPayable + totalExtraCharges;
 
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,8 +114,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         vehicleCategory: cab?.name || "Sedan",
         seater: cab?.seats || 4,
         fare: finalPayable,
-        advance: advanceToken,
-        dueFare: Math.max(0, finalPayable - advanceToken),
+        advance: cashfreePayable,
+        dueFare: Math.max(0, finalPayable - (paymentChoice === "advance" ? advanceToken : finalPayable)),
         status: "Pending",
         paymentStatus: "PENDING",
       });
@@ -353,9 +361,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="text-right">
                 <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Total Fare</div>
                 <div className="text-xl font-black text-slate-900">₹{finalPayable}</div>
-                <div className="text-[10px] text-slate-400 font-medium">
-                  Incl. GST &amp; PG Fee
-                </div>
               </div>
             </div>
 
@@ -522,14 +527,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="flex justify-between text-slate-600">
                 <span>Chauffeur &amp; Fuel Allowance:</span>
                 <span className="text-emerald-600 font-bold">FREE (Included)</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Goods &amp; Services Tax (GST 5%):</span>
-                <span>₹{gstAmount}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Payment Gateway Charges (2%):</span>
-                <span>₹{gatewayCharges}</span>
               </div>
               <div className="pt-2 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
                 <span>Total Trip Fare:</span>

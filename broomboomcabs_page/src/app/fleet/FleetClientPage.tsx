@@ -52,7 +52,7 @@ interface VehicleItem {
   discountedPrice: number;
   taxAndFee: number;
   roofCarrierFee?: number;
-  imageType: "hatchback" | "sedan" | "suv" | "minibus" | "tempo";
+  imageType: "hatchback" | "sedan" | "suv" | "suv-plus" | "minibus" | "tempo";
   extraKmRate?: number;
   advanceAmount?: number;
   dueAmount?: number;
@@ -68,7 +68,6 @@ interface ActiveFilterChip {
 /* -------------------------------------------------------------------------- */
 /*                                 CONSTANTS                                  */
 /* -------------------------------------------------------------------------- */
-
 
 const TIME_OPTIONS = [
   "06:00 AM", "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
@@ -90,6 +89,12 @@ const TRIP_TYPES = [
 
 const CAB_TYPE_OPTIONS = ["Hatchback", "Sedan", "Suv", "Minibus"] as const;
 const FUEL_TYPE_OPTIONS = ["Cng/diesel", "Diesel"] as const;
+
+const HOURLY_PACKAGES = [
+  "4 hrs 40 kms",
+  "8 hrs 80 kms",
+  "12 hrs 120 kms",
+];
 
 /* -------------------------------------------------------------------------- */
 /*                              PURE HELPERS                                  */
@@ -232,8 +237,8 @@ const FleetPageContent: React.FC = () => {
     if (lower.includes("airport")) return "Airport Transfers";
     return "Outstation One-Way";
   });
-  const [fromCity, setFromCity] = useState<string>(searchParams.get("from") || "Mumbai");
-  const [toCity, setToCity] = useState<string>(searchParams.get("to") || "Pune");
+  const [fromCity, setFromCity] = useState<string>(searchParams.get("from") || "");
+  const [toCity, setToCity] = useState<string>(searchParams.get("to") || "");
 
   const [sourceState, setSourceState] = useState<string>('');
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(() => {
@@ -247,6 +252,15 @@ const FleetPageContent: React.FC = () => {
     return lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
   });
 
+  // NEW: hourly package state
+  const [hourlyPackage, setHourlyPackage] = useState<string>(
+    searchParams.get("package") || HOURLY_PACKAGES[0]
+  );
+
+  // Derived flags
+  const isRoundTrip = tripType.toLowerCase().includes("round");
+  const isHourly = tripType.toLowerCase().includes("hourly") || tripType.toLowerCase().includes("rental");
+
   // Update sourceState based on fromCity (name or slug)
   useEffect(() => {
     const lower = fromCity.trim().toLowerCase();
@@ -255,11 +269,21 @@ const FleetPageContent: React.FC = () => {
     setSourceState(byName?.state ?? byId?.state ?? '');
   }, [fromCity]);
 
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const getTomorrowStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
   const [pickupDateIso, setPickupDateIso] = useState<string>(
-    searchParams.get("date") || searchParams.get("pickupDate") || "2026-10-27"
+    searchParams.get("date") || searchParams.get("pickupDate") || getTodayStr()
   );
   const [dropDateIso, setDropDateIso] = useState<string>(
-    searchParams.get("dropDate") || searchParams.get("returnDate") || searchParams.get("date") || "2026-10-28"
+    searchParams.get("dropDate") || searchParams.get("returnDate") || searchParams.get("date") || getTomorrowStr()
   );
   const [pickupTime, setPickupTime] = useState<string>(
     searchParams.get("time") || searchParams.get("pickupTime") || "11:00 AM"
@@ -283,7 +307,7 @@ const FleetPageContent: React.FC = () => {
   const [isModelOpen, setIsModelOpen] = useState(true);
   const [isFuelOpen, setIsFuelOpen] = useState(true);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  // Resolve state from city name or id
+
   const resolveState = (city: string) => {
     const lower = city.trim().toLowerCase();
     const byName = CITIES.find((c) => c.name.toLowerCase() === lower);
@@ -292,7 +316,6 @@ const FleetPageContent: React.FC = () => {
     if (byId) return byId.state;
     return "";
   };
-
 
   /* ------------------------------ Booking -------------------------------- */
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleItem | null>(null);
@@ -336,6 +359,14 @@ const FleetPageContent: React.FC = () => {
         durationMinutes: queryDur ? parseInt(queryDur, 10) : Math.round(parseFloat(queryDist) * 0.8),
       };
     }
+    // For hourly, initial distance is package kms
+    if (isHourly) {
+      const kmsMatch = hourlyPackage.match(/(\d+)\s*kms/i);
+      const hrsMatch = hourlyPackage.match(/(\d+)\s*hrs?/i);
+      const kms = kmsMatch ? parseInt(kmsMatch[1], 10) : 40;
+      const hrs = hrsMatch ? parseInt(hrsMatch[1], 10) : 4;
+      return { distance: kms, durationMinutes: hrs * 60 };
+    }
     return null;
   });
 
@@ -348,41 +379,52 @@ const FleetPageContent: React.FC = () => {
     let cancelled = false;
 
     async function fetchBackendData() {
-      if (!fromCity || !toCity) return;
+      // For hourly: only fromCity is required. For others: both cities needed.
+      if (!fromCity) return;
+      if (!isHourly && !toCity) return;
       setIsCalculatingPrices(true);
 
       let currentDistance = 0;
       let currentDuration = 0;
 
-      // 1. Calculate road distance & duration via map API (Nominatim / OSRM / Backend)
-      try {
-        const distRes = await api.calculateDistance({
-          from: fromCity.trim(),
-          to: toCity.trim(),
-          source: fromCity.trim(),
-          destination: toCity.trim(),
-          pickupLat: pickupCoords?.lat,
-          pickupLng: pickupCoords?.lng,
-          dropLat: dropCoords?.lat,
-          dropLng: dropCoords?.lng,
-        });
-        if (distRes && distRes.distance > 0) {
-          currentDistance = distRes.distance;
-          currentDuration = distRes.durationMinutes;
-          if (!cancelled) {
-            setBackendRoute({
-              distance: currentDistance,
-              durationMinutes: currentDuration,
-            });
-          }
+      // ---- HOURLY: distance comes from package, skip map API ----
+      if (isHourly) {
+        const kmsMatch = hourlyPackage.match(/(\d+)\s*kms/i);
+        const hrsMatch = hourlyPackage.match(/(\d+)\s*hrs?/i);
+        currentDistance = kmsMatch ? parseInt(kmsMatch[1], 10) : 40;
+        currentDuration = (hrsMatch ? parseInt(hrsMatch[1], 10) : 4) * 60;
+        if (!cancelled) {
+          setBackendRoute({ distance: currentDistance, durationMinutes: currentDuration });
         }
-      } catch (err) {
-        console.warn("Backend distance fetch error:", err);
-      }
+      } else {
+        // 1. Calculate road distance & duration via map API
+        try {
+          const distRes = await api.calculateDistance({
+            from: fromCity.trim(),
+            to: toCity.trim(),
+            source: fromCity.trim(),
+            destination: toCity.trim(),
+            pickupLat: pickupCoords?.lat,
+            pickupLng: pickupCoords?.lng,
+            dropLat: dropCoords?.lat,
+            dropLng: dropCoords?.lng,
+          });
+          if (distRes && distRes.distance > 0) {
+            currentDistance = distRes.distance;
+            currentDuration = distRes.durationMinutes;
+            if (!cancelled) {
+              setBackendRoute({
+                distance: currentDistance,
+                durationMinutes: currentDuration,
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("Backend distance fetch error:", err);
+        }
 
-      // If still no distance, try to use static popular routes data as fallback
+        // Fallback to static popular routes
         if (currentDistance === 0) {
-          // Import POPULAR_ROUTES lazily to avoid circular deps
           const { POPULAR_ROUTES } = await import("@/data/cabsData");
           const route = POPULAR_ROUTES.find(
             (r) =>
@@ -390,7 +432,6 @@ const FleetPageContent: React.FC = () => {
               r.to.toLowerCase() === toCity.trim().toLowerCase()
           );
           if (route) {
-            // distance string like "185 km"
             const match = route.distance.match(/(\d+\.?\d*)/);
             if (match) {
               currentDistance = parseFloat(match[1]);
@@ -404,25 +445,27 @@ const FleetPageContent: React.FC = () => {
             }
           }
         }
-      if (currentDistance === 0 && queryDist && parseFloat(queryDist) > 0) {
-        const initialFrom = searchParams.get("from");
-        const initialTo = searchParams.get("to");
-        if (
-          (!initialFrom || initialFrom.toLowerCase() === fromCity.toLowerCase()) &&
-          (!initialTo || initialTo.toLowerCase() === toCity.toLowerCase())
-        ) {
-          currentDistance = parseFloat(queryDist);
-          currentDuration = queryDur ? parseInt(queryDur, 10) : Math.round(currentDistance * 0.8);
-          if (!cancelled) {
-            setBackendRoute({
-              distance: currentDistance,
-              durationMinutes: currentDuration,
-            });
+
+        if (currentDistance === 0 && queryDist && parseFloat(queryDist) > 0) {
+          const initialFrom = searchParams.get("from");
+          const initialTo = searchParams.get("to");
+          if (
+            (!initialFrom || initialFrom.toLowerCase() === fromCity.toLowerCase()) &&
+            (!initialTo || initialTo.toLowerCase() === toCity.toLowerCase())
+          ) {
+            currentDistance = parseFloat(queryDist);
+            currentDuration = queryDur ? parseInt(queryDur, 10) : Math.round(currentDistance * 0.8);
+            if (!cancelled) {
+              setBackendRoute({
+                distance: currentDistance,
+                durationMinutes: currentDuration,
+              });
+            }
           }
         }
       }
 
-      // 2. Calculate dynamic fares per category from Backend Pricing Engine
+      // 2. Calculate dynamic fares per category
       try {
         const tLower = tripType.toLowerCase();
         const isRound = tLower.includes("round");
@@ -444,7 +487,6 @@ const FleetPageContent: React.FC = () => {
         const cleanDropTime = dropTime ? dropTime.replace(/^till\s+/i, "").trim() : "";
         const currentSourceState = resolveState(fromCity) || sourceState;
 
-
         const categories = [
           "Hatchback",
           "Sedan",
@@ -459,28 +501,10 @@ const FleetPageContent: React.FC = () => {
         await Promise.all(
           categories.map(async (cat) => {
             try {
-              console.log('Pricing request params', {
-            rideType: rideTypeParam,
-            sourceCity: fromCity.trim(),
-            destinationCity: toCity.trim(),
-            category: cat,
-            state: currentSourceState || undefined,
-            pickupLat: pickupCoords?.lat,
-            pickupLng: pickupCoords?.lng,
-            dropLat: dropCoords?.lat,
-            dropLng: dropCoords?.lng,
-            distance: calcDistance > 0 ? calcDistance : undefined,
-            oneWayDistance: currentDistance > 0 ? currentDistance : undefined,
-            days: isRound ? days : 1,
-            pickupDate: pickupDateIso,
-            pickupTime: cleanPickupTime,
-            returnDate: dropDateIso,
-            returnTime: cleanDropTime,
-          });
-          const res = await api.calculatePrice({
+              const res = await api.calculatePrice({
                 rideType: rideTypeParam,
                 sourceCity: fromCity.trim(),
-                destinationCity: toCity.trim(),
+                destinationCity: isHourly ? fromCity.trim() : toCity.trim(),
                 category: cat,
                 state: currentSourceState || undefined,
                 pickupLat: pickupCoords?.lat,
@@ -497,7 +521,6 @@ const FleetPageContent: React.FC = () => {
               });
               if (res && res.fare > 0) {
                 prices[cat] = res;
-                // If map distance wasn't resolved initially, update backendRoute from backend's map resolver
                 if (currentDistance === 0 && res.distance > 0 && !cancelled) {
                   const resolvedOneWay = isRound ? Math.round((res.distance / 2) * 10) / 10 : res.distance;
                   currentDistance = resolvedOneWay;
@@ -538,6 +561,7 @@ const FleetPageContent: React.FC = () => {
     dropTime,
     pickupCoords,
     dropCoords,
+    hourlyPackage,
   ]);
 
   /* --------------------------- Route metadata ---------------------------- */
@@ -561,7 +585,6 @@ const FleetPageContent: React.FC = () => {
       };
     }
 
-    // Default while live map distance is resolving (no arbitrary city fallbacks)
     return {
       kms: 0,
       oneWayKms: 0,
@@ -577,7 +600,6 @@ const FleetPageContent: React.FC = () => {
     const roundTo10 = (n: number) => Math.round(n / 10) * 10;
     const calcTax = (discPrice: number) => Math.round((discPrice * 0.05) / 10) * 10;
 
-    // Helper to get true backend price with fallback per-km rate
     const getVehiclePricing = (
       categoryName: string,
       perKmFallback: number,
@@ -595,11 +617,9 @@ const FleetPageContent: React.FC = () => {
         };
       }
 
-      // Use admin‑set per‑km rate for West Bengal if applicable
       const perKmRate = sourceState === "West Bengal" ? 10 : perKmFallback;
-      // If backend price is still loading, calculate directly using actual map road distance
-      const isRoundTrip = tripType.toLowerCase().includes("round");
-      const fallbackAdvancePct = isRoundTrip ? 0.25 : 0.2;
+      const isRoundTripCalc = tripType.toLowerCase().includes("round");
+      const fallbackAdvancePct = isRoundTripCalc ? 0.25 : 0.2;
       const fallbackFare = Math.max(1200, roundTo10(kms * perKmRate));
       return {
         discountedPrice: fallbackFare,
@@ -683,7 +703,7 @@ const FleetPageContent: React.FC = () => {
         dueAmount: suvPlusPricing.dueFare,
         extraKmRate: suvPlusPricing.extraKmRate,
         roofCarrierFee: 262,
-        imageType: "suv",
+        imageType: "suv-plus",
       },
       {
         id: "toyota-innova",
@@ -857,16 +877,26 @@ const FleetPageContent: React.FC = () => {
     setOpenDropdown(null);
     setShowAddStopModal(false);
 
-    // Sync new cities/times into URL parameters so state persists cleanly
     const params = new URLSearchParams({
       tripType,
       from: fromCity.trim(),
-      to: toCity.trim(),
       pickupDate: pickupDateIso,
       pickupTime,
-      dropDate: dropDateIso,
-      dropTime,
     });
+
+    if (isHourly) {
+      params.set("package", hourlyPackage);
+    } else {
+      params.set("to", toCity.trim());
+      params.set("dropDate", dropDateIso);
+      params.set("dropTime", dropTime);
+    }
+
+    if (isRoundTrip) {
+      params.set("returnDate", dropDateIso);
+      params.set("returnTime", dropTime);
+    }
+
     if (backendRoute?.distance) {
       params.set("distance", backendRoute.distance.toString());
       params.set("duration", backendRoute.durationMinutes.toString());
@@ -893,7 +923,7 @@ const FleetPageContent: React.FC = () => {
       cabSeats: vehicle.seats.toString(),
       tripType,
       from: fromCity,
-      to: toCity,
+      to: isHourly ? "" : toCity,
       pickupDate: pickupDateIso,
       pickupDateDisplay: formatDisplayDate(pickupDateIso),
       dropDate: dropDateIso,
@@ -911,6 +941,7 @@ const FleetPageContent: React.FC = () => {
       oneWayDistance: (routeMeta.oneWayKms || "").toString(),
       duration: (routeMeta.durationMinutes || "").toString(),
     });
+    if (isHourly) params.set("package", hourlyPackage);
     if (vehicle.advanceAmount) params.set("advance", vehicle.advanceAmount.toString());
     if (vehicle.dueAmount) params.set("dueFare", vehicle.dueAmount.toString());
 
@@ -918,78 +949,42 @@ const FleetPageContent: React.FC = () => {
   };
 
   /* ------------------------- Vehicle illustrations ----------------------- */
+  const CAR_IMAGES: Record<VehicleItem["imageType"], { src: string; alt: string }> = {
+    hatchback: {
+      src: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=400&q=80",
+      alt: "Hatchback — WagonR / Swift",
+    },
+    sedan: {
+      src: "/cars/sedan-dzire.png",
+      alt: "Sedan — Dzire / Etios",
+    },
+    suv: {
+      src: "/cars/suv-ertiga.png",
+      alt: "SUV — Toyota Innova / Ertiga",
+    },
+    "suv-plus": {
+      src: "/cars/suv-plus-innova-crysta.png",
+      alt: "SUV+ — Innova Crysta",
+    },
+    minibus: {
+      src: "/cars/tempo-traveller.png",
+      alt: "Minibus (20+1)",
+    },
+    tempo: {
+      src: "/cars/tempo-traveller.png",
+      alt: "Tempo Traveller",
+    },
+  };
+
   const renderVehicleIllustration = (type: VehicleItem["imageType"]) => {
-    if (type === "hatchback") {
-      return (
-        <svg viewBox="0 0 100 50" className="w-16 h-9 drop-shadow-sm" aria-hidden="true">
-          <path
-            d="M 12 32 L 18 32 C 18 26, 26 26, 26 32 L 68 32 C 68 26, 76 26, 76 32 L 88 32 C 91 32, 92 29, 90 26 L 82 22 C 78 21, 74 15, 68 15 L 36 15 C 28 15, 20 22, 14 26 L 10 28 C 8 29, 8 32, 12 32 Z"
-            fill="#5b95c6"
-          />
-          <path d="M 37 17 L 52 17 L 52 25 L 30 25 C 32 20, 34 17, 37 17 Z" fill="#22394f" />
-          <path d="M 55 17 L 66 17 C 70 17, 73 20, 75 23 L 77 25 L 55 25 Z" fill="#22394f" />
-          <circle cx="22" cy="32" r="6" fill="#1b2430" />
-          <circle cx="22" cy="32" r="3" fill="#cbd5e1" />
-          <circle cx="72" cy="32" r="6" fill="#1b2430" />
-          <circle cx="72" cy="32" r="3" fill="#cbd5e1" />
-          <rect x="8" y="27" width="3" height="3" rx="1" fill="#facc15" />
-          <rect x="89" y="27" width="2" height="3" rx="1" fill="#ef4444" />
-        </svg>
-      );
-    }
-    if (type === "sedan") {
-      return (
-        <svg viewBox="0 0 105 50" className="w-18 h-9 drop-shadow-sm" aria-hidden="true">
-          <path
-            d="M 8 32 L 16 32 C 16 26, 25 26, 25 32 L 72 32 C 72 26, 81 26, 81 32 L 96 32 C 99 32, 100 29, 98 27 L 88 23 C 85 22, 80 16, 72 16 L 38 16 C 30 16, 24 22, 18 24 L 9 26 C 6 27, 6 32, 8 32 Z"
-            fill="#6ca4d8"
-          />
-          <path d="M 39 18 L 53 18 L 53 25 L 28 25 C 31 20, 35 18, 39 18 Z" fill="#1e293b" />
-          <path d="M 56 18 L 69 18 C 74 18, 77 21, 79 25 L 56 25 Z" fill="#1e293b" />
-          <circle cx="20.5" cy="32" r="6" fill="#0f172a" />
-          <circle cx="20.5" cy="32" r="3" fill="#cbd5e1" />
-          <circle cx="76.5" cy="32" r="6" fill="#0f172a" />
-          <circle cx="76.5" cy="32" r="3" fill="#cbd5e1" />
-          <rect x="6" y="27" width="3" height="3" rx="1" fill="#facc15" />
-          <rect x="97" y="27" width="2" height="3" rx="1" fill="#ef4444" />
-        </svg>
-      );
-    }
-    if (type === "suv") {
-      return (
-        <svg viewBox="0 0 105 52" className="w-18 h-10 drop-shadow-sm" aria-hidden="true">
-          <path
-            d="M 8 34 L 16 34 C 16 27, 26 27, 26 34 L 72 34 C 72 27, 82 27, 82 34 L 96 34 C 99 34, 100 31, 98 28 L 92 19 C 90 16, 87 14, 82 14 L 38 14 C 30 14, 22 19, 16 23 L 9 26 C 6 28, 6 34, 8 34 Z"
-            fill="#578ebd"
-          />
-          <path d="M 39 16 L 53 16 L 53 24 L 26 24 C 29 19, 34 16, 39 16 Z" fill="#1e293b" />
-          <path d="M 56 16 L 70 16 L 70 24 L 56 24 Z" fill="#1e293b" />
-          <path d="M 73 16 L 82 16 C 85 16, 88 18, 90 22 L 73 24 Z" fill="#1e293b" />
-          <rect x="36" y="12" width="46" height="2" rx="1" fill="#334155" />
-          <circle cx="21" cy="34" r="7" fill="#0f172a" />
-          <circle cx="21" cy="34" r="3.5" fill="#94a3b8" />
-          <circle cx="77" cy="34" r="7" fill="#0f172a" />
-          <circle cx="77" cy="34" r="3.5" fill="#94a3b8" />
-          <rect x="6" y="28" width="3" height="3" rx="1" fill="#facc15" />
-          <rect x="97" y="28" width="2" height="3" rx="1" fill="#ef4444" />
-        </svg>
-      );
-    }
+    const img = CAR_IMAGES[type] ?? CAR_IMAGES["sedan"];
     return (
-      <svg viewBox="0 0 115 54" className="w-20 h-10 drop-shadow-sm" aria-hidden="true">
-        <rect x="10" y="12" width="95" height="26" rx="6" fill="#4d82b4" />
-        <rect x="15" y="16" width="16" height="11" rx="2" fill="#1e293b" />
-        <rect x="34" y="16" width="16" height="11" rx="2" fill="#1e293b" />
-        <rect x="53" y="16" width="16" height="11" rx="2" fill="#1e293b" />
-        <rect x="72" y="16" width="16" height="11" rx="2" fill="#1e293b" />
-        <rect x="91" y="16" width="10" height="14" rx="2" fill="#1e293b" />
-        <circle cx="28" cy="38" r="7" fill="#0f172a" />
-        <circle cx="28" cy="38" r="3.5" fill="#cbd5e1" />
-        <circle cx="85" cy="38" r="7" fill="#0f172a" />
-        <circle cx="85" cy="38" r="3.5" fill="#cbd5e1" />
-        <rect x="103" y="30" width="3" height="4" rx="1" fill="#facc15" />
-        <rect x="9" y="30" width="2" height="4" rx="1" fill="#ef4444" />
-      </svg>
+      <img
+        src={img.src}
+        alt={img.alt}
+        className="w-28 h-16 object-cover rounded-lg drop-shadow-md"
+        loading="lazy"
+      />
     );
   };
 
@@ -1040,13 +1035,13 @@ const FleetPageContent: React.FC = () => {
       ? "outstation-round"
       : "outstation-oneway") as any,
     fromCity,
-    toCity,
+    toCity: isHourly ? "" : toCity,
     pickupDate: formatDisplayDate(pickupDateIso),
     pickupTime,
     returnDate: formatDisplayDate(dropDateIso),
     returnTime: dropTime,
     dropTime,
-    hourlyPackage: "4 hrs 40 kms",
+    hourlyPackage: hourlyPackage,
     airportMode: "to-airport",
     flightNumber: "",
   };
@@ -1065,7 +1060,7 @@ const FleetPageContent: React.FC = () => {
       />
 
       {/* ================================================================== */}
-      {/* 2. SEARCH STRIP (White Theme)                                      */}
+      {/* 2. SEARCH STRIP (Adaptive based on trip type)                       */}
       {/* ================================================================== */}
       <section className="relative bg-white text-slate-800 border-b border-slate-200">
         <div className="relative max-w-[1200px] mx-auto px-4 sm:px-6 py-1.5">
@@ -1094,19 +1089,19 @@ const FleetPageContent: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. FROM */}
+            {/* 2. FROM / PICKUP LOCATION */}
             <div
               onClick={() => setOpenDropdown((prev) => (prev === "from" ? null : "from"))}
               className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative cursor-pointer"
             >
-              <FieldLabel>FROM</FieldLabel>
+              <FieldLabel>{isHourly ? "PICKUP LOCATION" : "FROM"}</FieldLabel>
               <div className="flex items-center justify-between font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
                 <span className="truncate">{fromCity || "Select City"}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-1" />
               </div>
               {openDropdown === "from" && (
                 <CitySearchPopover
-                  title="Select Pickup Location"
+                  title={isHourly ? "Select Pickup Location" : "Select Pickup Location"}
                   placeholder="Search city, town, landmark across India..."
                   selected={fromCity}
                   align="left"
@@ -1120,31 +1115,53 @@ const FleetPageContent: React.FC = () => {
               )}
             </div>
 
-            {/* 3. TO */}
-            <div
-              onClick={() => setOpenDropdown((prev) => (prev === "to" ? null : "to"))}
-              className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative cursor-pointer"
-            >
-              <FieldLabel>TO</FieldLabel>
-              <div className="flex items-center justify-between font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
-                <span className="truncate">{toCity || "Select City"}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-1" />
+            {/* 3. TO (city) OR PACKAGE (hourly) */}
+            {!isHourly ? (
+              <div
+                onClick={() => setOpenDropdown((prev) => (prev === "to" ? null : "to"))}
+                className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[110px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative cursor-pointer"
+              >
+                <FieldLabel>TO</FieldLabel>
+                <div className="flex items-center justify-between font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
+                  <span className="truncate">{toCity || "Select City"}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-1" />
+                </div>
+                {openDropdown === "to" && (
+                  <CitySearchPopover
+                    title="Select Destination Location"
+                    placeholder="Search destination city, town or place..."
+                    selected={toCity}
+                    align="left"
+                    onSelect={(name, _st, coords) => {
+                      setToCity(name);
+                      if (coords) setDropCoords(coords);
+                      else setDropCoords(null);
+                    }}
+                    onClose={() => setOpenDropdown(null)}
+                  />
+                )}
               </div>
-              {openDropdown === "to" && (
-                <CitySearchPopover
-                  title="Select Destination Location"
-                  placeholder="Search destination city, town or place..."
-                  selected={toCity}
-                  align="left"
-                  onSelect={(name, _st, coords) => {
-                    setToCity(name);
-                    if (coords) setDropCoords(coords);
-                    else setDropCoords(null);
-                  }}
-                  onClose={() => setOpenDropdown(null)}
-                />
-              )}
-            </div>
+            ) : (
+              <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[140px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
+                <FieldLabel>PACKAGE</FieldLabel>
+                <div className="relative flex items-center justify-between gap-1 font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
+                  <span className="truncate">{hourlyPackage}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0 pointer-events-none" />
+                  <select
+                    value={hourlyPackage}
+                    onChange={(e) => setHourlyPackage(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    aria-label="Hourly package"
+                  >
+                    {HOURLY_PACKAGES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* 4. ADD STOPS */}
             <div className="col-span-2 md:col-span-4 lg:col-span-1 lg:shrink-0 px-3 py-1.5 lg:py-2 lg:border-r border-slate-200 flex items-center justify-center relative self-center">
@@ -1232,23 +1249,7 @@ const FleetPageContent: React.FC = () => {
               </div>
             </div>
 
-            {/* 6. DROP DATE */}
-            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
-              <FieldLabel>DROP DATE</FieldLabel>
-              <div className="relative font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
-                <span>{formatDisplayDate(dropDateIso)}</span>
-                <input
-                  type="date"
-                  value={dropDateIso}
-                  min={pickupDateIso}
-                  onChange={(e) => setDropDateIso(e.target.value)}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  aria-label="Drop date"
-                />
-              </div>
-            </div>
-
-            {/* 7. PICK-UP TIME */}
+            {/* 6. PICK-UP TIME (moved before return fields) */}
             <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[120px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
               <FieldLabel icon={<Clock className="w-2.5 h-2.5 text-amber-500" />}>
                 PICK-UP TIME
@@ -1268,25 +1269,44 @@ const FleetPageContent: React.FC = () => {
               </div>
             </div>
 
-            {/* 8. DROP TIME */}
-            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[130px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative pr-2">
-              <FieldLabel icon={<Clock className="w-2.5 h-2.5 text-amber-500" />}>
-                DROP TIME
-              </FieldLabel>
-              <div className="relative flex items-center justify-between gap-1 font-bold text-slate-700 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
-                <span className="truncate">{dropTime}</span>
-                <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 opacity-80 group-hover:opacity-100" />
-                <input
-                  type="time"
-                  value={format24Hour(dropTime)}
-                  onChange={(e) => {
-                    if (e.target.value) setDropTime(`till ${format12Hour(e.target.value)}`);
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  aria-label="Drop time timer"
-                />
-              </div>
-            </div>
+            {/* 7 & 8. RETURN DATE / RETURN TIME — only for round-trip */}
+            {isRoundTrip && (
+              <>
+                <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
+                  <FieldLabel>RETURN DATE</FieldLabel>
+                  <div className="relative font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
+                    <span>{formatDisplayDate(dropDateIso)}</span>
+                    <input
+                      type="date"
+                      value={dropDateIso}
+                      min={pickupDateIso}
+                      onChange={(e) => setDropDateIso(e.target.value)}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      aria-label="Return date"
+                    />
+                  </div>
+                </div>
+
+                <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[130px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative pr-2">
+                  <FieldLabel icon={<Clock className="w-2.5 h-2.5 text-amber-500" />}>
+                    RETURN TIME
+                  </FieldLabel>
+                  <div className="relative flex items-center justify-between gap-1 font-bold text-slate-700 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
+                    <span className="truncate">{dropTime}</span>
+                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 opacity-80 group-hover:opacity-100" />
+                    <input
+                      type="time"
+                      value={format24Hour(dropTime)}
+                      onChange={(e) => {
+                        if (e.target.value) setDropTime(`till ${format12Hour(e.target.value)}`);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      aria-label="Return time timer"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* 9. SEARCH */}
             <div className="col-span-2 md:col-span-4 lg:col-span-1 lg:shrink-0 w-full lg:w-auto mt-1 lg:mt-0">
@@ -1304,7 +1324,7 @@ const FleetPageContent: React.FC = () => {
       </section>
 
       {/* ================================================================== */}
-      {/* 3. BODY (Removed top padding to close gap)                         */}
+      {/* 3. BODY                                                             */}
       {/* ================================================================== */}
       <div
         ref={resultsRef}
@@ -1349,7 +1369,6 @@ const FleetPageContent: React.FC = () => {
           </div>
 
           <div className={`${mobileFiltersOpen ? "block" : "hidden"} md:block`}>
-            {/* Cab Type */}
             <FilterSection
               title="Cab Type"
               open={isCabTypeOpen}
@@ -1368,7 +1387,6 @@ const FleetPageContent: React.FC = () => {
               ))}
             </FilterSection>
 
-            {/* Cab Model */}
             <FilterSection
               title="Cab Model"
               open={isModelOpen}
@@ -1387,7 +1405,6 @@ const FleetPageContent: React.FC = () => {
               ))}
             </FilterSection>
 
-            {/* Fuel Type */}
             <FilterSection
               title="Fuel Type"
               open={isFuelOpen}
@@ -1410,7 +1427,6 @@ const FleetPageContent: React.FC = () => {
 
         {/* ----------------------------- RESULTS ---------------------------- */}
         <div className="flex-1 w-full min-w-0 space-y-3">
-          {/* Trust banner - Updated to match white theme */}
           <div className="relative overflow-hidden rounded-xl bg-amber-50/50 border border-amber-200/60 text-slate-800 px-4 sm:px-6 py-2.5 shadow-sm">
             <div className="pointer-events-none absolute -right-10 -top-12 w-44 h-44 rounded-full bg-amber-400/10 blur-2xl" />
             <div className="relative flex items-center justify-between gap-4">
@@ -1443,14 +1459,19 @@ const FleetPageContent: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-xs text-slate-800 font-bold flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>{fromCity} → {toCity}</span>
+                <span>
+                  {isHourly
+                    ? `${fromCity} • ${hourlyPackage}`
+                    : `${fromCity} → ${toCity}`}
+                </span>
               </p>
               <span className="text-slate-300">•</span>
               <p className="text-xs text-slate-600 font-medium">
                 {routeMeta.hasDistance ? (
                   <>
-                    <strong className="text-slate-900 font-extrabold">{routeMeta.kms.toLocaleString("en-IN")} km</strong> road distance
-                    {tripType.toLowerCase().includes("round") ? " (Round-Trip)" : " (One-Way)"}
+                    <strong className="text-slate-900 font-extrabold">{routeMeta.kms.toLocaleString("en-IN")} km</strong>{" "}
+                    {isHourly ? "package distance" : "road distance"}
+                    {isRoundTrip ? " (Round-Trip)" : !isHourly ? " (One-Way)" : ""}
                     {" • "}
                     <span className="font-bold text-slate-800">{routeMeta.hours} hr(s) approx time</span>
                   </>
@@ -1522,7 +1543,6 @@ const FleetPageContent: React.FC = () => {
                   className="group bg-white rounded-xl border border-slate-200/90 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_8px_20px_-12px_rgba(15,23,42,0.25)] hover:border-amber-300 transition-all duration-200 overflow-hidden"
                 >
                   <div className="p-3 sm:p-4 flex flex-col lg:flex-row lg:items-center gap-3 sm:gap-4">
-                    {/* Identity + specs */}
                     <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                       <div className="w-24 sm:w-28 h-20 shrink-0 rounded-lg bg-gradient-to-br from-amber-50 via-amber-100/60 to-yellow-100/80 ring-1 ring-amber-200/80 flex flex-col items-center justify-center p-1.5 group-hover:scale-[1.02] transition-transform duration-200">
                         {renderVehicleIllustration(cab.imageType)}
@@ -1571,27 +1591,19 @@ const FleetPageContent: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Price + CTA */}
                     <div className="flex flex-col items-start sm:items-end justify-center shrink-0 lg:pl-4 text-left sm:text-right mt-1 sm:mt-0">
                       <div className="text-[10px] sm:text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                         Base Fare
                       </div>
 
-                      {/* Base Price (Enlarged & Highlighted) */}
                       <div className="text-3xl sm:text-[34px] font-black text-slate-950 leading-none tracking-tight">
                         {inr(cab.discountedPrice)}
                       </div>
 
-                      {/* GST & Gateway Fee Notice */}
-                      <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-1 mb-2.5">
-                        +5% GST &amp; 2% Gateway Charges
-                      </div>
-
-                      {/* SELECT CAB button in signature BroomBoom Yellow */}
                       <button
                         type="button"
                         onClick={() => handleSelectCabClick(cab)}
-                        className="w-full sm:w-44 py-2.5 px-6 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-md shadow-amber-400/20 border border-amber-300 text-center cursor-pointer whitespace-nowrap"
+                        className="w-full sm:w-44 mt-2.5 py-2.5 px-6 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-md shadow-amber-400/20 border border-amber-300 text-center cursor-pointer whitespace-nowrap"
                       >
                         SELECT CAB
                       </button>

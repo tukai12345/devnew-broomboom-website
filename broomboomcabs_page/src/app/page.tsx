@@ -20,17 +20,23 @@ import { isUserLoggedIn } from "@/utils/auth";
 
 export default function Home() {
   const router = useRouter();
+
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
   const [activeTripType, setActiveTripType] = useState<string>("outstation-oneway");
-  const [fromCity, setFromCity] = useState<string>("Mumbai");
-  const [toCity, setToCity] = useState<string>("Delhi");
+  const [fromCity, setFromCity] = useState<string>("");
+  const [toCity, setToCity] = useState<string>("");
 
   const [currentSearchParams, setCurrentSearchParams] = useState<SearchParams>({
     tripType: "outstation-oneway",
-    fromCity: "Mumbai",
-    toCity: "Delhi",
-    pickupDate: "2026-10-24",
+    fromCity: "",
+    toCity: "",
+    pickupDate: getTodayStr(),
     pickupTime: "10:00 AM",
-    returnDate: "2026-10-26",
+    returnDate: getTodayStr(),
     returnTime: "08:00 PM",
     dropTime: "09:45 PM",
     hourlyPackage: "4 hrs 40 kms",
@@ -76,6 +82,14 @@ export default function Home() {
   };
 
   const handleSearch = (params: SearchParams) => {
+    const isLoggedIn = isUserLoggedIn();
+
+    if (!isLoggedIn) {
+      setPendingSearchParams(params);
+      setIsLoginModalOpen(true);
+      return;
+    }
+
     proceedWithSearch(params);
   };
 

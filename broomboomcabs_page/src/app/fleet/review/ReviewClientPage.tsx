@@ -41,10 +41,10 @@ export const ReviewClientPage: React.FC = () => {
   const cabFuel = searchParams.get("cabFuel") || "CNG/Diesel";
   const cabSeats = searchParams.get("cabSeats") || "4";
   const tripType = searchParams.get("tripType") || "Outstation Round-Trip";
-  const fromCity = searchParams.get("from") || "Mumbai";
-  const toCity = searchParams.get("to") || "Delhi";
-  const pickupDate = searchParams.get("pickupDate") || "2026-10-25";
-  const dropDate = searchParams.get("dropDate") || "2026-10-27";
+  const fromCity = searchParams.get("from") || "";
+  const toCity = searchParams.get("to") || "";
+  const pickupDate = searchParams.get("pickupDate") || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  const dropDate = searchParams.get("dropDate") || (() => { const d = new Date(); d.setDate(d.getDate()+1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const pickupDateDisplay = searchParams.get("pickupDateDisplay") || pickupDate;
   const dropDateDisplay = searchParams.get("dropDateDisplay") || dropDate;
   const pickupTime = searchParams.get("pickupTime") || "11:00 AM";
@@ -170,25 +170,29 @@ export const ReviewClientPage: React.FC = () => {
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
 
   /* ---------------------------- Calculations ---------------------------- */
-  // GST: 5% of base fare
-  const gstAmount = Math.round(baseFare * 0.05);
-
-  // Payment Gateway Charges: 2% of base fare
-  const gatewayCharges = Math.round(baseFare * 0.02);
-
   const addonsTotal =
     (addonRoofCarrier ? ROOF_FEE : 0) +
     (addonLanguage ? LANGUAGE_FEE : 0) +
     (addonNewVehicle ? NEW_VEHICLE_FEE : 0) +
     (addonSightseeing ? SIGHTSEEING_FEE : 0);
 
-  // Total Fare: Base Fare + GST (5%) + Gateway Charges (2%) + Add-ons
-  const finalTotal = baseFare + gstAmount + gatewayCharges + addonsTotal;
+  // Total Fare shown on web: Base Fare + Add-ons (no GST or Gateway charges visible)
+  const finalTotal = baseFare + addonsTotal;
 
-  // Part Pay: Use backend advance token (or proportional token)
+  // Part Pay shown on web: exactly 20% advance token (or backend token)
   const partPayAmount = liveAdvance > 0
-    ? Math.round(liveAdvance + (gstAmount + gatewayCharges + addonsTotal) * (liveAdvance / Math.max(1, baseFare)))
+    ? Math.round(liveAdvance + addonsTotal * (liveAdvance / Math.max(1, baseFare)))
     : Math.round(finalTotal * 0.2);
+
+  // Hidden GST (5%) & Payment Gateway Charges (2%) added at Cashfree checkout
+  const gstCharge = Math.round(finalTotal * 0.05);
+  const gatewayCharge = Math.round(finalTotal * 0.02);
+  const totalExtraCharges = gstCharge + gatewayCharge; // 7% extra (e.g. ₹60 + ₹24 = ₹84)
+
+  // Amount sent to Cashfree gateway with GST & Gateway charges included
+  const cashfreePayableAmount = paymentOption === "part"
+    ? Math.round(partPayAmount + totalExtraCharges * (partPayAmount / Math.max(1, finalTotal)))
+    : finalTotal + totalExtraCharges;
 
   const payableNow = paymentOption === "part" ? partPayAmount : finalTotal;
 
@@ -236,8 +240,8 @@ export const ReviewClientPage: React.FC = () => {
         vehicleCategory: cabName || cabCategory || "Sedan",
         seater: parseInt(cabSeats, 10) || 4,
         fare: finalTotal,
-        advance: payableNow,
-        dueFare: Math.max(0, finalTotal - payableNow),
+        advance: cashfreePayableAmount,
+        dueFare: Math.max(0, finalTotal - (paymentOption === "part" ? partPayAmount : finalTotal)),
         status: "Pending",
         paymentStatus: "PENDING",
       });
@@ -825,28 +829,6 @@ export const ReviewClientPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Goods & Services Tax (GST 5%) */}
-                <div className="pt-2 border-t border-slate-100">
-                  <div className="flex justify-between font-bold text-slate-800">
-                    <span>Goods &amp; Services Tax (GST 5%)</span>
-                    <span>{inr(gstAmount)}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    Government mandated tax
-                  </div>
-                </div>
-
-                {/* Payment Gateway Charges (2%) */}
-                <div className="pt-2 border-t border-slate-100">
-                  <div className="flex justify-between font-bold text-slate-800">
-                    <span>Payment Gateway Charges (2%)</span>
-                    <span>{inr(gatewayCharges)}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    Cashfree secure online processing
-                  </div>
-                </div>
-
                 {/* Add-ons if any */}
                 {addonsTotal > 0 && (
                   <div className="pt-2 border-t border-slate-100">
@@ -868,9 +850,6 @@ export const ReviewClientPage: React.FC = () => {
                   <div>
                     <div className="text-xs font-black uppercase tracking-wider text-slate-700">
                       TOTAL FARE
-                    </div>
-                    <div className="text-[10px] text-slate-500 font-medium">
-                      Inclusive of GST &amp; Gateway Charges
                     </div>
                   </div>
                   <div className="text-2xl sm:text-[26px] font-black text-slate-950">

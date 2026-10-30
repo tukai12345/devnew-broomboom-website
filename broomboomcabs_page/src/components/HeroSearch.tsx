@@ -652,18 +652,34 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   activeTripType,
   onTripTypeChange,
   onSearch,
-  initialFrom = "Mumbai",
-  initialTo = "Delhi",
+  initialFrom = "",
+  initialTo = "",
   heading,
 }) => {
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const getCurrentTimeStr = () => {
+    const d = new Date();
+    // Round up to next 30-minute slot
+    const minutes = d.getMinutes() < 30 ? 30 : 0;
+    let hours = d.getMinutes() < 30 ? d.getHours() : d.getHours() + 1;
+    if (hours >= 24) hours = 0;
+    const h12 = hours % 12 === 0 ? 12 : hours % 12;
+    const ampm = hours < 12 ? "AM" : "PM";
+    return `${String(h12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
+  };
+
   const [tripType, setTripType] = useState<TripType>((activeTripType as TripType) || "outstation-round");
   const [fromCity, setFromCity] = useState(initialFrom);
   const [toCity, setToCity] = useState(initialTo);
   const [fromState, setFromState] = useState(
-    CITIES.find((c) => c.name === initialFrom)?.state ?? "Maharashtra"
+    initialFrom ? (CITIES.find((c) => c.name === initialFrom)?.state ?? "") : ""
   );
   const [toState, setToState] = useState(
-    CITIES.find((c) => c.name === initialTo)?.state ?? "Delhi"
+    initialTo ? (CITIES.find((c) => c.name === initialTo)?.state ?? "") : ""
   );
   const [fromCoords, setFromCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [toCoords, setToCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -671,9 +687,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDurationMinutes, setRouteDurationMinutes] = useState<number | null>(null);
 
-  const [pickupDate, setPickupDate] = useState("2026-10-24");
-  const [pickupTime, setPickupTime] = useState("10:00 AM");
-  const [returnDate, setReturnDate] = useState("2026-10-24");
+  const [pickupDate, setPickupDate] = useState(getTodayStr());
+  const [pickupTime, setPickupTime] = useState(getCurrentTimeStr());
+  const [returnDate, setReturnDate] = useState(getTodayStr());
   const [dropTime, setDropTime] = useState("09:45 PM");
   const [hourlyPackage, setHourlyPackage] = useState("1 hrs 10 kms");
 
@@ -682,7 +698,10 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   
   const [searchFromQuery, setSearchFromQuery] = useState("");
   const [searchToQuery, setSearchToQuery] = useState("");
-  const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 9, 1));
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -692,18 +711,22 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   }, [activeTripType]);
 
   useEffect(() => {
+    setFromCity(initialFrom ?? "");
     if (initialFrom) {
-      setFromCity(initialFrom);
       const st = CITIES.find((c) => c.name === initialFrom)?.state;
       if (st) setFromState(st);
+    } else {
+      setFromState("");
     }
   }, [initialFrom]);
 
   useEffect(() => {
+    setToCity(initialTo ?? "");
     if (initialTo) {
-      setToCity(initialTo);
       const st = CITIES.find((c) => c.name === initialTo)?.state;
       if (st) setToState(st);
+    } else {
+      setToState("");
     }
   }, [initialTo]);
 
@@ -1312,7 +1335,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[21%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>From</div>
+                  <div className={label}>Pickup Location</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
                   {openDropdown === "from" && (
@@ -1340,11 +1363,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     type="button"
                     onClick={handleSwap}
                     className="absolute z-20 w-7 h-7 sm:w-7 sm:h-7 rounded-full bg-white border-2 border-amber-400 shadow-md hover:bg-amber-50 text-amber-600 flex items-center justify-center transition active:scale-90 top-1/2 -left-3.5 -translate-x-0 -translate-y-1/2"
-                    title="Swap From and To"
+                    title="Swap Pickup and Drop"
                   >
                     <ArrowRightLeft className="w-3.5 h-3.5" />
                   </button>
-                  <div className={label}>To</div>
+                  <div className={label}>Drop Location</div>
                   <div className={value}>{toCity}</div>
                   <div className={sub}>{toState}</div>
                   {openDropdown === "to" && (
@@ -1470,7 +1493,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[28%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>From</div>
+                  <div className={label}>Pickup Location</div>
                   <div className={value}>{fromCity}</div>
                   <div className={sub}>{fromState}</div>
                   {openDropdown === "from" && (
@@ -1498,11 +1521,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     type="button"
                     onClick={handleSwap}
                     className="absolute z-20 w-7 h-7 sm:w-7 sm:h-7 rounded-full bg-white border-2 border-amber-400 shadow-md hover:bg-amber-50 text-amber-600 flex items-center justify-center transition active:scale-90 top-1/2 -left-3.5 -translate-x-0 -translate-y-1/2"
-                    title="Swap From and To"
+                    title="Swap Pickup and Drop"
                   >
                     <ArrowRightLeft className="w-3.5 h-3.5" />
                   </button>
-                  <div className={label}>To</div>
+                  <div className={label}>Drop Location</div>
                   <div className={value}>{toCity}</div>
                   <div className={sub}>{toState}</div>
                   {openDropdown === "to" && (
