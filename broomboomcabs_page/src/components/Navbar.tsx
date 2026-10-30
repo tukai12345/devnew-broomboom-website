@@ -12,7 +12,6 @@ import {
   Menu,
   X,
   MapPin,
-  Sparkles,
   ArrowRight,
   User,
   Smartphone,
@@ -45,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  const hoverCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const syncUser = () => {
@@ -60,6 +60,30 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
     setCurrentUser(null);
     setUserDropdownOpen(false);
   };
+
+  // Hover handlers for the Services dropdown
+  const openServicesOnHover = () => {
+    if (hoverCloseTimeoutRef.current) {
+      clearTimeout(hoverCloseTimeoutRef.current);
+      hoverCloseTimeoutRef.current = null;
+    }
+    setServicesDropdownOpen(true);
+  };
+
+  const closeServicesOnLeave = () => {
+    if (hoverCloseTimeoutRef.current) clearTimeout(hoverCloseTimeoutRef.current);
+    hoverCloseTimeoutRef.current = setTimeout(() => {
+      setServicesDropdownOpen(false);
+      hoverCloseTimeoutRef.current = null;
+    }, 200);
+  };
+
+  // Clean up the hover timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverCloseTimeoutRef.current) clearTimeout(hoverCloseTimeoutRef.current);
+    };
+  }, []);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -130,28 +154,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
           </div>
 
           {/* ======================================================== */}
-          {/* NAVIGATION ITEMS (Service Section with 10-City Dropdown) */}
+          {/* NAVIGATION ITEMS (Home + Service Section with 10-City Dropdown) */}
           {/* ======================================================== */}
           <div className="hidden lg:flex items-center gap-3 relative" ref={dropdownRef}>
             
-            {/* SERVICE DROPDOWN TRIGGER BUTTON */}
-            <div className="relative">
+            {/* HOME LINK */}
+            <Link
+              href="/"
+              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
+            >
+              Home
+            </Link>
+
+            {/* SERVICE TRIGGER — styled like the other nav links, opens on hover */}
+            <div
+              className="relative"
+              onMouseEnter={openServicesOnHover}
+              onMouseLeave={closeServicesOnLeave}
+            >
               <button
                 type="button"
                 onClick={() => setServicesDropdownOpen((prev) => !prev)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                aria-expanded={servicesDropdownOpen}
+                aria-haspopup="true"
+                className={`flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold transition ${
                   servicesDropdownOpen
-                    ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20"
-                    : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
+                    ? "text-amber-400 bg-white/10"
+                    : "text-white/90 hover:text-white hover:bg-white/10"
                 }`}
               >
-                <div className="w-5 h-5 rounded-full bg-amber-400/20 flex items-center justify-center text-amber-400">
-                  <Sparkles className="w-3 h-3" />
-                </div>
-                <span className="text-[13px]">Services</span>
+                <span>Services</span>
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    servicesDropdownOpen ? "rotate-180 text-slate-950" : "text-slate-400"
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    servicesDropdownOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
@@ -267,11 +302,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               )}
             </div>
 
+            {/* Direct Navigation Links (About Us, Blog, Contact) */}
+            <Link
+              href="/about"
+              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
+            >
+              About Us
+            </Link>
+
+            <Link
+              href="/blog"
+              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
+            >
+              Blog
+            </Link>
+
+            <Link
+              href="/contact"
+              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
+            >
+              Contact
+            </Link>
+
             <div className="h-6 w-px bg-white/20 mx-1" aria-hidden="true" />
 
             {/* 24x7 Helpline */}
             <a
-              href="tel:+917044022000"
+              href="tel:+918240765499"
               className="flex items-center gap-2 hover:bg-white/5 py-2 px-3 rounded-lg transition-colors text-white text-xs font-semibold"
             >
               <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
@@ -445,6 +502,38 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
             </div>
           </div>
 
+          {/* Mobile Navigation Links (Home, About, Blog, Contact) */}
+          <div className="grid grid-cols-4 gap-2 py-3 border-t border-white/10 text-center">
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
+            >
+              Home
+            </Link>
+            <Link
+              href="/about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
+            >
+              About Us
+            </Link>
+            <Link
+              href="/blog"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
+            >
+              Blog
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
+            >
+              Contact
+            </Link>
+          </div>
+
           {/* Mobile Install App Banner Card */}
           <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 flex items-center justify-between shadow-md">
             <div className="flex items-center gap-2.5">
@@ -475,7 +564,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
           {/* Mobile Helpline & Account buttons */}
           <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-xs">
             <a
-              href="tel:+917044022000"
+              href="tel:+918240765499"
               onClick={() => setMobileMenuOpen(false)}
               className="p-3 bg-white/5 rounded-xl text-left border border-white/10 flex items-center gap-2"
             >

@@ -994,7 +994,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   return (
     <div
-      className="relative pt-6 sm:pt-8 md:pt-10 pb-10 sm:pb-12 md:pb-14 bg-cover bg-center bg-no-repeat overflow-visible"
+      className="relative pt-6 sm:pt-8 md:pt-10 pb-10 sm:pb-12 md:pb-12 bg-cover bg-center bg-no-repeat overflow-visible"
       style={{
         zIndex: openDropdown ? 50 : 20,
         backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.65), rgba(10, 16, 26, 0.80)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80')`,
@@ -1858,7 +1858,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
           </div>
 
           {/* Laurel pill: "India's Top Rated Car Rental Service" */}
-          <div className="mt-6 sm:mt-8 mb-3 sm:mb-2 flex items-center justify-center gap-2 text-white text-[11px] sm:text-[13px] font-semibold tracking-wide drop-shadow-sm select-none">
+          <div className="mt-10 sm:mt-10 mb-0 flex items-center justify-center gap-2 text-white text-[11px] sm:text-[13px] font-semibold tracking-wide drop-shadow-sm select-none">
             <svg className="w-4 h-5 sm:w-5 sm:h-6 text-white fill-current drop-shadow-sm" viewBox="0 0 24 32" aria-hidden="true">
               <path d="M18 2C16 5 13 7 9 7C11 9 12 11 11 14C8 13 6 11 5 8C5 11 4 14 2 16C4 16 6 15 8 13C8 17 7 20 5 22C7 21 9 19 10 17C11 20 11 23 9 26C11 24 13 21 14 18C16 21 17 24 16 28C18 25 19 22 19 19C21 21 23 23 24 25C24 22 23 19 21 17C23 18 25 18 26 18C24 15 22 14 20 13C22 13 24 12 25 10C22 10 20 10 18 11C19 8 20 5 18 2Z" />
             </svg>

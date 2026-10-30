@@ -93,7 +93,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({
             </div>
           </div>
           <a
-            href="tel:+917044022000"
+            href="tel:+918240765499"
             className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-2 shadow-md shadow-amber-400/20 border border-amber-300 transition whitespace-nowrap active:scale-95"
           >
             <PhoneCall className="w-4 h-4" />

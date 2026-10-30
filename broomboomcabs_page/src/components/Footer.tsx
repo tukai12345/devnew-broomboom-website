@@ -24,10 +24,13 @@ const routeLinks = [
 ];
 
 const legalLinks = [
-  "Privacy Policy",
-  "Terms of Service",
-  "Fastag & Toll Guidelines",
-  "Driver Attachment",
+  { label: "About Us", href: "/about" },
+  { label: "Blog & Guides", href: "/blog" },
+  { label: "Contact Us", href: "/contact" },
+  { label: "Privacy Policy", href: "#" },
+  { label: "Terms of Service", href: "#" },
+  { label: "Fastag & Toll Guidelines", href: "#" },
+  { label: "Driver Attachment", href: "#" },
 ];
 
 const linkClass =
@@ -109,7 +112,7 @@ export const Footer: React.FC = () => {
 
             <div className="space-y-2.5">
               <a
-                href="tel:+917044022000"
+                href="tel:+918240765499"
                 className="flex items-center gap-2 font-bold text-white transition hover:text-amber-400"
               >
                 <PhoneCall
@@ -149,11 +152,11 @@ export const Footer: React.FC = () => {
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-end">
             {legalLinks.map((item, index) => (
-              <React.Fragment key={item}>
+              <React.Fragment key={item.label}>
                 {index > 0 && <span aria-hidden="true">•</span>}
-                <a href="#" className="transition hover:text-slate-300">
-                  {item}
-                </a>
+                <Link href={item.href} className="transition hover:text-slate-300">
+                  {item.label}
+                </Link>
               </React.Fragment>
             ))}
           </div>

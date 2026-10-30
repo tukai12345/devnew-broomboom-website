@@ -66,7 +66,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         </button>
 
         <a
-          href="tel:+917044022000"
+          href="tel:+918240765499"
           className="flex flex-col items-center gap-0.5 text-emerald-600 focus:outline-none"
         >
           <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center">

@@ -312,7 +312,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             {/* Actions */}
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
               <a
-                href={`https://wa.me/917044022000?text=Hi%20BroomBoom,%20I%20have%20booked%20cab%20${bookingId}%20for%20${searchParams.fromCity}%20to%20${searchParams.toCity}`}
+                href={`https://wa.me/918240765499?text=Hi%20BroomBoom,%20I%20have%20booked%20cab%20${bookingId}%20for%20${searchParams.fromCity}%20to%20${searchParams.toCity}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm"

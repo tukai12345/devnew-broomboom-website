@@ -495,7 +495,7 @@ export default function ServicesPage() {
 
             <div className="flex items-center gap-3 shrink-0">
               <a
-                href="tel:+917044022000"
+                href="tel:+918240765499"
                 className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-2 transition"
               >
                 <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
