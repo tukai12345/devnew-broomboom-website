@@ -531,8 +531,8 @@ export function getServiceUrl(serviceId: string, cityId?: string): string {
       ? "/outstation-cabs"
       : srv === "airport" || srv === "airport-cabs"
       ? "/airport-cabs"
-      : srv === "rental" || srv === "hourly-rentals"
-      ? "/hourly-rentals"
+      : srv === "rental" || srv === "hourly-rentals" || srv === "car-rental"
+      ? "/car-rental"
       : `/services/${serviceId}`;
 
   if (!cityId) return base;

@@ -72,11 +72,10 @@ const TRIP_TABS: { id: TripType; label: string; badge?: string }[] = [
 ];
 
 const HOURLY_PACKAGES = [
-  { label: "1 hrs 10 kms", desc: "Short city errands & shopping", tag: "POPULAR" },
-  { label: "2 hrs 20 kms", desc: "Local meetings & doctor visits", tag: null },
-  { label: "4 hrs 40 kms", desc: "Half-day city tour or office rounds", tag: "BEST VALUE" },
+  { label: "5 hrs 50 kms", desc: "Half-day city tour or shopping", tag: "POPULAR" },
   { label: "8 hrs 80 kms", desc: "Full-day business or city exploration", tag: "POPULAR" },
-  { label: "12 hrs 120 kms", desc: "Extended full day & multi-city stops", tag: null },
+  { label: "10 hrs 100 kms", desc: "Extended day errands & meetings", tag: "BEST VALUE" },
+  { label: "12 hrs 120 kms", desc: "Full day disposal & multi-city stops", tag: null },
 ];
 
 /* ------------------------------- helpers ------------------------------- */
@@ -691,7 +690,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const [pickupTime, setPickupTime] = useState(getCurrentTimeStr());
   const [returnDate, setReturnDate] = useState(getTodayStr());
   const [dropTime, setDropTime] = useState("09:45 PM");
-  const [hourlyPackage, setHourlyPackage] = useState("1 hrs 10 kms");
+  const [hourlyPackage, setHourlyPackage] = useState("8 hrs 80 kms");
 
   const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
   const [mobileDateTimeTarget, setMobileDateTimeTarget] = useState<"pickup" | "return" | null>(null);

@@ -342,10 +342,10 @@ export interface RentalPackage {
 }
 
 export const RENTAL_PACKAGES: RentalPackage[] = [
-  { id: "pkg-2-20", duration: "2 Hours", km: "20 Kms", basePrice: 499, sedanPrice: 649, suvPrice: 899, idealFor: "Quick shopping & medical visits" },
-  { id: "pkg-4-40", duration: "4 Hours", km: "40 Kms", basePrice: 899, sedanPrice: 1149, suvPrice: 1549, idealFor: "City meetings & short sightseeing" },
-  { id: "pkg-8-80", duration: "8 Hours", km: "80 Kms", basePrice: 1699, sedanPrice: 2099, suvPrice: 2799, idealFor: "Full day office or full city tour" },
-  { id: "pkg-12-120", duration: "12 Hours", km: "120 Kms", basePrice: 2499, sedanPrice: 2999, suvPrice: 3899, idealFor: "Wedding events & whole day errands" },
+  { id: "pkg-5-50", duration: "5 Hours", km: "50 Kms", basePrice: 3551, sedanPrice: 3551, suvPrice: 4551, idealFor: "Half-day city tour or shopping" },
+  { id: "pkg-8-80", duration: "8 Hours", km: "80 Kms", basePrice: 4551, sedanPrice: 4551, suvPrice: 5551, idealFor: "Full day office or full city tour" },
+  { id: "pkg-10-100", duration: "10 Hours", km: "100 Kms", basePrice: 5051, sedanPrice: 5051, suvPrice: 7051, idealFor: "Extended day errands & meetings" },
+  { id: "pkg-12-120", duration: "12 Hours", km: "120 Kms", basePrice: 6051, sedanPrice: 6051, suvPrice: 8051, idealFor: "Wedding events & whole day errands" },
 ];
 
 export interface FaqItem {

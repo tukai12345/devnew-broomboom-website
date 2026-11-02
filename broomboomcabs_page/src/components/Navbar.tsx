@@ -304,7 +304,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
 
             {/* Direct Navigation Links (About Us, Blog, Contact) */}
             <Link
-              href="/about"
+              href="/about-us"
               className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
             >
               About Us
@@ -318,7 +318,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
             </Link>
 
             <Link
-              href="/contact"
+              href="/contact-us"
               className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
             >
               Contact

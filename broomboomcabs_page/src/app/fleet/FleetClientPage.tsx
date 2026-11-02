@@ -91,8 +91,9 @@ const CAB_TYPE_OPTIONS = ["Hatchback", "Sedan", "Suv", "Minibus"] as const;
 const FUEL_TYPE_OPTIONS = ["Cng/diesel", "Diesel"] as const;
 
 const HOURLY_PACKAGES = [
-  "4 hrs 40 kms",
+  "5 hrs 50 kms",
   "8 hrs 80 kms",
+  "10 hrs 100 kms",
   "12 hrs 120 kms",
 ];
 
@@ -496,6 +497,15 @@ const FleetPageContent: React.FC = () => {
           "17 Seater Traveller",
         ];
 
+        let pkgHours = 8;
+        let pkgKms = 80;
+        if (isRental && hourlyPackage) {
+          const matchH = hourlyPackage.match(/(\d+)\s*hr/i);
+          const matchK = hourlyPackage.match(/(\d+)\s*km/i);
+          if (matchH) pkgHours = parseInt(matchH[1], 10);
+          if (matchK) pkgKms = parseInt(matchK[1], 10);
+        }
+
         const prices: Record<string, PricingCalculationResult> = {};
 
         await Promise.all(
@@ -511,8 +521,10 @@ const FleetPageContent: React.FC = () => {
                 pickupLng: pickupCoords?.lng,
                 dropLat: dropCoords?.lat,
                 dropLng: dropCoords?.lng,
-                distance: calcDistance > 0 ? calcDistance : undefined,
+                distance: isRental ? pkgKms : (calcDistance > 0 ? calcDistance : undefined),
                 oneWayDistance: currentDistance > 0 ? currentDistance : undefined,
+                packageHours: isRental ? pkgHours : undefined,
+                includedKms: isRental ? pkgKms : undefined,
                 days: isRound ? days : 1,
                 pickupDate: pickupDateIso,
                 pickupTime: cleanPickupTime,
@@ -562,6 +574,7 @@ const FleetPageContent: React.FC = () => {
     pickupCoords,
     dropCoords,
     hourlyPackage,
+    sourceState,
   ]);
 
   /* --------------------------- Route metadata ---------------------------- */
@@ -596,9 +609,34 @@ const FleetPageContent: React.FC = () => {
 
   /* ----------------------------- Fleet data ------------------------------ */
   const allVehicles: VehicleItem[] = useMemo(() => {
-    const kms = routeMeta.kms > 0 ? routeMeta.kms : 100;
+    // ✅ 1. Resolve rental package FIRST (previously declared too late — TDZ bug)
+    const isRental =
+      tripType.toLowerCase().includes("hourly") ||
+      tripType.toLowerCase().includes("rental");
+
+    let currentPkgHours = 8;
+    let currentPkgKms = 80;
+    if (isRental && hourlyPackage) {
+      const matchH = hourlyPackage.match(/(\d+)\s*hr/i);
+      const matchK = hourlyPackage.match(/(\d+)\s*km/i);
+      if (matchH) currentPkgHours = parseInt(matchH[1], 10);
+      if (matchK) currentPkgKms = parseInt(matchK[1], 10);
+    }
+
+    // ✅ 2. Safe to reference them now
+    const kms = isRental ? currentPkgKms : (routeMeta.kms > 0 ? routeMeta.kms : 100);
     const roundTo10 = (n: number) => Math.round(n / 10) * 10;
     const calcTax = (discPrice: number) => Math.round((discPrice * 0.05) / 10) * 10;
+
+    const RENTAL_MATRIX: Record<string, Record<number, number>> = {
+      Sedan: { 5: 3551, 8: 4551, 10: 5051, 12: 6051 },
+      SUV: { 5: 4551, 8: 5551, 10: 7051, 12: 8051 },
+      "SUV+": { 5: 6051, 8: 7551, 10: 8051, 12: 9051 },
+      "13 Seater Traveller": { 5: 9051, 8: 10051, 10: 11051, 12: 12051 },
+      "17 Seater Traveller": { 5: 10051, 8: 11051, 10: 12051, 12: 13051 },
+      "24 Seater Traveller": { 5: 12051, 8: 13051, 10: 14051, 12: 15051 },
+      Hatchback: { 5: 3551, 8: 4551, 10: 5051, 12: 6051 },
+    };
 
     const getVehiclePricing = (
       categoryName: string,
@@ -614,6 +652,18 @@ const FleetPageContent: React.FC = () => {
           advance: live.advance,
           dueFare: live.dueFare,
           extraKmRate: (live.details as any)?.ratePerKm || (live.details as any)?.extraKmRate || perKmFallback,
+        };
+      }
+
+      if (isRental) {
+        const matrixFare = RENTAL_MATRIX[categoryName]?.[currentPkgHours] || 4551;
+        return {
+          discountedPrice: matrixFare,
+          originalPrice: Math.round((matrixFare * 1.15) / 10) * 10,
+          discountPercent: defaultDiscount,
+          advance: Math.round(matrixFare * 0.2),
+          dueFare: Math.round(matrixFare * 0.8),
+          extraKmRate: categoryName.includes("Traveller") ? 40 : 20,
         };
       }
 
@@ -637,6 +687,7 @@ const FleetPageContent: React.FC = () => {
     const suvPlusPricing = getVehiclePricing("SUV+", 25, 14);
     const traveller13Pricing = getVehiclePricing("13 Seater Traveller", 40, 0);
     const traveller17Pricing = getVehiclePricing("17 Seater Traveller", 45, 0);
+    const traveller24Pricing = getVehiclePricing("24 Seater Traveller", 50, 0);
 
     return [
       {
@@ -749,6 +800,27 @@ const FleetPageContent: React.FC = () => {
         imageType: "minibus",
       },
       {
+        id: "minibus-24",
+        name: "Minibus / Traveller (24 + 1)",
+        modelType: "exact model",
+        modelBadgeText: "NEW",
+        category: "Minibus",
+        modelName: "Minibus / Traveller (24 + 1)",
+        fuelType: "Diesel",
+        fuelLabel: "Diesel",
+        seats: 24,
+        ac: true,
+        includedKms: kms,
+        discountPercent: traveller24Pricing.discountPercent,
+        originalPrice: traveller24Pricing.originalPrice,
+        discountedPrice: traveller24Pricing.discountedPrice,
+        taxAndFee: calcTax(traveller24Pricing.discountedPrice),
+        advanceAmount: traveller24Pricing.advance,
+        dueAmount: traveller24Pricing.dueFare,
+        extraKmRate: traveller24Pricing.extraKmRate,
+        imageType: "minibus",
+      },
+      {
         id: "tempo-12",
         name: "Tempo traveller (12 + 1)",
         modelType: "exact model",
@@ -791,7 +863,7 @@ const FleetPageContent: React.FC = () => {
         imageType: "tempo",
       },
     ];
-  }, [routeMeta, backendPrices]);
+  }, [routeMeta, backendPrices, tripType, hourlyPackage, sourceState]);
 
   /* ------------------------------ Filtering ------------------------------ */
   const filteredVehicles = useMemo(() => {

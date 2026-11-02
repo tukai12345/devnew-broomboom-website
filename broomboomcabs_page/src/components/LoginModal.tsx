@@ -191,19 +191,37 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     let backendId = "";
     let finalName = fullName.trim() || `User ${phoneNumber.slice(-4)}`;
+    const currentLoginTimestamp = new Date().toISOString();
+
     try {
-      // Connect to BroomBoom User Backend (creates or updates user lead in Admin)
+      // Connect to BroomBoom User Backend (creates or updates user lead in Admin with current date & time)
       const backendUser = await api.createUser({
         name: finalName,
         phone: cleanPhone,
         email: email.trim(),
         status: "Active",
-        leadType: "New",
+        source: "BroomBoom Web Page",
+        lastLoginAt: currentLoginTimestamp,
       });
       backendId = backendUser.id || backendUser._id || "";
       if (backendUser.name) {
         finalName = backendUser.name;
       }
+
+      // Notify open Admin tabs immediately of incoming web lead
+      try {
+        localStorage.setItem(
+          "broomboom_user_login_event",
+          JSON.stringify({
+            phone: cleanPhone,
+            name: finalName,
+            email: email.trim(),
+            timestamp: Date.now(),
+            source: "BroomBoom Web Page",
+            loginTime: currentLoginTimestamp,
+          })
+        );
+      } catch {}
     } catch (err) {
       console.warn("Backend user sync notice:", err);
     }

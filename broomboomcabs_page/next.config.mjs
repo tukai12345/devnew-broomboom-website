@@ -26,6 +26,26 @@ const nextConfig = {
         destination: "/outstation-cabs",
         permanent: true,
       },
+      {
+        source: "/hourly-rentals/:city",
+        destination: "/car-rental/:city",
+        permanent: true,
+      },
+      {
+        source: "/hourly-rentals",
+        destination: "/car-rental",
+        permanent: true,
+      },
+      {
+        source: "/services/rental/:city",
+        destination: "/car-rental/:city",
+        permanent: true,
+      },
+      {
+        source: "/services/rental",
+        destination: "/car-rental",
+        permanent: true,
+      },
     ];
   },
 };

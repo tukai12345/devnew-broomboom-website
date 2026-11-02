@@ -203,7 +203,7 @@ export const getApiBaseUrl = (): string => {
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 9000
+  timeoutMs = 3500
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -214,7 +214,7 @@ async function fetchWithTimeout(
       signal: controller.signal,
     });
   } catch (err) {
-    // If local URL was attempted and failed, attempt cloud fallback
+    // If local URL was attempted and failed, attempt cloud fallback immediately
     if (url.includes("localhost:5004")) {
       const fallbackUrl = url.replace(LOCAL_API_BASE_URL, PROD_API_BASE_URL);
       try {
@@ -252,15 +252,22 @@ export const api = {
     email?: string;
     status?: string;
     leadType?: string;
+    source?: string;
+    lastLoginAt?: string;
   }): Promise<BackendUserLead> {
     const baseUrl = getApiBaseUrl();
-    const payload = {
+    const payload: any = {
       name: userData.name || "Customer",
       phone: userData.phone.trim(),
       email: userData.email?.trim() || undefined,
       status: userData.status || "Active",
-      leadType: userData.leadType || "New",
+      source: userData.source || "BroomBoom Web Page",
+      lastLoginAt: userData.lastLoginAt || new Date().toISOString(),
     };
+
+    if (userData.leadType) {
+      payload.leadType = userData.leadType;
+    }
 
     const res = await fetchWithTimeout(`${baseUrl}/users`, {
       method: "POST",

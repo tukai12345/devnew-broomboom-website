@@ -55,6 +55,9 @@ export default function ServiceCategoryPage({ params }: PageProps) {
   if (params.service === "outstation") {
     redirect("/outstation-cabs");
   }
+  if (params.service === "rental") {
+    redirect("/car-rental");
+  }
 
   const serviceMeta = getServiceMeta(params.service);
   if (!serviceMeta) {

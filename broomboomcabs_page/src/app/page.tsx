@@ -39,7 +39,7 @@ export default function Home() {
     returnDate: getTodayStr(),
     returnTime: "08:00 PM",
     dropTime: "09:45 PM",
-    hourlyPackage: "4 hrs 40 kms",
+    hourlyPackage: "8 hrs 80 kms",
     airportMode: "to-airport",
     flightNumber: "",
   });

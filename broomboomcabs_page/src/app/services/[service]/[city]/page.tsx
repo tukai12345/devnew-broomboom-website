@@ -57,7 +57,7 @@ export default function ServiceCityPage({ params }: PageProps) {
     redirect(`/airport-cabs/${params.city}`);
   }
   if (params.service === "rental") {
-    redirect(`/hourly-rentals/${params.city}`);
+    redirect(`/car-rental/${params.city}`);
   }
 
   const cityData = getCityServiceData(params.city);
