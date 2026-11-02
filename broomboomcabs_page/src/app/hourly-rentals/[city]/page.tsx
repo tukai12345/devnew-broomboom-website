@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 
-export default function HourlyRentalCityPage({ params }: { params: { city: string } }) {
-  redirect(`/car-rental/${params.city}`);
+export default async function HourlyRentalCityPage(props: {
+  params: Promise<{ city: string }> | { city: string };
+}) {
+  const resolved = await props.params;
+  redirect(`/car-rental/${resolved?.city || ""}`);
 }
 

@@ -35,9 +35,12 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  // Allow null so we can collapse the city list if clicked again
+  const [mobileActiveService, setMobileActiveService] = useState<ServiceType | null>(null); 
+  
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [activeMenuService, setActiveMenuService] = useState<ServiceType>("outstation");
-  const [mobileActiveService, setMobileActiveService] = useState<ServiceType>("outstation");
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ identifier: string; role: string; name?: string } | null>(null);
@@ -61,7 +64,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
     setUserDropdownOpen(false);
   };
 
-  // Hover handlers for the Services dropdown
   const openServicesOnHover = () => {
     if (hoverCloseTimeoutRef.current) {
       clearTimeout(hoverCloseTimeoutRef.current);
@@ -78,14 +80,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
     }, 200);
   };
 
-  // Clean up the hover timeout on unmount
   useEffect(() => {
     return () => {
       if (hoverCloseTimeoutRef.current) clearTimeout(hoverCloseTimeoutRef.current);
     };
   }, []);
 
-  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -126,9 +126,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
       <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-[72px]">
           
-          {/* ======================================================== */}
-          {/* LOGO ON LEFT (BroomBoom Cabs) */}
-          {/* ======================================================== */}
+          {/* LOGO ON LEFT */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
             <Link
               href="/"
@@ -153,57 +151,36 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
             </Link>
           </div>
 
-          {/* ======================================================== */}
-          {/* NAVIGATION ITEMS (Home + Service Section with 10-City Dropdown) */}
-          {/* ======================================================== */}
+          {/* NAVIGATION ITEMS DESKTOP */}
           <div className="hidden lg:flex items-center gap-3 relative" ref={dropdownRef}>
             
-            {/* HOME LINK */}
-            <Link
-              href="/"
-              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
-            >
+            <Link href="/" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">
               Home
             </Link>
 
-            {/* SERVICE TRIGGER — styled like the other nav links, opens on hover */}
-            <div
-              className="relative"
-              onMouseEnter={openServicesOnHover}
-              onMouseLeave={closeServicesOnLeave}
-            >
+            {/* SERVICE TRIGGER DESKTOP */}
+            <div className="relative" onMouseEnter={openServicesOnHover} onMouseLeave={closeServicesOnLeave}>
               <button
                 type="button"
                 onClick={() => setServicesDropdownOpen((prev) => !prev)}
                 aria-expanded={servicesDropdownOpen}
                 aria-haspopup="true"
                 className={`flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold transition ${
-                  servicesDropdownOpen
-                    ? "text-amber-400 bg-white/10"
-                    : "text-white/90 hover:text-white hover:bg-white/10"
+                  servicesDropdownOpen ? "text-amber-400 bg-white/10" : "text-white/90 hover:text-white hover:bg-white/10"
                 }`}
               >
                 <span>Services</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    servicesDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${servicesDropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* ======================================================== */}
-              {/* TWO-LEVEL CASCADING DROPDOWN (Services -> 10 Cities) */}
-              {/* ======================================================== */}
+              {/* TWO-LEVEL CASCADING DROPDOWN */}
               {servicesDropdownOpen && (
                 <div className="absolute right-0 top-full mt-2 w-[620px] bg-white rounded-2xl shadow-2xl border border-slate-200 text-slate-900 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex gap-4">
-                    
-                    {/* LEFT PANEL: 3 CORE SERVICES */}
                     <div className="w-[240px] border-r border-slate-100 pr-3 space-y-2">
                       <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-2 pb-1">
                         1. Choose Service:
                       </div>
-
                       {SERVICES_LIST.map((srv) => {
                         const isSelected = activeMenuService === srv.id;
                         return (
@@ -212,66 +189,32 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                             onMouseEnter={() => setActiveMenuService(srv.id)}
                             onClick={() => setActiveMenuService(srv.id)}
                             className={`p-3 rounded-xl cursor-pointer transition flex items-center justify-between ${
-                              isSelected
-                                ? "bg-amber-400 text-slate-950 shadow-sm"
-                                : "hover:bg-slate-50 text-slate-700"
+                              isSelected ? "bg-amber-400 text-slate-950 shadow-sm" : "hover:bg-slate-50 text-slate-700"
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
-                              <div
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                  isSelected
-                                    ? "bg-slate-950 text-amber-400"
-                                    : "bg-slate-100 text-slate-700"
-                                }`}
-                              >
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? "bg-slate-950 text-amber-400" : "bg-slate-100 text-slate-700"}`}>
                                 {srv.id === "outstation" && <Car className="w-4 h-4" />}
                                 {srv.id === "rental" && <Clock className="w-4 h-4" />}
                                 {srv.id === "airport" && <Plane className="w-4 h-4" />}
                               </div>
                               <div className="leading-tight">
                                 <div className="font-extrabold text-xs">{srv.name}</div>
-                                <div
-                                  className={`text-[10px] ${
-                                    isSelected ? "text-slate-800" : "text-slate-400"
-                                  }`}
-                                >
-                                  {srv.badge}
-                                </div>
+                                <div className={`text-[10px] ${isSelected ? "text-slate-800" : "text-slate-400"}`}>{srv.badge}</div>
                               </div>
                             </div>
-                            <ChevronRight
-                              className={`w-4 h-4 ${
-                                isSelected ? "text-slate-950" : "text-slate-300"
-                              }`}
-                            />
+                            <ChevronRight className={`w-4 h-4 ${isSelected ? "text-slate-950" : "text-slate-300"}`} />
                           </div>
                         );
                       })}
-
-                      <div className="pt-2 px-1">
-                        <Link
-                          href="/services"
-                          onClick={() => setServicesDropdownOpen(false)}
-                          className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1"
-                        >
-                          <span>View All Services Directory</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                      </div>
                     </div>
 
-                    {/* RIGHT PANEL: 10 CITIES FOR SELECTED SERVICE */}
                     <div className="flex-1 pl-1">
                       <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
                         <div className="text-[11px] font-black uppercase tracking-wider text-slate-400">
                           2. Select City for {activeServiceInfo.name}:
                         </div>
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-                          10 Cities
-                        </span>
                       </div>
-
                       <div className="grid grid-cols-2 gap-2">
                         {TOP_10_CITIES_SERVICES.map((city) => (
                           <Link
@@ -283,12 +226,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                             <div className="flex items-center gap-2 truncate">
                               <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                               <div className="truncate">
-                                <div className="font-bold text-xs truncate">
-                                  {city.cityName}
-                                </div>
-                                <div className="text-[10px] text-slate-400 truncate">
-                                  {city.state}
-                                </div>
+                                <div className="font-bold text-xs truncate">{city.cityName}</div>
+                                <div className="text-[10px] text-slate-400 truncate">{city.state}</div>
                               </div>
                             </div>
                             <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition" />
@@ -296,41 +235,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                         ))}
                       </div>
                     </div>
-
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Direct Navigation Links (About Us, Blog, Contact) */}
-            <Link
-              href="/about-us"
-              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
-            >
-              About Us
-            </Link>
-
-            <Link
-              href="/blog"
-              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
-            >
-              Blog
-            </Link>
-
-            <Link
-              href="/contact-us"
-              className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition"
-            >
-              Contact
-            </Link>
-
+            <Link href="/about-us" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">About Us</Link>
+            <Link href="/blogs" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">Blog</Link>
+            <Link href="/contact-us" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">Contact</Link>
             <div className="h-6 w-px bg-white/20 mx-1" aria-hidden="true" />
 
-            {/* 24x7 Helpline */}
-            <a
-              href="tel:+918240765499"
-              className="flex items-center gap-2 hover:bg-white/5 py-2 px-3 rounded-lg transition-colors text-white text-xs font-semibold"
-            >
+            <a href="tel:+918240765499" className="flex items-center gap-2 hover:bg-white/5 py-2 px-3 rounded-lg transition-colors text-white text-xs font-semibold">
               <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                 <PhoneCall className="w-3.5 h-3.5" />
               </div>
@@ -342,7 +257,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
 
             <div className="h-6 w-px bg-white/20 mx-1" aria-hidden="true" />
 
-            {/* Install App Button (Desktop) */}
             <button
               type="button"
               onClick={() => setInstallModalOpen(true)}
@@ -359,7 +273,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
 
             <div className="h-6 w-px bg-white/20 mx-1" aria-hidden="true" />
 
-            {/* Login / My Bookings */}
             {currentUser ? (
               <div className="relative" ref={userDropdownRef}>
                 <button
@@ -414,11 +327,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
             )}
           </div>
 
-          {/* ======================================================== */}
-          {/* MOBILE ACTIONS (Install App + Menu Toggle) */}
-          {/* ======================================================== */}
+          {/* MOBILE ACTIONS */}
           <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Install App Button (Mobile View - Always Visible in Header) */}
             <button
               type="button"
               onClick={() => setInstallModalOpen(true)}
@@ -444,105 +354,102 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
         </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* MOBILE DRAWER WITH 3 SERVICES & 10 CITIES */}
-      {/* ======================================================== */}
+      {/* MOBILE DRAWER */}
       {mobileMenuOpen && (
         <div
           id="mobile-menu"
           className="lg:hidden bg-[#0a0f1c] border-t border-white/10 p-4 max-h-[85vh] overflow-y-auto"
         >
-          {/* Header */}
-          <div className="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-3 flex items-center justify-between">
-            <span>Service:</span>
-          </div>
+          {/* Mobile Navigation Links (Home) */}
+          <Link 
+            href="/" 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="block py-3 px-1 text-base font-bold text-white transition border-b border-white/10"
+          >
+            Home
+          </Link>
 
-          {/* Service Switcher Tabs */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 rounded-xl mb-4 text-xs font-bold border border-white/10">
-            {SERVICES_LIST.map((srv) => (
-              <button
-                key={srv.id}
-                type="button"
-                onClick={() => setMobileActiveService(srv.id)}
-                className={`py-2 px-1 rounded-lg text-center transition ${
-                  mobileActiveService === srv.id
-                    ? "bg-amber-400 text-slate-950 font-black shadow-sm"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                {srv.name.split(" ")[0]}
-              </button>
-            ))}
-          </div>
+          {/* NEW: Mobile Services Accordion Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              setMobileServicesOpen(!mobileServicesOpen);
+              // Optionally close the active service when closing the whole services menu
+              if (mobileServicesOpen) setMobileActiveService(null); 
+            }}
+            className="w-full flex items-center justify-between py-3 px-1 text-base font-bold text-amber-400 border-b border-white/10"
+          >
+            <span>Services</span>
+            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180' : ''}`} />
+          </button>
 
-          {/* 10 Cities for the selected mobile service */}
-          <div className="space-y-1.5 mb-4">
-            <div className="text-[11px] text-slate-400 font-bold mb-2">
-              Select City for{" "}
-              <span className="text-white">
-                {SERVICES_LIST.find((s) => s.id === mobileActiveService)?.name}:
-              </span>
-            </div>
+          {/* Collapsible Services Content */}
+          {mobileServicesOpen && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-200 py-2 space-y-2">
+              {SERVICES_LIST.map((srv) => (
+                <div key={srv.id} className="flex flex-col">
+                  {/* Service Item Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Toggle logic: if clicking the active one, collapse it. Otherwise open it.
+                      setMobileActiveService(mobileActiveService === srv.id ? null : srv.id);
+                    }}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-bold transition border ${
+                      mobileActiveService === srv.id
+                        ? "bg-amber-400/10 border-amber-400 text-amber-400"
+                        : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <span>{srv.name}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        mobileActiveService === srv.id ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
-            <div className="grid grid-cols-2 gap-2">
-              {TOP_10_CITIES_SERVICES.map((city) => (
-                <Link
-                  key={city.cityId}
-                  href={getServiceUrl(mobileActiveService, city.cityId)}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2.5 bg-white/5 hover:bg-amber-400 hover:text-slate-950 text-white rounded-xl text-xs font-bold border border-white/10 flex items-center justify-between transition"
-                >
-                  <div className="truncate">
-                    <div>{city.cityName}</div>
-                    <div className="text-[10px] text-slate-400">{city.state}</div>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
-                </Link>
+                  {/* City List (Shows when this specific service is clicked) */}
+                  {mobileActiveService === srv.id && (
+                    <div className="mt-2 pl-3 pr-1 pb-2 border-l-2 border-amber-400/50 ml-3">
+                      <div className="text-[11px] text-slate-400 font-bold mb-3 mt-2">
+                        Select City for {srv.name}:
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {TOP_10_CITIES_SERVICES.map((city) => (
+                          <Link
+                            key={city.cityId}
+                            href={getServiceUrl(srv.id, city.cityId)}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="p-2.5 bg-white/5 hover:bg-amber-400 hover:text-slate-950 text-white rounded-xl text-xs font-bold border border-white/10 flex items-center justify-between transition group"
+                          >
+                            <div className="truncate">
+                              <div>{city.cityName}</div>
+                              <div className="text-[10px] text-slate-400 group-hover:text-slate-800">{city.state}</div>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
-          </div>
+          )}
 
-          {/* Mobile Navigation Links (Home, About, Blog, Contact) */}
-          <div className="grid grid-cols-4 gap-2 py-3 border-t border-white/10 text-center">
-            <Link
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
-            >
-              Home
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
-            >
-              About Us
-            </Link>
-            <Link
-              href="/blog"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
-            >
-              Blog
-            </Link>
-            <Link
-              href="/contact"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10"
-            >
-              Contact
-            </Link>
+          {/* Mobile Navigation Links (About, Blog, Contact, Login) */}
+          <div className="grid grid-cols-3 gap-2 py-3 border-t border-white/10 text-center mt-2">
+            <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10">About Us</Link>
+            <Link href="/blogs" onClick={() => setMobileMenuOpen(false)} className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10">Blog</Link>
+            <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10">Contact</Link>
           </div>
 
           {/* Mobile Install App Banner Card */}
           <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 flex items-center justify-between shadow-md">
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-950 p-0.5 flex items-center justify-center shadow-xs shrink-0">
-                <img
-                  src="/logo.png"
-                  alt="BroomBoom Cabs App"
-                  className="w-full h-full object-contain rounded-full"
-                />
+                <img src="/logo.png" alt="BroomBoom Cabs App" className="w-full h-full object-contain rounded-full" />
               </div>
               <div>
                 <div className="font-black text-xs">BroomBoom Cabs App</div>
@@ -562,12 +469,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
           </div>
 
           {/* Mobile Helpline & Account buttons */}
-          <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-xs">
-            <a
-              href="tel:+918240765499"
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-3 bg-white/5 rounded-xl text-left border border-white/10 flex items-center gap-2"
-            >
+          <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-xs mt-3">
+            <a href="tel:+918240765499" onClick={() => setMobileMenuOpen(false)} className="p-3 bg-white/5 rounded-xl text-left border border-white/10 flex items-center gap-2">
               <PhoneCall className="w-4 h-4 text-emerald-400" />
               <div>
                 <div className="font-bold text-white text-[11px]">24x7 Helpline</div>
@@ -602,13 +505,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
         </div>
       )}
 
-      {/* Global Install App Modal */}
-      <InstallAppModal
-        isOpen={installModalOpen}
-        onClose={() => setInstallModalOpen(false)}
-      />
-
-      {/* Global Login / Sign-up Modal */}
+      <InstallAppModal isOpen={installModalOpen} onClose={() => setInstallModalOpen(false)} />
       <LoginModal
         isOpen={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}

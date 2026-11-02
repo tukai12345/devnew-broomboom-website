@@ -512,19 +512,24 @@ export const SERVICES_LIST: ServiceMeta[] = [
   },
 ];
 
-export function getCityServiceData(cityId: string): CityServiceInfo | undefined {
+export function getCityServiceData(cityId?: string): CityServiceInfo | undefined {
+  if (!cityId || typeof cityId !== "string") return undefined;
+  const target = cityId.trim().toLowerCase();
   return TOP_10_CITIES_SERVICES.find(
-    (c) => c.cityId.toLowerCase() === cityId.toLowerCase()
+    (c) => c?.cityId && c.cityId.toLowerCase() === target
   );
 }
 
-export function getServiceMeta(serviceId: string): ServiceMeta | undefined {
+export function getServiceMeta(serviceId?: string): ServiceMeta | undefined {
+  if (!serviceId || typeof serviceId !== "string") return undefined;
+  const target = serviceId.trim().toLowerCase();
   return SERVICES_LIST.find(
-    (s) => s.id.toLowerCase() === serviceId.toLowerCase()
+    (s) => s?.id && s.id.toLowerCase() === target
   );
 }
 
-export function getServiceUrl(serviceId: string, cityId?: string): string {
+export function getServiceUrl(serviceId?: string, cityId?: string): string {
+  if (!serviceId || typeof serviceId !== "string") return "/";
   const srv = serviceId.toLowerCase();
   const base =
     srv === "outstation" || srv === "outstation-cabs"

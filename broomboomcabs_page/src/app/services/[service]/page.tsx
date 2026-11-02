@@ -26,19 +26,22 @@ import { ServiceContentSection } from "@/components/ServiceContentSection";
 import { WhyChooseUs } from "@/components/WhyChooseUs";
 import { FaqSection } from "@/components/FaqSection";
 
-interface PageProps {
-  params: {
+type PageProps = {
+  params: Promise<{
+    service: string;
+  }> | {
     service: string;
   };
-}
+};
 
 export async function generateStaticParams() {
   const services: ServiceType[] = ["outstation", "rental", "airport"];
   return services.map((service) => ({ service }));
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const serviceMeta = getServiceMeta(params.service);
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const resolved = await props.params;
+  const serviceMeta = getServiceMeta(resolved.service);
   if (!serviceMeta) {
     return {
       title: "Cab Services | BroomBoom Cabs",
@@ -51,15 +54,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function ServiceCategoryPage({ params }: PageProps) {
-  if (params.service === "outstation") {
+export default async function ServiceCategoryPage(props: PageProps) {
+  const resolved = await props.params;
+  if (resolved.service === "outstation") {
     redirect("/outstation-cabs");
   }
-  if (params.service === "rental") {
+  if (resolved.service === "rental") {
     redirect("/car-rental");
   }
 
-  const serviceMeta = getServiceMeta(params.service);
+  const serviceMeta = getServiceMeta(resolved.service);
   if (!serviceMeta) {
     notFound();
   }

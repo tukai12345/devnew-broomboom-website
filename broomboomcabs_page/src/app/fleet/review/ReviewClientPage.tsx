@@ -21,6 +21,8 @@ import {
   AlertCircle,
   ArrowRight,
   ShieldCheck,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
@@ -148,11 +150,14 @@ export const ReviewClientPage: React.FC = () => {
   }, []);
 
   // Add-ons
+  const [addonPet, setAddonPet] = useState(false);
+  const [petCount, setPetCount] = useState(1);
   const [addonRoofCarrier, setAddonRoofCarrier] = useState(false);
   const [addonLanguage, setAddonLanguage] = useState(false);
   const [addonNewVehicle, setAddonNewVehicle] = useState(false);
   const [addonSightseeing, setAddonSightseeing] = useState(false);
 
+  const PET_FEE = 1001;
   const ROOF_FEE = 157;
   const LANGUAGE_FEE = 209;
   const NEW_VEHICLE_FEE = 262;
@@ -171,6 +176,7 @@ export const ReviewClientPage: React.FC = () => {
 
   /* ---------------------------- Calculations ---------------------------- */
   const addonsTotal =
+    (addonPet ? PET_FEE * petCount : 0) +
     (addonRoofCarrier ? ROOF_FEE : 0) +
     (addonLanguage ? LANGUAGE_FEE : 0) +
     (addonNewVehicle ? NEW_VEHICLE_FEE : 0) +
@@ -274,6 +280,14 @@ export const ReviewClientPage: React.FC = () => {
         amountPaid: payableNow,
         remainingAmount: finalTotal - payableNow,
         paymentMode: paymentOption === "part" ? "Part Pay via Cashfree" : "Full Pay via Cashfree",
+        addons: {
+          petAllowance: addonPet,
+          petCount: addonPet ? petCount : 0,
+          roofCarrier: addonRoofCarrier,
+          language: addonLanguage,
+          newVehicle: addonNewVehicle,
+          sightseeing: addonSightseeing,
+        },
         traveller: {
           name: fullName,
           phone: mobileNumber,
@@ -530,6 +544,86 @@ export const ReviewClientPage: React.FC = () => {
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* Add-on 0: Travel with Pet */}
+                <div
+                  className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-2.5 ${
+                    addonPet
+                      ? "border-amber-400 bg-amber-50/50 ring-1 ring-amber-300"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
+                  }`}
+                >
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={addonPet}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setAddonPet(checked);
+                        if (checked && petCount < 1) setPetCount(1);
+                      }}
+                      className="w-4 h-4 mt-0.5 rounded accent-amber-500 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs sm:text-sm font-bold text-slate-900">
+                          Travel with Pet (Pet Allowance)
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-slate-900 whitespace-nowrap">
+                          +{inr(PET_FEE * (addonPet ? petCount : 1))}
+                        </span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                        Sanitized pet-friendly cab with protective seat covers (₹1,001 per pet)
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Quantity Stepper when checked */}
+                  {addonPet && (
+                    <div className="flex items-center justify-between pt-2 border-t border-amber-200/80 pl-7">
+                      <span className="text-xs font-semibold text-slate-700">
+                        Number of pets:
+                      </span>
+                      <div className="flex items-center gap-1.5 bg-white rounded-lg border border-amber-300 px-2 py-0.5 shadow-2xs">
+                        <button
+                          type="button"
+                          disabled={petCount <= 1}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (petCount > 1) setPetCount(petCount - 1);
+                          }}
+                          className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                            petCount <= 1
+                              ? "text-slate-300 cursor-not-allowed"
+                              : "text-slate-700 hover:text-amber-800 hover:bg-amber-100 cursor-pointer"
+                          }`}
+                          title="Decrease pet count"
+                          aria-label="Decrease pet count"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="text-xs font-black text-slate-950 min-w-5 text-center">
+                          {petCount}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPetCount(petCount + 1);
+                          }}
+                          className="w-6 h-6 flex items-center justify-center rounded text-slate-700 hover:text-amber-800 hover:bg-amber-100 cursor-pointer transition-colors"
+                          title="Increase pet count"
+                          aria-label="Increase pet count"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Add-on 1: Roof Carrier */}
                 <label
                   className={`p-3.5 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
@@ -837,6 +931,12 @@ export const ReviewClientPage: React.FC = () => {
                       <span>+{inr(addonsTotal)}</span>
                     </div>
                     <div className="text-[11px] text-slate-400 space-y-0.5 mt-0.5">
+                      {addonPet && (
+                        <div className="flex justify-between">
+                          <span>Pet Allowance ({petCount} {petCount === 1 ? "pet" : "pets"})</span>
+                          <span>+{inr(PET_FEE * petCount)}</span>
+                        </div>
+                      )}
                       {addonRoofCarrier && <div className="flex justify-between"><span>Roof Carrier</span><span>+{inr(ROOF_FEE)}</span></div>}
                       {addonLanguage && <div className="flex justify-between"><span>Driver Language</span><span>+{inr(LANGUAGE_FEE)}</span></div>}
                       {addonNewVehicle && <div className="flex justify-between"><span>New Vehicle (2023+)</span><span>+{inr(NEW_VEHICLE_FEE)}</span></div>}

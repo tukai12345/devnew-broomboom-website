@@ -10,12 +10,15 @@ import {
 } from "@/data/cityServicesData";
 import { CityServiceClientPage } from "./CityServiceClientPage";
 
-interface PageProps {
-  params: {
+type PageProps = {
+  params: Promise<{
+    service: string;
+    city: string;
+  }> | {
     service: string;
     city: string;
   };
-}
+};
 
 export async function generateStaticParams() {
   const params: { service: string; city: string }[] = [];
@@ -33,9 +36,10 @@ export async function generateStaticParams() {
   return params;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const cityData = getCityServiceData(params.city);
-  const serviceMeta = getServiceMeta(params.service);
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const resolved = await props.params;
+  const cityData = getCityServiceData(resolved.city);
+  const serviceMeta = getServiceMeta(resolved.service);
 
   if (!cityData || !serviceMeta) {
     return {
@@ -49,19 +53,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function ServiceCityPage({ params }: PageProps) {
-  if (params.service === "outstation") {
-    redirect(`/outstation-cabs/${params.city}`);
+export default async function ServiceCityPage(props: PageProps) {
+  const resolved = await props.params;
+  if (resolved.service === "outstation") {
+    redirect(`/outstation-cabs/${resolved.city}`);
   }
-  if (params.service === "airport") {
-    redirect(`/airport-cabs/${params.city}`);
+  if (resolved.service === "airport") {
+    redirect(`/airport-cabs/${resolved.city}`);
   }
-  if (params.service === "rental") {
-    redirect(`/car-rental/${params.city}`);
+  if (resolved.service === "rental") {
+    redirect(`/car-rental/${resolved.city}`);
   }
 
-  const cityData = getCityServiceData(params.city);
-  const serviceMeta = getServiceMeta(params.service);
+  const cityData = getCityServiceData(resolved.city);
+  const serviceMeta = getServiceMeta(resolved.service);
 
   if (!cityData || !serviceMeta) {
     notFound();

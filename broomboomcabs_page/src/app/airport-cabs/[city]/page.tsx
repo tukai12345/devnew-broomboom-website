@@ -8,11 +8,13 @@ import {
 } from "@/data/cityServicesData";
 import { CityServiceClientPage } from "@/app/services/[service]/[city]/CityServiceClientPage";
 
-interface PageProps {
-  params: {
+type PageProps = {
+  params: Promise<{
+    city: string;
+  }> | {
     city: string;
   };
-}
+};
 
 export async function generateStaticParams() {
   return TOP_10_CITIES_SERVICES.map((c) => ({
@@ -20,8 +22,9 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const cityData = getCityServiceData(params.city);
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const resolved = await props.params;
+  const cityData = getCityServiceData(resolved.city);
   const serviceMeta = getServiceMeta("airport");
 
   if (!cityData || !serviceMeta) {
@@ -39,8 +42,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function AirportCityPage({ params }: PageProps) {
-  const cityData = getCityServiceData(params.city);
+export default async function AirportCityPage(props: PageProps) {
+  const resolved = await props.params;
+  const cityData = getCityServiceData(resolved.city);
   const serviceMeta = getServiceMeta("airport");
 
   if (!cityData || !serviceMeta) {

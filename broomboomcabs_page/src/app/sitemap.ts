@@ -72,6 +72,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${siteUrl}/taxi-service/pet-friendly-cabs-in-kolkata`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.88,
+    },
+    {
+      url: `${siteUrl}/taxi-service/lucknow-to-prayagraj-taxi-fare`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.88,
+    },
   ];
 
   // 2. Service Category Landing Pages (/outstation-cabs, /services/rental, /services/airport)

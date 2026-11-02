@@ -1,4 +1,6 @@
+// app/layout.tsx
 import type { Metadata, Viewport } from "next";
+import { GoogleTagManager, GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,7 +13,10 @@ export const metadata: Metadata = {
     icon: "/logo.png",
     apple: "/logo.png",
   },
-  robots: "noindex, nofollow",
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const viewport: Viewport = {
@@ -22,11 +27,22 @@ export const viewport: Viewport = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  👇 CHANGE THESE TWO VALUES TO YOUR REAL NUMBERS                    */
+/* CONTACT DETAILS                                                    */
 /* ------------------------------------------------------------------ */
-const PHONE_NUMBER = "+918240765499";        // used for tel:
-const WHATSAPP_NUMBER = "918240765499";      // digits only, no + or spaces
+
+const PHONE_NUMBER = "+918240765499";
+const WHATSAPP_NUMBER = "918240765499";
 const WHATSAPP_MESSAGE = "Hi BroomBoom Cabs, I want to book a cab.";
+
+/* ------------------------------------------------------------------ */
+/* GOOGLE TRACKING                                                     */
+/* ------------------------------------------------------------------ */
+
+const GTM_ID = "GTM-N6D7HH8";
+const GA_ID = "G-JD89KXBSS2";
+
+/* ------------------------------------------------------------------ */
+/* FLOATING CONTACT BUTTONS                                           */
 /* ------------------------------------------------------------------ */
 
 function FloatingContactButtons() {
@@ -38,7 +54,6 @@ function FloatingContactButtons() {
     <div
       className="fixed z-[9999] right-4 bottom-4 sm:right-6 sm:bottom-6 flex flex-col items-end gap-3 print:hidden"
       style={{
-        // keeps buttons above iOS home indicator / Android nav bar
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         paddingRight: "env(safe-area-inset-right, 0px)",
       }}
@@ -49,8 +64,8 @@ function FloatingContactButtons() {
         aria-label="Call BroomBoom Cabs"
         className="group relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/40 ring-2 ring-white/70 transition-transform duration-200 hover:scale-110 active:scale-95"
       >
-        {/* subtle pulse ring */}
         <span className="pointer-events-none absolute inset-0 rounded-full bg-amber-400/60 animate-ping opacity-40" />
+
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -71,6 +86,7 @@ function FloatingContactButtons() {
         className="group relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-[#25D366]/40 ring-2 ring-white/70 transition-transform duration-200 hover:scale-110 active:scale-95"
       >
         <span className="pointer-events-none absolute inset-0 rounded-full bg-[#25D366]/60 animate-ping opacity-40 [animation-delay:800ms]" />
+
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 32 32"
@@ -85,6 +101,10 @@ function FloatingContactButtons() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* ROOT LAYOUT                                                        */
+/* ------------------------------------------------------------------ */
+
 export default function RootLayout({
   children,
 }: {
@@ -93,11 +113,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="min-h-screen flex flex-col antialiased text-slate-800 bg-slate-50 selection:bg-amber-400 selection:text-slate-950">
+        {/* WEBSITE CONTENT */}
         {children}
 
-        {/* Fixed Call + WhatsApp buttons – visible on every page & mobile */}
+        {/* FLOATING CALL + WHATSAPP BUTTONS */}
         <FloatingContactButtons />
       </body>
+
+      {/* Google Tag Manager (GTM-N6D7HH8) */}
+      <GoogleTagManager gtmId={GTM_ID} />
+
+      {/* Google Analytics 4 (G-JD89KXBSS2) */}
+      <GoogleAnalytics gaId={GA_ID} />
     </html>
   );
 }
