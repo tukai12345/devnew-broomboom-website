@@ -16,6 +16,10 @@ import {
   User,
   Smartphone,
   LogOut,
+  Home,
+  Info,
+  BookOpen,
+  Mail,
 } from "lucide-react";
 import { InstallAppModal } from "./InstallAppModal";
 import { LoginModal } from "./LoginModal";
@@ -36,7 +40,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
-  // Allow null so we can collapse the city list if clicked again
   const [mobileActiveService, setMobileActiveService] = useState<ServiceType | null>(null); 
   
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
@@ -121,12 +124,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
   const activeServiceInfo =
     SERVICES_LIST.find((s) => s.id === activeMenuService) || SERVICES_LIST[0];
 
+  const renderServiceIcon = (id: string, className = "w-4 h-4") => {
+    if (id === "outstation") return <Car className={className} />;
+    if (id === "rental") return <Clock className={className} />;
+    if (id === "airport") return <Plane className={className} />;
+    return <Car className={className} />;
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-[#0a0f1c]/95 backdrop-blur-md border-b border-white/10 text-white select-none">
       <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-[72px]">
           
-          {/* LOGO ON LEFT */}
+          {/* LOGO */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
             <Link
               href="/"
@@ -151,20 +161,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
             </Link>
           </div>
 
-          {/* NAVIGATION ITEMS DESKTOP */}
+          {/* DESKTOP NAVIGATION */}
           <div className="hidden lg:flex items-center gap-3 relative" ref={dropdownRef}>
-            
             <Link href="/" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">
               Home
             </Link>
 
-            {/* SERVICE TRIGGER DESKTOP */}
+            {/* DESKTOP SERVICES DROPDOWN */}
             <div className="relative" onMouseEnter={openServicesOnHover} onMouseLeave={closeServicesOnLeave}>
               <button
                 type="button"
                 onClick={() => setServicesDropdownOpen((prev) => !prev)}
                 aria-expanded={servicesDropdownOpen}
-                aria-haspopup="true"
                 className={`flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold transition ${
                   servicesDropdownOpen ? "text-amber-400 bg-white/10" : "text-white/90 hover:text-white hover:bg-white/10"
                 }`}
@@ -173,7 +181,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${servicesDropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* TWO-LEVEL CASCADING DROPDOWN */}
               {servicesDropdownOpen && (
                 <div className="absolute right-0 top-full mt-2 w-[620px] bg-white rounded-2xl shadow-2xl border border-slate-200 text-slate-900 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex gap-4">
@@ -194,9 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                           >
                             <div className="flex items-center gap-2.5">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? "bg-slate-950 text-amber-400" : "bg-slate-100 text-slate-700"}`}>
-                                {srv.id === "outstation" && <Car className="w-4 h-4" />}
-                                {srv.id === "rental" && <Clock className="w-4 h-4" />}
-                                {srv.id === "airport" && <Plane className="w-4 h-4" />}
+                                {renderServiceIcon(srv.id)}
                               </div>
                               <div className="leading-tight">
                                 <div className="font-extrabold text-xs">{srv.name}</div>
@@ -327,7 +332,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
             )}
           </div>
 
-          {/* MOBILE ACTIONS */}
+          {/* MOBILE HEADER ACTIONS */}
           <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
@@ -354,153 +359,210 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
         </div>
       </div>
 
-      {/* MOBILE DRAWER */}
+      {/* ======================= MOBILE DRAWER ======================= */}
       {mobileMenuOpen && (
         <div
           id="mobile-menu"
-          className="lg:hidden bg-[#0a0f1c] border-t border-white/10 p-4 max-h-[85vh] overflow-y-auto"
+          className="lg:hidden bg-[#0a0f1c] border-t border-white/10 p-4 max-h-[85vh] overflow-y-auto shadow-2xl"
         >
-          {/* Mobile Navigation Links (Home) */}
-          <Link 
-            href="/" 
-            onClick={() => setMobileMenuOpen(false)} 
-            className="block py-3 px-1 text-base font-bold text-white transition border-b border-white/10"
-          >
-            Home
-          </Link>
+          <div className="space-y-4">
+            
+            {/* MAIN LINKS */}
+            <div className="space-y-1">
+              <Link 
+                href="/" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition text-white"
+              >
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Home className="w-4 h-4 text-amber-400" />
+                </div>
+                <span className="font-bold text-[15px]">Home</span>
+              </Link>
 
-          {/* NEW: Mobile Services Accordion Toggle */}
-          <button
-            type="button"
-            onClick={() => {
-              setMobileServicesOpen(!mobileServicesOpen);
-              // Optionally close the active service when closing the whole services menu
-              if (mobileServicesOpen) setMobileActiveService(null); 
-            }}
-            className="w-full flex items-center justify-between py-3 px-1 text-base font-bold text-amber-400 border-b border-white/10"
-          >
-            <span>Services</span>
-            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180' : ''}`} />
-          </button>
+              {/* ===== FIXED SERVICES SECTION ===== */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileServicesOpen(!mobileServicesOpen);
+                  if (mobileServicesOpen) setMobileActiveService(null); 
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition text-white"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                    <Car className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <span className="font-bold text-[15px]">Our Services</span>
+                </div>
+                <div className={`p-1.5 rounded-full bg-white/5 transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180' : ''}`}>
+                  <ChevronDown className="w-4 h-4 text-slate-300" />
+                </div>
+              </button>
 
-          {/* Collapsible Services Content */}
-          {mobileServicesOpen && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-200 py-2 space-y-2">
-              {SERVICES_LIST.map((srv) => (
-                <div key={srv.id} className="flex flex-col">
-                  {/* Service Item Button */}
+              {/* SERVICES ACCORDION CONTENT - CARD BASED */}
+              {mobileServicesOpen && (
+                <div className="animate-in fade-in slide-in-from-top-1 duration-200 py-2 space-y-2">
+                  {SERVICES_LIST.map((srv) => (
+                    <div key={srv.id} className="flex flex-col rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                      
+                      {/* Service Item Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileActiveService(mobileActiveService === srv.id ? null : srv.id);
+                        }}
+                        className={`w-full flex items-center justify-between p-3.5 text-sm font-bold transition ${
+                          mobileActiveService === srv.id
+                            ? "bg-amber-400/10 text-amber-400"
+                            : "text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                            mobileActiveService === srv.id ? "bg-amber-400 text-slate-950" : "bg-white/10 text-slate-300"
+                          }`}>
+                            {renderServiceIcon(srv.id, "w-4 h-4")}
+                          </div>
+                          <span>{srv.name}</span>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            mobileActiveService === srv.id ? "rotate-180 text-amber-400" : "text-slate-400"
+                          }`}
+                        />
+                      </button>
+
+                      {/* City List (Expands inside the card) */}
+                      {mobileActiveService === srv.id && (
+                        <div className="p-3 border-t border-white/10 bg-black/20 animate-in fade-in slide-in-from-top-1 duration-150">
+                          <div className="text-[11px] text-slate-400 font-bold mb-2 flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                            Select City for {srv.name}:
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {TOP_10_CITIES_SERVICES.map((city) => (
+                              <Link
+                                key={city.cityId}
+                                href={getServiceUrl(srv.id, city.cityId)}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="p-2.5 bg-white/5 hover:bg-amber-400 hover:text-slate-950 text-white rounded-lg text-xs font-bold border border-white/10 flex items-center justify-between transition group"
+                              >
+                                <div className="truncate">
+                                  <div>{city.cityName}</div>
+                                  <div className="text-[9px] text-slate-400 group-hover:text-slate-800">{city.state}</div>
+                                </div>
+                                <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Link href="/about-us" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition text-white">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Info className="w-4 h-4 text-amber-400" />
+                </div>
+                <span className="font-bold text-[15px]">About Us</span>
+              </Link>
+
+              <Link href="/blogs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition text-white">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4 text-amber-400" />
+                </div>
+                <span className="font-bold text-[15px]">Blog</span>
+              </Link>
+
+              <Link href="/contact-us" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition text-white">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-amber-400" />
+                </div>
+                <span className="font-bold text-[15px]">Contact Us</span>
+              </Link>
+            </div>
+
+            {/* APP INSTALL BANNER */}
+            <div className="mt-2 p-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 flex flex-col gap-3 shadow-lg shadow-amber-400/10 relative overflow-hidden">
+              <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/20 rounded-full blur-xl"></div>
+              
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-950 p-0.5 flex items-center justify-center shadow-md shrink-0">
+                  <img src="/logo.png" alt="BroomBoom Cabs App" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <div>
+                  <div className="font-black text-sm tracking-tight">BroomBoom Cabs App</div>
+                  <div className="text-[11px] font-bold text-slate-800">Get Flat ₹200 OFF on 1st ride</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setInstallModalOpen(true);
+                }}
+                className="w-full py-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-400 font-black text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-2 relative z-10"
+              >
+                <Smartphone className="w-4 h-4" />
+                Install App Now
+              </button>
+            </div>
+
+            {/* BOTTOM ACTIONS (HELPLINE & LOGIN) */}
+            <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-3">
+              <a 
+                href="tel:+918240765499" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="flex flex-col justify-center p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <PhoneCall className="w-4 h-4 text-emerald-400" />
+                  <span className="font-bold text-white text-[13px]">24x7 Helpline</span>
+                </div>
+                <div className="text-[11px] text-slate-400 font-medium ml-6">+91 8240765499</div>
+              </a>
+
+              {currentUser ? (
+                <div className="flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => {
-                      // Toggle logic: if clicking the active one, collapse it. Otherwise open it.
-                      setMobileActiveService(mobileActiveService === srv.id ? null : srv.id);
+                      setMobileMenuOpen(false);
+                      onMyBookingsClick?.();
                     }}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-bold transition border ${
-                      mobileActiveService === srv.id
-                        ? "bg-amber-400/10 border-amber-400 text-amber-400"
-                        : "bg-white/5 border-white/10 text-white hover:bg-white/10"
-                    }`}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-400 hover:bg-amber-300 rounded-xl text-slate-950 font-black text-xs transition shadow-sm"
                   >
-                    <span>{srv.name}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        mobileActiveService === srv.id ? "rotate-180" : ""
-                      }`}
-                    />
+                    <Clock className="w-4 h-4" />
+                    My Bookings
                   </button>
-
-                  {/* City List (Shows when this specific service is clicked) */}
-                  {mobileActiveService === srv.id && (
-                    <div className="mt-2 pl-3 pr-1 pb-2 border-l-2 border-amber-400/50 ml-3">
-                      <div className="text-[11px] text-slate-400 font-bold mb-3 mt-2">
-                        Select City for {srv.name}:
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {TOP_10_CITIES_SERVICES.map((city) => (
-                          <Link
-                            key={city.cityId}
-                            href={getServiceUrl(srv.id, city.cityId)}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="p-2.5 bg-white/5 hover:bg-amber-400 hover:text-slate-950 text-white rounded-xl text-xs font-bold border border-white/10 flex items-center justify-between transition group"
-                          >
-                            <div className="truncate">
-                              <div>{city.cityName}</div>
-                              <div className="text-[10px] text-slate-400 group-hover:text-slate-800">{city.state}</div>
-                            </div>
-                            <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl font-bold text-xs transition border border-red-500/20"
+                  >
+                    Sign Out
+                  </button>
                 </div>
-              ))}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setLoginModalOpen(true);
+                  }}
+                  className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-black text-[13px] border border-white/10 transition"
+                >
+                  <User className="w-4 h-4 text-amber-400" />
+                  Login / Account
+                </button>
+              )}
             </div>
-          )}
-
-          {/* Mobile Navigation Links (About, Blog, Contact, Login) */}
-          <div className="grid grid-cols-3 gap-2 py-3 border-t border-white/10 text-center mt-2">
-            <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10">About Us</Link>
-            <Link href="/blogs" onClick={() => setMobileMenuOpen(false)} className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10">Blog</Link>
-            <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="py-2 px-1 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-white transition border border-white/10">Contact</Link>
-          </div>
-
-          {/* Mobile Install App Banner Card */}
-          <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 flex items-center justify-between shadow-md">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-950 p-0.5 flex items-center justify-center shadow-xs shrink-0">
-                <img src="/logo.png" alt="BroomBoom Cabs App" className="w-full h-full object-contain rounded-full" />
-              </div>
-              <div>
-                <div className="font-black text-xs">BroomBoom Cabs App</div>
-                <div className="text-[10px] font-bold text-slate-800">Flat ₹200 OFF on 1st ride</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setInstallModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-400 font-black text-xs shadow-sm active:scale-95 transition"
-            >
-              Install App
-            </button>
-          </div>
-
-          {/* Mobile Helpline & Account buttons */}
-          <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-xs mt-3">
-            <a href="tel:+918240765499" onClick={() => setMobileMenuOpen(false)} className="p-3 bg-white/5 rounded-xl text-left border border-white/10 flex items-center gap-2">
-              <PhoneCall className="w-4 h-4 text-emerald-400" />
-              <div>
-                <div className="font-bold text-white text-[11px]">24x7 Helpline</div>
-                <div className="text-[9px] text-slate-400">+91 8240765499</div>
-              </div>
-            </a>
-
-            {currentUser ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleLogout();
-                }}
-                className="p-3 bg-red-600/90 hover:bg-red-600 rounded-xl text-center text-white font-bold truncate"
-              >
-                Sign Out ({currentUser.name || currentUser.identifier.slice(0, 8)})
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setLoginModalOpen(true);
-                }}
-                className="p-3 bg-amber-400 hover:bg-amber-300 rounded-xl text-center text-slate-950 font-black"
-              >
-                Login / Account
-              </button>
-            )}
           </div>
         </div>
       )}
