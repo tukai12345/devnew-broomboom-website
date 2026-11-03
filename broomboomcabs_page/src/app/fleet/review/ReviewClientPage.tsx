@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,6 +17,8 @@ import {
   Mail,
   User as UserIcon,
   CheckCircle2,
+  XCircle,
+  X,
   Car,
   AlertCircle,
   ArrowRight,
@@ -36,10 +38,10 @@ export const ReviewClientPage: React.FC = () => {
   const router = useRouter();
 
   /* -------------------------- Query Parameters -------------------------- */
-  const cabName = searchParams.get("cabName") || "WagonR, Swift";
+  const cabName = searchParams.get("cabName") || "Dzire, Etios";
   const modelType = searchParams.get("modelType") || "or similar";
-  const modelBadgeText = searchParams.get("modelBadgeText") || "NEW";
-  const cabCategory = (searchParams.get("cabCategory") || "Hatchback").toUpperCase();
+  const modelBadgeText = searchParams.get("modelBadgeText") || "5/5";
+  const cabCategory = (searchParams.get("cabCategory") || "Sedan").toUpperCase();
   const cabFuel = searchParams.get("cabFuel") || "CNG/Diesel";
   const cabSeats = searchParams.get("cabSeats") || "4";
   const tripType = searchParams.get("tripType") || "Outstation Round-Trip";
@@ -60,16 +62,40 @@ export const ReviewClientPage: React.FC = () => {
   const distanceParam = parseFloat(searchParams.get("distance") || "0");
   const oneWayDistanceParam = parseFloat(searchParams.get("oneWayDistance") || "0");
   const includedKmsParam = parseInt(searchParams.get("includedKms") || "0", 10);
-  const imageType = searchParams.get("imageType") || "hatchback";
+  const imageType = searchParams.get("imageType") || "sedan";
   const extraKmRate = searchParams.get("extraKmRate") || "15";
+  const hourlyPackage = searchParams.get("package") || "";
 
-  const [liveBaseFare, setLiveBaseFare] = useState<number>(baseFareParam || 2499);
-  const [liveAdvance, setLiveAdvance] = useState<number>(advanceParam || 0);
-  const [liveDueFare, setLiveDueFare] = useState<number>(dueFareParam || 0);
-  const [liveKms, setLiveKms] = useState<number>(includedKmsParam || 150);
+  const tLower = tripType.toLowerCase();
+  const isRound = tLower.includes("round");
+  const isRental = tLower.includes("hourly") || tLower.includes("rental");
+  const isAirport = tLower.includes("airport");
+
+  const defaultAirportFare = cabCategory.toLowerCase().includes("suv+")
+    ? 1350
+    : cabCategory.toLowerCase().includes("suv")
+    ? 1050
+    : 750;
+
+  const [liveBaseFare, setLiveBaseFare] = useState<number>(
+    baseFareParam > 0 ? baseFareParam : (isAirport ? defaultAirportFare : 2499)
+  );
+  const [liveAdvance, setLiveAdvance] = useState<number>(
+    advanceParam > 0 ? advanceParam : (isAirport ? 500 : 0)
+  );
+  const [liveDueFare, setLiveDueFare] = useState<number>(
+    dueFareParam > 0 ? dueFareParam : (isAirport ? Math.max(0, (baseFareParam || defaultAirportFare) - 500) : 0)
+  );
+  const [liveKms, setLiveKms] = useState<number>(
+    includedKmsParam > 0 ? includedKmsParam : (isAirport ? 15 : 150)
+  );
+  const [backendInclusions, setBackendInclusions] = useState<string[]>([]);
+  const [backendExclusions, setBackendExclusions] = useState<string[]>([]);
+  const [incTab, setIncTab] = useState<"all" | "inclusions" | "exclusions">("all");
 
   useEffect(() => {
-    if (baseFareParam > 0) {
+    const isStaleAirportFallback = isAirport && (baseFareParam === 1200 || baseFareParam === 2499 || baseFareParam === 500);
+    if (baseFareParam > 0 && !isStaleAirportFallback) {
       setLiveBaseFare(baseFareParam);
       if (advanceParam > 0) setLiveAdvance(advanceParam);
       if (dueFareParam > 0) setLiveDueFare(dueFareParam);
@@ -79,10 +105,6 @@ export const ReviewClientPage: React.FC = () => {
 
     async function fetchLiveFare() {
       try {
-        const tLower = tripType.toLowerCase();
-        const isRound = tLower.includes("round");
-        const isRental = tLower.includes("hourly") || tLower.includes("rental");
-        const isAirport = tLower.includes("airport");
         const rideTypeParam: "Oneway" | "Roundtrip" | "Rental" | "Airport" =
           isRound ? "Roundtrip" : isRental ? "Rental" : isAirport ? "Airport" : "Oneway";
 
@@ -92,7 +114,7 @@ export const ReviewClientPage: React.FC = () => {
             c.id.toLowerCase() === fromCity.trim().toLowerCase()
         )?.state;
 
-        const effectiveTotalDist = distanceParam > 0 ? distanceParam : undefined;
+        const effectiveTotalDist = distanceParam > 0 ? distanceParam : (isAirport ? 15 : undefined);
         const effectiveOneWayDist = oneWayDistanceParam > 0
           ? oneWayDistanceParam
           : (distanceParam > 0 ? (isRound ? Math.round(distanceParam / 2) : distanceParam) : undefined);
@@ -113,10 +135,19 @@ export const ReviewClientPage: React.FC = () => {
 
         if (res && res.fare > 0) {
           setLiveBaseFare(res.fare);
-          if (res.advance > 0) setLiveAdvance(res.advance);
-          if (res.dueFare > 0) setLiveDueFare(res.dueFare);
+          setLiveAdvance(res.advance || (isAirport ? 500 : Math.round(res.fare * 0.2)));
+          setLiveDueFare(res.dueFare || Math.max(0, res.fare - (res.advance || 500)));
           if (res.distance > 0) {
             setLiveKms(Math.round(res.distance));
+          } else if (isAirport) {
+            setLiveKms(15);
+          }
+          const dAny = res.details as any;
+          if (Array.isArray(dAny?.inclusions) && dAny.inclusions.length > 0) {
+            setBackendInclusions(dAny.inclusions);
+          }
+          if (Array.isArray(dAny?.exclusions) && dAny.exclusions.length > 0) {
+            setBackendExclusions(dAny.exclusions);
           }
         }
       } catch (e) {
@@ -125,10 +156,220 @@ export const ReviewClientPage: React.FC = () => {
     }
 
     fetchLiveFare();
-  }, [baseFareParam, advanceParam, dueFareParam, includedKmsParam, tripType, fromCity, toCity, cabCategory, distanceParam, oneWayDistanceParam, pickupDate, pickupTime, dropDate, dropTime]);
+  }, [baseFareParam, advanceParam, dueFareParam, includedKmsParam, tripType, fromCity, toCity, cabCategory, distanceParam, oneWayDistanceParam, pickupDate, pickupTime, dropDate, dropTime, isAirport, isRound, isRental]);
 
   const baseFare = liveBaseFare;
   const includedKms = liveKms;
+
+  /* ---------------------- Inclusions & Exclusions Data ---------------------- */
+  const inclusionsList = useMemo(() => {
+    if (backendInclusions.length > 0) {
+      return backendInclusions.map((item) => {
+        const itemLower = item.toLowerCase();
+        if (itemLower.includes("kilometer") || itemLower.includes("km") || itemLower.includes("transfer charges")) {
+          return {
+            title: `${includedKms.toLocaleString("en-IN")} Kms Included`,
+            desc: `₹${extraKmRate}/km applies beyond included distance`,
+          };
+        }
+        if (itemLower.includes("driver")) {
+          return {
+            title: "Driver Allowance & Night Stay",
+            desc: "Driver food, day allowance and accommodation charges included",
+          };
+        }
+        if (itemLower.includes("airport")) {
+          return {
+            title: "Airport Transfer Assistance",
+            desc: "Dedicated pickup & up to 60 mins complimentary waiting",
+          };
+        }
+        return {
+          title: item,
+          desc: "Included in your base booking quote",
+        };
+      });
+    }
+
+    if (isAirport) {
+      return [
+        {
+          title: `${includedKms.toLocaleString("en-IN")} Kms Included`,
+          desc: `₹${extraKmRate}/km applies beyond the included distance`,
+        },
+        {
+          title: "Complimentary Airport Waiting",
+          desc: "Up to 60 minutes free waiting time at the airport terminal",
+        },
+        {
+          title: "Driver Allowance & Luggage Help",
+          desc: "Dedicated chauffeur with luggage assistance and food charges included",
+        },
+        {
+          title: "Clean AC Vehicle & Fuel",
+          desc: "Pre-sanitized air-conditioned cab and all fuel expenses included",
+        },
+      ];
+    }
+
+    if (isRental) {
+      return [
+        {
+          title: `Package: ${hourlyPackage || `${includedKms} Kms Included`}`,
+          desc: "Dedicated chauffeur & cab at your disposal within package limits",
+        },
+        {
+          title: "Driver Allowance",
+          desc: "Chauffeur charges and meal allowance included for the rental hours",
+        },
+        {
+          title: "Clean AC Vehicle & Fuel",
+          desc: "Air-conditioned cab with all fuel included within package kilometers",
+        },
+      ];
+    }
+
+    if (isRound) {
+      return [
+        {
+          title: `${includedKms.toLocaleString("en-IN")} Kms Roundtrip Included`,
+          desc: `₹${extraKmRate}/km applies beyond included distance for return trip`,
+        },
+        {
+          title: "Driver Allowance & Night Stay",
+          desc: "Driver food, day allowance, and night stay charges included",
+        },
+        {
+          title: "Clean AC Vehicle & Fuel",
+          desc: "Well-maintained sanitized AC cab with complete fuel charges included",
+        },
+      ];
+    }
+
+    // Outstation One-way default
+    return [
+      {
+        title: `${includedKms.toLocaleString("en-IN")} Kms One-way Included`,
+        desc: `₹${extraKmRate}/km applies beyond included distance`,
+      },
+      {
+        title: "Driver Allowance",
+        desc: "Driver food and accommodation (night stay) charges are included",
+      },
+      {
+        title: "Clean AC Vehicle & Fuel",
+        desc: "Sanitized air-conditioned cab with all fuel expenses included",
+      },
+    ];
+  }, [backendInclusions, includedKms, extraKmRate, isAirport, isRental, isRound, hourlyPackage]);
+
+  const exclusionsList = useMemo(() => {
+    if (backendExclusions.length > 0) {
+      return backendExclusions.map((item) => {
+        const itemLower = item.toLowerCase();
+        if (itemLower.includes("toll") || itemLower.includes("state tax")) {
+          return {
+            title: "Toll & State Permit Taxes",
+            desc: "Payable directly at toll plazas / state entry counters at actuals",
+          };
+        }
+        if (itemLower.includes("parking")) {
+          return {
+            title: "Parking Charges",
+            desc: "Airport or venue parking payable directly as per actual receipts",
+          };
+        }
+        if (itemLower.includes("waiting")) {
+          return {
+            title: "Extra Waiting Charges",
+            desc: "₹150/hour applicable after complimentary waiting period",
+          };
+        }
+        if (itemLower.includes("night")) {
+          return {
+            title: "Night Driving Allowance",
+            desc: "₹250/- applicable only if traveling between 11:00 PM and 6:00 AM",
+          };
+        }
+        if (itemLower.includes("gst")) {
+          return {
+            title: "GST (5%)",
+            desc: "Statutory government tax added at final payment step",
+          };
+        }
+        return {
+          title: item,
+          desc: "To be paid as actuals during or after the journey",
+        };
+      });
+    }
+
+    if (isAirport) {
+      return [
+        {
+          title: "Airport Parking & Entry",
+          desc: "Payable directly at airport pickup / terminal counter as per actual slip",
+        },
+        {
+          title: "Toll Taxes",
+          desc: "Highway toll charges payable directly at toll plazas (if any)",
+        },
+        {
+          title: "Extra Kilometers",
+          desc: `₹${extraKmRate}/km applicable beyond the included ${includedKms} km`,
+        },
+        {
+          title: "Extended Waiting Time",
+          desc: "₹150/hour applicable after the first 60 minutes of complimentary waiting",
+        },
+        {
+          title: "Night Allowance (11 PM - 6 AM)",
+          desc: "₹250/- applicable only if ride starts or runs between 11:00 PM and 6:00 AM",
+        },
+      ];
+    }
+
+    if (isRental) {
+      return [
+        {
+          title: "Toll & Parking Charges",
+          desc: "Payable at actuals during the journey against official receipts",
+        },
+        {
+          title: "Extra Kilometers",
+          desc: `₹${extraKmRate}/km applicable beyond package distance`,
+        },
+        {
+          title: "Extra Rental Hours",
+          desc: "₹150/hour applicable beyond booked package duration",
+        },
+        {
+          title: "Night Driving Charges",
+          desc: "₹250/- applicable if trip extends between 11:00 PM and 6:00 AM",
+        },
+      ];
+    }
+
+    // Outstation One-way & Roundtrip
+    return [
+      {
+        title: "Tolls & State Permit Taxes",
+        desc: "Payable directly at toll plazas and interstate state-tax border counters at actuals",
+      },
+      {
+        title: "Parking Fees",
+        desc: "Destination and sightseeing spot parking to be paid as per actual slips",
+      },
+      {
+        title: "Extra Kilometers",
+        desc: `₹${extraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km`,
+      },
+      {
+        title: "Night Allowance (11 PM - 6 AM)",
+        desc: "₹250/- applicable if journey continues between 11:00 PM and 6:00 AM",
+      },
+    ];
+  }, [backendExclusions, extraKmRate, includedKms, isAirport, isRental]);
 
   /* ------------------------------- State -------------------------------- */
   // User Form
@@ -497,42 +738,128 @@ export const ReviewClientPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* INCLUSIONS Section (Directly inside Card 1 matching Image 3) */}
+              {/* INCLUSIONS & EXCLUSIONS Section */}
               <div className="p-4 sm:p-5">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 mb-3.5">
-                  INCLUSIONS
-                </h4>
-
-                <div className="space-y-4">
-                  {/* Kilometer Allowance */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs sm:text-sm font-bold text-slate-900">
-                        {includedKms.toLocaleString("en-IN")} Km included
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        ₹{extraKmRate}/km will apply beyond the included kms
-                      </div>
-                    </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                      <span>Fare Inclusions &amp; Exclusions</span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full normal-case">
+                        100% Transparent Pricing
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Review what is covered in your ride fare and what is payable as actuals
+                    </p>
                   </div>
 
-                  {/* Driver Allowance */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
-                      <UserIcon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs sm:text-sm font-bold text-slate-900">
-                        Driver allowance
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        Driver food and accommodation(stay) charges are included
-                      </div>
-                    </div>
+                  {/* Filter Pills */}
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIncTab("all")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        incTab === "all"
+                          ? "bg-white text-slate-950 shadow-xs"
+                          : "text-slate-600 hover:text-slate-950"
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIncTab("inclusions")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        incTab === "inclusions"
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "text-emerald-700 hover:text-emerald-800"
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Inclusions</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIncTab("exclusions")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        incTab === "exclusions"
+                          ? "bg-rose-600 text-white shadow-xs"
+                          : "text-rose-700 hover:text-rose-800"
+                      }`}
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>Exclusions</span>
+                    </button>
                   </div>
+                </div>
+
+                {/* Content Grid */}
+                <div className={`grid gap-4 ${incTab === "all" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
+                  {/* INCLUSIONS COLUMN */}
+                  {(incTab === "all" || incTab === "inclusions") && (
+                    <div className="bg-emerald-50/40 border border-emerald-200/70 rounded-2xl p-4">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-emerald-100">
+                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-wider text-emerald-900">
+                          Included In This Fare
+                        </span>
+                        <span className="ml-auto text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          {inclusionsList.length} Items
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {inclusionsList.map((inc, i) => (
+                          <div key={i} className="flex items-start gap-2.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                                {inc.title}
+                              </div>
+                              <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                {inc.desc}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* EXCLUSIONS COLUMN */}
+                  {(incTab === "all" || incTab === "exclusions") && (
+                    <div className="bg-rose-50/30 border border-rose-200/70 rounded-2xl p-4">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-rose-100">
+                        <div className="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">
+                          <X className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-wider text-rose-900">
+                          Exclusions &amp; Extra Charges
+                        </span>
+                        <span className="ml-auto text-[10px] font-extrabold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                          Payable as Actuals
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {exclusionsList.map((exc, i) => (
+                          <div key={i} className="flex items-start gap-2.5">
+                            <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                                {exc.title}
+                              </div>
+                              <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                {exc.desc}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

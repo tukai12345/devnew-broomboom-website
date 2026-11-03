@@ -28,7 +28,7 @@ import { BookingModal } from "@/components/BookingModal";
 import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { SearchParams } from "@/components/HeroSearch";
 import { CitySearchPopover } from "@/components/CitySearchPopover";
-import { api, PricingCalculationResult } from "@/services/api";
+import { api, PricingCalculationResult, AirportRuleItem } from "@/services/api";
 import { CITIES, FLEET_CABS } from "@/data/cabsData";
 
 /* -------------------------------------------------------------------------- */
@@ -40,7 +40,7 @@ interface VehicleItem {
   name: string;
   modelType: string;
   modelBadgeText: string;
-  category: "Hatchback" | "Sedan" | "Suv" | "Minibus";
+  category: "Sedan" | "Suv" | "Minibus";
   modelName: string;
   fuelType: "Cng/diesel" | "Diesel";
   fuelLabel: string;
@@ -52,7 +52,7 @@ interface VehicleItem {
   discountedPrice: number;
   taxAndFee: number;
   roofCarrierFee?: number;
-  imageType: "hatchback" | "sedan" | "suv" | "suv-plus" | "minibus" | "tempo";
+  imageType: "sedan" | "suv" | "suv-plus" | "minibus" | "tempo";
   extraKmRate?: number;
   advanceAmount?: number;
   dueAmount?: number;
@@ -87,7 +87,7 @@ const TRIP_TYPES = [
   "Hourly Rentals",
 ];
 
-const CAB_TYPE_OPTIONS = ["Hatchback", "Sedan", "Suv", "Minibus"] as const;
+const CAB_TYPE_OPTIONS = ["Sedan", "Suv", "Minibus"] as const;
 const FUEL_TYPE_OPTIONS = ["Cng/diesel", "Diesel"] as const;
 
 const HOURLY_PACKAGES = [
@@ -261,6 +261,7 @@ const FleetPageContent: React.FC = () => {
   // Derived flags
   const isRoundTrip = tripType.toLowerCase().includes("round");
   const isHourly = tripType.toLowerCase().includes("hourly") || tripType.toLowerCase().includes("rental");
+  const isAirport = tripType.toLowerCase().includes("airport");
 
   // Update sourceState based on fromCity (name or slug)
   useEffect(() => {
@@ -375,6 +376,34 @@ const FleetPageContent: React.FC = () => {
     Record<string, PricingCalculationResult>
   >({});
   const [isCalculatingPrices, setIsCalculatingPrices] = useState(false);
+  const [airportRules, setAirportRules] = useState<AirportRuleItem[]>([]);
+
+  // Load live admin airport rules on mount and listen for real-time changes
+  useEffect(() => {
+    let mounted = true;
+    const loadRules = async () => {
+      try {
+        const rules = await api.getAirportRules();
+        if (mounted && Array.isArray(rules) && rules.length > 0) {
+          setAirportRules(rules);
+        }
+      } catch (e) {
+        console.warn("Unable to load airport rules:", e);
+      }
+    };
+    loadRules();
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "broomboom_airport_pricing_updated" || e.key === "broomboom_airport_fares") {
+        loadRules();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      mounted = false;
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -483,20 +512,6 @@ const FleetPageContent: React.FC = () => {
           days = Math.max(1, diffDays || 1);
         }
 
-        const calcDistance = isRound ? currentDistance * 2 : currentDistance;
-        const cleanPickupTime = pickupTime ? pickupTime.trim() : "";
-        const cleanDropTime = dropTime ? dropTime.replace(/^till\s+/i, "").trim() : "";
-        const currentSourceState = resolveState(fromCity) || sourceState;
-
-        const categories = [
-          "Hatchback",
-          "Sedan",
-          "SUV",
-          "SUV+",
-          "13 Seater Traveller",
-          "17 Seater Traveller",
-        ];
-
         let pkgHours = 8;
         let pkgKms = 80;
         if (isRental && hourlyPackage) {
@@ -505,6 +520,24 @@ const FleetPageContent: React.FC = () => {
           if (matchH) pkgHours = parseInt(matchH[1], 10);
           if (matchK) pkgKms = parseInt(matchK[1], 10);
         }
+
+        const calcDistance = isRental
+          ? pkgKms
+          : isAirport
+          ? (currentDistance > 0 ? currentDistance : undefined)
+          : (isRound ? currentDistance * 2 : currentDistance);
+        const cleanPickupTime = pickupTime ? pickupTime.trim() : "";
+        const cleanDropTime = dropTime ? dropTime.replace(/^till\s+/i, "").trim() : "";
+        const currentSourceState = resolveState(fromCity) || sourceState;
+
+        const categories = [
+          "Sedan",
+          "SUV",
+          "SUV+",
+          "13 Seater Traveller",
+          "17 Seater Traveller",
+          "24 Seater Traveller",
+        ];
 
         const prices: Record<string, PricingCalculationResult> = {};
 
@@ -521,7 +554,7 @@ const FleetPageContent: React.FC = () => {
                 pickupLng: pickupCoords?.lng,
                 dropLat: dropCoords?.lat,
                 dropLng: dropCoords?.lng,
-                distance: isRental ? pkgKms : (calcDistance > 0 ? calcDistance : undefined),
+                distance: isRental ? pkgKms : (calcDistance && calcDistance > 0 ? calcDistance : undefined),
                 oneWayDistance: currentDistance > 0 ? currentDistance : undefined,
                 packageHours: isRental ? pkgHours : undefined,
                 includedKms: isRental ? pkgKms : undefined,
@@ -624,9 +657,18 @@ const FleetPageContent: React.FC = () => {
     }
 
     // ✅ 2. Safe to reference them now
-    const kms = isRental ? currentPkgKms : (routeMeta.kms > 0 ? routeMeta.kms : 100);
+    const kms = isRental
+      ? currentPkgKms
+      : isAirport
+      ? (backendRoute?.distance && backendRoute.distance > 0 ? backendRoute.distance : 15)
+      : (routeMeta.kms > 0 ? routeMeta.kms : 100);
     const roundTo10 = (n: number) => Math.round(n / 10) * 10;
     const calcTax = (discPrice: number) => Math.round((discPrice * 0.05) / 10) * 10;
+    const displayIncludedKms = isRental
+      ? currentPkgKms
+      : isAirport
+      ? 15
+      : (routeMeta.kms > 0 ? routeMeta.kms : 0);
 
     const RENTAL_MATRIX: Record<string, Record<number, number>> = {
       Sedan: { 5: 3551, 8: 4551, 10: 5051, 12: 6051 },
@@ -635,7 +677,6 @@ const FleetPageContent: React.FC = () => {
       "13 Seater Traveller": { 5: 9051, 8: 10051, 10: 11051, 12: 12051 },
       "17 Seater Traveller": { 5: 10051, 8: 11051, 10: 12051, 12: 13051 },
       "24 Seater Traveller": { 5: 12051, 8: 13051, 10: 14051, 12: 15051 },
-      Hatchback: { 5: 3551, 8: 4551, 10: 5051, 12: 6051 },
     };
 
     const getVehiclePricing = (
@@ -667,6 +708,54 @@ const FleetPageContent: React.FC = () => {
         };
       }
 
+      if (isAirport) {
+        const localAirportRes = api.calculateAirportPriceLocally(airportRules, {
+          category: categoryName,
+          sourceCity: fromCity,
+          destinationCity: toCity,
+          state: sourceState,
+          distance: kms,
+          pickupTime,
+        });
+        if (localAirportRes && localAirportRes.fare > 0) {
+          return {
+            discountedPrice: localAirportRes.fare,
+            originalPrice: localAirportRes.originalFare || Math.round((localAirportRes.fare * 1.15) / 10) * 10,
+            discountPercent: localAirportRes.discountPercent || defaultDiscount,
+            advance: localAirportRes.advance,
+            dueFare: localAirportRes.dueFare,
+            extraKmRate: (localAirportRes.details as any)?.extraKmRate || perKmFallback,
+          };
+        }
+
+        // Canonical admin airport defaults matching backend MongoDB rules (no outstation 1200 fallback)
+        const adminAirportDefaults: Record<string, { fare0to15: number; fare15to25: number; extraKmRate: number; advance: number }> = {
+          Sedan: { fare0to15: 750, fare15to25: 1050, extraKmRate: 15, advance: 500 },
+          SUV: { fare0to15: 1050, fare15to25: 1450, extraKmRate: 20, advance: 500 },
+          "SUV+": { fare0to15: 1350, fare15to25: 1850, extraKmRate: 24, advance: 500 },
+          "13 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 35, advance: 1000 },
+          "17 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 40, advance: 1000 },
+          "24 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 45, advance: 1500 },
+        };
+        const def = adminAirportDefaults[categoryName] || adminAirportDefaults["Sedan"];
+        const d = kms > 0 ? kms : 15;
+        let adminFare = def.fare0to15;
+        if (d > 25) {
+          adminFare = Math.round(d * def.extraKmRate);
+        } else if (d > 15) {
+          adminFare = def.fare15to25;
+        }
+        const adminOrig = Math.round((adminFare * 1.15) / 10) * 10;
+        return {
+          discountedPrice: adminFare,
+          originalPrice: adminOrig,
+          discountPercent: 12,
+          advance: Math.min(adminFare, def.advance),
+          dueFare: Math.max(0, adminFare - def.advance),
+          extraKmRate: def.extraKmRate,
+        };
+      }
+
       const perKmRate = sourceState === "West Bengal" ? 10 : perKmFallback;
       const isRoundTripCalc = tripType.toLowerCase().includes("round");
       const fallbackAdvancePct = isRoundTripCalc ? 0.25 : 0.2;
@@ -681,7 +770,6 @@ const FleetPageContent: React.FC = () => {
       };
     };
 
-    const hatchPricing = getVehiclePricing("Hatchback", 11, 14);
     const sedanPricing = getVehiclePricing("Sedan", 15, 14);
     const suvPricing = getVehiclePricing("SUV", 20, 12);
     const suvPlusPricing = getVehiclePricing("SUV+", 25, 14);
@@ -690,28 +778,6 @@ const FleetPageContent: React.FC = () => {
     const traveller24Pricing = getVehiclePricing("24 Seater Traveller", 50, 0);
 
     return [
-      {
-        id: "wagonr-swift",
-        name: "WagonR, Swift",
-        modelType: "or similar",
-        modelBadgeText: "NEW",
-        category: "Hatchback",
-        modelName: "WagonR, Swift",
-        fuelType: "Cng/diesel",
-        fuelLabel: "CNG/Diesel",
-        seats: 4,
-        ac: true,
-        includedKms: routeMeta.kms,
-        discountPercent: hatchPricing.discountPercent,
-        originalPrice: hatchPricing.originalPrice,
-        discountedPrice: hatchPricing.discountedPrice,
-        taxAndFee: calcTax(hatchPricing.discountedPrice),
-        advanceAmount: hatchPricing.advance,
-        dueAmount: hatchPricing.dueFare,
-        extraKmRate: hatchPricing.extraKmRate,
-        roofCarrierFee: 157,
-        imageType: "hatchback",
-      },
       {
         id: "dzire-etios",
         name: "Dzire, Etios",
@@ -723,7 +789,7 @@ const FleetPageContent: React.FC = () => {
         fuelLabel: "CNG/Diesel",
         seats: 4,
         ac: true,
-        includedKms: routeMeta.kms,
+        includedKms: displayIncludedKms,
         discountPercent: sedanPricing.discountPercent,
         originalPrice: sedanPricing.originalPrice,
         discountedPrice: sedanPricing.discountedPrice,
@@ -745,7 +811,7 @@ const FleetPageContent: React.FC = () => {
         fuelLabel: "Diesel",
         seats: 6,
         ac: true,
-        includedKms: routeMeta.kms,
+        includedKms: displayIncludedKms,
         discountPercent: suvPlusPricing.discountPercent,
         originalPrice: suvPlusPricing.originalPrice,
         discountedPrice: suvPlusPricing.discountedPrice,
@@ -767,7 +833,7 @@ const FleetPageContent: React.FC = () => {
         fuelLabel: "Diesel",
         seats: 7,
         ac: true,
-        includedKms: routeMeta.kms,
+        includedKms: displayIncludedKms,
         discountPercent: suvPricing.discountPercent,
         originalPrice: suvPricing.originalPrice,
         discountedPrice: suvPricing.discountedPrice,
@@ -789,7 +855,7 @@ const FleetPageContent: React.FC = () => {
         fuelLabel: "Diesel",
         seats: 20,
         ac: true,
-        includedKms: routeMeta.kms,
+        includedKms: displayIncludedKms,
         discountPercent: traveller17Pricing.discountPercent,
         originalPrice: traveller17Pricing.originalPrice,
         discountedPrice: traveller17Pricing.discountedPrice,
@@ -810,7 +876,7 @@ const FleetPageContent: React.FC = () => {
         fuelLabel: "Diesel",
         seats: 24,
         ac: true,
-        includedKms: kms,
+        includedKms: displayIncludedKms,
         discountPercent: traveller24Pricing.discountPercent,
         originalPrice: traveller24Pricing.originalPrice,
         discountedPrice: traveller24Pricing.discountedPrice,
@@ -831,7 +897,7 @@ const FleetPageContent: React.FC = () => {
         fuelLabel: "Diesel",
         seats: 12,
         ac: true,
-        includedKms: routeMeta.kms,
+        includedKms: displayIncludedKms,
         discountPercent: traveller13Pricing.discountPercent,
         originalPrice: traveller13Pricing.originalPrice,
         discountedPrice: traveller13Pricing.discountedPrice,
@@ -852,7 +918,7 @@ const FleetPageContent: React.FC = () => {
         fuelLabel: "Diesel",
         seats: 16,
         ac: true,
-        includedKms: routeMeta.kms,
+        includedKms: displayIncludedKms,
         discountPercent: traveller17Pricing.discountPercent,
         originalPrice: traveller17Pricing.originalPrice,
         discountedPrice: traveller17Pricing.discountedPrice,
@@ -863,7 +929,19 @@ const FleetPageContent: React.FC = () => {
         imageType: "tempo",
       },
     ];
-  }, [routeMeta, backendPrices, tripType, hourlyPackage, sourceState]);
+  }, [
+    routeMeta,
+    backendPrices,
+    tripType,
+    hourlyPackage,
+    sourceState,
+    isAirport,
+    fromCity,
+    toCity,
+    airportRules,
+    backendRoute,
+    pickupTime,
+  ]);
 
   /* ------------------------------ Filtering ------------------------------ */
   const filteredVehicles = useMemo(() => {
@@ -1022,10 +1100,6 @@ const FleetPageContent: React.FC = () => {
 
   /* ------------------------- Vehicle illustrations ----------------------- */
   const CAR_IMAGES: Record<VehicleItem["imageType"], { src: string; alt: string }> = {
-    hatchback: {
-      src: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=400&q=80",
-      alt: "Hatchback — WagonR / Swift",
-    },
     sedan: {
       src: "/cars/sedan-dzire.png",
       alt: "Sedan — Dzire / Etios",
@@ -1714,22 +1788,6 @@ const FleetPageContent: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* ================================================================== */}
-      {/* 4. TRIP ASSISTANT                                                  */}
-      {/* ================================================================== */}
-      <aside aria-label="Trip Assistant" className="fixed bottom-6 right-6 z-40">
-        <button
-          type="button"
-          onClick={() => alert("Trip Assistant is ready to help you plan your journey!")}
-          className="flex items-center gap-2.5 bg-white text-slate-800 pl-2 pr-4 py-1.5 rounded-full shadow-lg ring-1 ring-amber-300 hover:shadow-xl hover:ring-amber-400 transition active:scale-95"
-        >
-          <span className="w-8 h-8 rounded-full overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-sm shrink-0">
-            <img src="/logo.png" alt="BroomBoom Assistant" className="w-full h-full object-contain rounded-full" />
-          </span>
-          <span className="text-xs font-black text-slate-800">Trip assistant</span>
-        </button>
-      </aside>
 
       {/* ================================================================== */}
       {/* 5. MODALS                                                          */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { api } from "@/services/api";
@@ -80,6 +80,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 }) => {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Form Fields
   const [fullName, setFullName] = useState("");
@@ -176,6 +177,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Autofocus only on desktop – avoids the mobile keyboard popping up and
+  // jumping/zooming the modal the moment it opens.
+  useEffect(() => {
+    if (!isOpen || !mounted) return;
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      const t = setTimeout(() => nameInputRef.current?.focus(), 60);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen, mounted]);
+
   const isFormValid =
     fullName.trim().length >= 2 &&
     phoneNumber.trim().length >= 7 &&
@@ -263,12 +274,27 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[840px] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-900 animate-in zoom-in-95 duration-200 my-auto flex flex-col md:flex-row min-h-[540px] max-h-[95vh]"
+        className="relative w-full max-w-[840px] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-900 animate-in zoom-in-95 duration-200 my-auto flex flex-col md:flex-row min-h-0 md:min-h-[540px] max-h-[95dvh]"
       >
         {/* ======================================================== */}
-        {/* LEFT PANEL: PROMOTIONAL BANNER & CAR KEY IMAGE (40% width) */}
+        {/* CLOSE BUTTON — lives on the modal root so it is always   */}
+        {/* visible & tappable on mobile (was buried below the promo */}
+        {/* panel before).                                           */}
         {/* ======================================================== */}
-        <div className="relative md:w-[40%] bg-slate-950 text-white p-6 sm:p-8 flex flex-col justify-between overflow-hidden shrink-0">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close modal"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-slate-100/95 backdrop-blur-sm hover:bg-slate-200 flex items-center justify-center text-slate-600 transition active:scale-95 cursor-pointer shadow-sm"
+        >
+          <X className="w-5 h-5 stroke-[2.5]" />
+        </button>
+
+        {/* ======================================================== */}
+        {/* LEFT PANEL: PROMOTIONAL BANNER & CAR KEY IMAGE           */}
+        {/* Hidden on mobile — the form is what matters there.       */}
+        {/* ======================================================== */}
+        <div className="relative hidden md:flex md:w-[40%] bg-slate-950 text-white p-6 sm:p-8 flex-col justify-between overflow-hidden shrink-0">
           {/* Background Hand Over Car Key Image */}
           <div
             className="absolute inset-0 bg-cover bg-center opacity-35"
@@ -359,31 +385,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         </div>
 
         {/* ======================================================== */}
-        {/* RIGHT PANEL: LOGIN / REGISTRATION FORM (60% width) */}
+        {/* RIGHT PANEL: LOGIN / REGISTRATION FORM                   */}
         {/* ======================================================== */}
-        <div className="relative flex-1 p-6 sm:p-8 md:p-9 flex flex-col justify-between bg-white overflow-y-auto">
-          {/* Close Button on Top Right */}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close modal"
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition active:scale-95 cursor-pointer z-20"
-          >
-            <X className="w-5 h-5 stroke-[2.5]" />
-          </button>
-
+        <div className="relative flex-1 min-h-0 p-5 sm:p-6 md:p-9 flex flex-col justify-between bg-white overflow-y-auto">
           <div>
             {/* Notification/Trigger alert banner if triggered from search */}
             {initialMessage && (
-              <div className="mb-4 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center gap-2">
+              <div className="mb-4 p-2.5 pr-12 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
                 <span>{initialMessage}</span>
               </div>
             )}
 
             {/* Header */}
-            <div className="mb-6 pr-8 flex items-start gap-3">
-              <div className="lg:hidden w-10 h-10 rounded-full overflow-hidden bg-amber-400 p-0.5 shrink-0 shadow-sm">
+            <div className="mb-5 sm:mb-6 pr-10 sm:pr-8 flex items-start gap-3">
+              <div className="md:hidden w-10 h-10 rounded-full overflow-hidden bg-amber-400 p-0.5 shrink-0 shadow-sm">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Logo"
@@ -417,13 +433,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     id="login-fullname"
+                    ref={nameInputRef}
                     type="text"
                     placeholder="Enter Your Full Name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-sm font-medium outline-none transition placeholder:text-slate-400"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-base sm:text-sm font-medium outline-none transition placeholder:text-slate-400"
                     required
-                    autoFocus
                   />
                 </div>
               </div>
@@ -454,7 +470,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         );
                         if (found) setSelectedCountry(found);
                       }}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
                     >
                       {COUNTRY_CODES.map((c, i) => (
                         <option
@@ -473,7 +489,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     type="tel"
                     placeholder={
                       selectedCountry.code === "+91"
-                        ? "Enter 10-digit mobile number"
+                        ? "10-digit mobile number"
                         : "Enter phone number"
                     }
                     value={phoneNumber}
@@ -481,7 +497,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))
                     }
                     maxLength={selectedCountry.code === "+91" ? 10 : 15}
-                    className="flex-1 px-3.5 py-3 text-sm font-medium outline-none bg-transparent placeholder:text-slate-400"
+                    className="flex-1 min-w-0 px-3.5 py-3 text-base sm:text-sm font-medium outline-none bg-transparent placeholder:text-slate-400"
                     required
                   />
                 </div>
@@ -512,7 +528,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     placeholder="e.g. yourname@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-sm font-medium outline-none transition placeholder:text-slate-400"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-base sm:text-sm font-medium outline-none transition placeholder:text-slate-400"
                     required
                   />
                 </div>
@@ -598,7 +614,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {/* Bottom Legal Agreement */}
-          <div className="pt-6 border-t border-slate-100 text-[11px] text-slate-500 text-center leading-relaxed">
+          <div className="pt-5 sm:pt-6 border-t border-slate-100 text-[11px] text-slate-500 text-center leading-relaxed">
             By proceeding, you agree to BroomBoom&apos;s{" "}
             <a href="#" className="text-amber-600 hover:underline">
               Privacy Policy
@@ -618,4 +634,3 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     document.body
   );
 };
-

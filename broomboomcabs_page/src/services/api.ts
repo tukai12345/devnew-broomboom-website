@@ -130,6 +130,30 @@ export interface PricingCalculationResult {
   error?: string;
 }
 
+export interface AirportRuleItem {
+  id?: string;
+  _id?: string;
+  city: string;
+  carCategory: string;
+  baseKms: number;
+  baseFare: number;
+  fare15to25: number;
+  maxAirportKms: number;
+  extraKmRate: number;
+  advanceAmount: number;
+  advanceType?: string;
+  advanceValue?: number;
+  waitingChargePerHour?: number;
+  waitingFreeMins?: number;
+  nightAllowance?: number;
+  nightStartHour?: number;
+  nightEndHour?: number;
+  threshold?: number;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface CityItem {
   id: string;
   name: string;
@@ -618,11 +642,249 @@ export const api = {
         },
         7000
       );
-      if (!res.ok) return null;
-      return (await res.json()) as PricingCalculationResult;
-    } catch {
-      return null;
+      if (res.ok) {
+        const data = (await res.json()) as PricingCalculationResult;
+        if (data && data.fare > 0) return data;
+      }
+    } catch (err) {
+      console.warn("Backend /pricing-rules/calculate warning:", err);
     }
+
+    // Resilient fallback for Airport rides: compute directly using admin airport rules
+    if (params.rideType === "Airport") {
+      try {
+        const rules = await this.getAirportRules();
+        return this.calculateAirportPriceLocally(rules, {
+          category: params.category,
+          sourceCity: params.sourceCity,
+          destinationCity: params.destinationCity,
+          state: params.state,
+          distance: params.distance,
+          pickupTime: params.pickupTime,
+        });
+      } catch (err) {
+        console.warn("Local airport fallback calculation error:", err);
+      }
+    }
+
+    return null;
+  },
+
+  /**
+   * Fetch canonical airport pricing rules configured by admin
+   */
+  async getAirportRules(): Promise<AirportRuleItem[]> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetchWithTimeout(`${baseUrl}/pricing-rules/airport`, {}, 5000);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          try {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("broomboom_airport_rules_cache", JSON.stringify(data));
+            }
+          } catch {}
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn("Unable to fetch airport rules from backend:", e);
+    }
+
+    // Fallback: check localStorage cache
+    try {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("broomboom_airport_rules_cache");
+        if (cached) return JSON.parse(cached);
+        const adminFares = localStorage.getItem("broomboom_airport_fares");
+        if (adminFares) {
+          const parsed = JSON.parse(adminFares);
+          return parsed.map((item: any) => ({
+            id: item.id,
+            city: item.state || "Default",
+            carCategory: item.vehicleType || "Sedan",
+            baseKms: item.packageKm || 15,
+            baseFare: Number(item.fare0to15 ?? item.packageCost ?? 750),
+            fare15to25: Number(item.fare15to25 ?? 1050),
+            maxAirportKms: item.maxAirportKms || 25,
+            extraKmRate: Number(item.extraKmCharge || 16),
+            advanceAmount: Number(item.advancedAmount || 500),
+            waitingChargePerHour: Number(item.waitingTimeCharge || 150),
+            nightAllowance: Number(item.nightDrivingCharge || 250),
+          }));
+        }
+      }
+    } catch {}
+
+    return [];
+  },
+
+  /**
+   * Client-side resilient airport fare calculation matching admin configuration
+   */
+  calculateAirportPriceLocally(
+    rules: AirportRuleItem[],
+    params: {
+      category: string;
+      sourceCity?: string;
+      destinationCity?: string;
+      state?: string;
+      distance?: number;
+      pickupTime?: string;
+    }
+  ): PricingCalculationResult {
+    const catClean = (params.category || "Sedan").trim().toLowerCase();
+    const sCity = (params.sourceCity || "").toLowerCase();
+    const dCity = (params.destinationCity || "").toLowerCase();
+    const stateStr = (params.state || "").toLowerCase();
+
+    // Normalize category mapping
+    const matchesCategory = (ruleCat: string) => {
+      const rc = (ruleCat || "").trim().toLowerCase();
+      if (rc === catClean) return true;
+      if (catClean.includes("hatchback") && rc.includes("hatchback")) return true;
+      if (catClean.includes("suv+") && rc.includes("suv+")) return true;
+      if (!catClean.includes("+") && catClean.includes("suv") && !rc.includes("+") && rc.includes("suv")) return true;
+      if (catClean.includes("sedan") && rc.includes("sedan")) return true;
+      if (catClean.includes("13") && rc.includes("13")) return true;
+      if (catClean.includes("17") && rc.includes("17")) return true;
+      if ((catClean.includes("24") || catClean.includes("25")) && (rc.includes("24") || rc.includes("25"))) return true;
+      return false;
+    };
+
+    const catRules = Array.isArray(rules) ? rules.filter((r) => matchesCategory(r.carCategory)) : [];
+
+    // Try city-specific match first, then state, then Default
+    let matchedRule = catRules.find((r) => {
+      const rCity = (r.city || "").toLowerCase().trim();
+      if (!rCity || rCity === "default") return false;
+      return (
+        sCity.includes(rCity) ||
+        dCity.includes(rCity) ||
+        stateStr.includes(rCity) ||
+        rCity.includes(sCity) ||
+        rCity.includes(dCity)
+      );
+    });
+
+    if (!matchedRule) {
+      matchedRule = catRules.find((r) => (r.city || "").toLowerCase().trim() === "default") || catRules[0];
+    }
+
+    // Default values if no rule in DB
+    const baseKms = matchedRule?.baseKms || 15;
+    const maxAirportKms = matchedRule?.maxAirportKms || 25;
+    const baseFare =
+      matchedRule?.baseFare ||
+      (catClean.includes("hatch")
+        ? 650
+        : catClean.includes("suv+")
+        ? 1350
+        : catClean.includes("suv")
+        ? 1050
+        : 750);
+    const fare15to25 =
+      matchedRule?.fare15to25 ||
+      (catClean.includes("suv+")
+        ? 1850
+        : catClean.includes("suv")
+        ? 1450
+        : 1050);
+    const extraKmRate =
+      matchedRule?.extraKmRate ||
+      (catClean.includes("hatch")
+        ? 14
+        : catClean.includes("suv+")
+        ? 24
+        : catClean.includes("suv")
+        ? 20
+        : catClean.includes("13")
+        ? 35
+        : catClean.includes("17")
+        ? 40
+        : catClean.includes("24") || catClean.includes("25")
+        ? 45
+        : 15);
+
+    const dist = params.distance && params.distance > 0 ? params.distance : baseKms;
+    let fare = baseFare;
+    let tier = "0-15 km";
+    let extraKms = 0;
+
+    if (dist <= baseKms) {
+      fare = baseFare;
+      tier = "0-15 km";
+    } else if (dist <= maxAirportKms) {
+      fare = fare15to25;
+      tier = "15-25 km";
+      extraKms = Math.round((dist - baseKms) * 10) / 10;
+    } else {
+      extraKms = Math.round((dist - maxAirportKms) * 10) / 10;
+      fare = Math.round(dist * extraKmRate);
+      tier = ">25 km";
+    }
+
+    // Check night allowance (11 PM - 6 AM)
+    let nightApplicable = false;
+    let nightCost = 0;
+    if (params.pickupTime) {
+      const match = params.pickupTime.match(/(\d+):?(\d*)\s*(am|pm)/i);
+      if (match) {
+        let hour = parseInt(match[1], 10);
+        const meridiem = match[3].toLowerCase();
+        if (meridiem === "pm" && hour < 12) hour += 12;
+        if (meridiem === "am" && hour === 12) hour = 0;
+        if (hour >= 23 || hour < 6) {
+          nightApplicable = true;
+          nightCost = matchedRule?.nightAllowance || 250;
+          fare += nightCost;
+        }
+      }
+    }
+
+    // Advance & due
+    let advance = 500;
+    if (matchedRule?.advanceType === "Percentage") {
+      const pct = matchedRule.advanceValue || 20;
+      advance = Math.round((fare * pct) / 100);
+    } else if (matchedRule?.advanceValue || matchedRule?.advanceAmount) {
+      advance = matchedRule.advanceValue || matchedRule.advanceAmount || 500;
+    }
+    advance = Math.min(fare, advance);
+    const dueFare = Math.max(0, fare - advance);
+    const originalFare = Math.round((fare * 1.15) / 10) * 10;
+    const discountPercent = 12;
+
+    return {
+      success: true,
+      fare,
+      originalFare,
+      discountPercent,
+      advance,
+      dueFare,
+      distance: dist,
+      durationMinutes: Math.round(dist * 1.6) || 30,
+      details: {
+        type: `Airport Transfer (${matchedRule?.city || "Default"})`,
+        pickup: params.sourceCity,
+        drop: params.destinationCity,
+        baseFare,
+        distance: dist,
+        slab: tier,
+        ratePerKm: extraKmRate,
+        extraKmRate,
+        originalFare,
+        discountPercent,
+        advanceType: matchedRule?.advanceType || "Fixed",
+        advanceValue: advance,
+        advancePercentage: Math.round((advance / fare) * 100),
+        nightAllowance: nightCost,
+        adminSetPrice: fare,
+      },
+      appliedRule: matchedRule?.id || matchedRule?._id,
+      ruleType: "AirportPricingLocalResilient",
+    };
   },
 
   /**

@@ -24,7 +24,7 @@ import {
   BlogPost,
 } from "@/data/blogData";
 
-const STORAGE_KEY = "broomboom_blog_page_cms_data";
+const STORAGE_KEY = "broomboom_blog_page_cms_data_v6";
 
 export function BlogClientPage() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export function BlogClientPage() {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed && Array.isArray(parsed.posts)) {
+        if (parsed && Array.isArray(parsed.posts) && parsed.posts.length >= INITIAL_BLOG_DATA.posts.length) {
           setData(parsed);
         }
       }
@@ -501,16 +501,24 @@ export function BlogClientPage() {
                 </p>
               </div>
 
-              <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setReadingPost(null)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
-                >
-                  Close Article
-                </button>
+              <div className="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReadingPost(null)}
+                    className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    Close
+                  </button>
+                  <Link
+                    href={`/blog/${readingPost.slug}`}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg transition"
+                  >
+                    Open Full Article &rarr;
+                  </Link>
+                </div>
                 <Link
-                  href="/"
+                  href="/fleet"
                   className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-lg shadow-sm transition flex items-center gap-2"
                 >
                   <Car className="w-3.5 h-3.5" />
