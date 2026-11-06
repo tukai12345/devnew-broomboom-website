@@ -529,7 +529,6 @@ export const ReviewClientPage: React.FC = () => {
         dueFare: Math.max(0, finalTotal - (paymentOption === "part" ? partPayAmount : finalTotal)),
         status: "Pending",
         paymentStatus: "PENDING",
-        source: "BroomBoom Web",
       });
 
       if (backendBooking?.bookingId) {
