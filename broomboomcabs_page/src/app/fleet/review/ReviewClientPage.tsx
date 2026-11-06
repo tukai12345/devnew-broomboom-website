@@ -529,6 +529,7 @@ export const ReviewClientPage: React.FC = () => {
         dueFare: Math.max(0, finalTotal - (paymentOption === "part" ? partPayAmount : finalTotal)),
         status: "Pending",
         paymentStatus: "PENDING",
+        source: "BroomBoom Web",
       });
 
       if (backendBooking?.bookingId) {
@@ -1197,15 +1198,15 @@ export const ReviewClientPage: React.FC = () => {
 
                   {/* Email ID */}
                   <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
-                      EMAIL ID
+                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center justify-between">
+                      <span>EMAIL ID</span>
+                      <span className="text-[10px] text-slate-400 font-normal lowercase">(optional)</span>
                     </div>
                     <input
                       type="email"
-                      required
                       value={emailId}
                       onChange={(e) => setEmailId(e.target.value)}
-                      placeholder="e.g. name@email.com"
+                      placeholder="e.g. name@email.com (optional)"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-200 text-xs sm:text-sm font-bold text-slate-900 outline-none transition"
                     />
                   </div>

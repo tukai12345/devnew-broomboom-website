@@ -187,11 +187,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   }, [isOpen, mounted]);
 
+  const isEmailValid =
+    !email.trim() ||
+    (email.trim().includes("@") && email.trim().includes("."));
+
   const isFormValid =
     fullName.trim().length >= 2 &&
     phoneNumber.trim().length >= 7 &&
-    email.trim().includes("@") &&
-    email.trim().includes(".");
+    isEmailValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,7 +212,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       const backendUser = await api.createUser({
         name: finalName,
         phone: cleanPhone,
-        email: email.trim(),
+        email: email.trim() || undefined,
         status: "Active",
         source: "BroomBoom Web Page",
         lastLoginAt: currentLoginTimestamp,
@@ -241,6 +244,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           leadType: "Existing",
         });
         localStorage.setItem("broomboom_login_events_vault", JSON.stringify(vault.slice(0, 200)));
+
+        const rawWebLeads = localStorage.getItem("broomboom_web_phone_leads");
+        const webLeads: string[] = rawWebLeads ? JSON.parse(rawWebLeads) : [];
+        if (!webLeads.includes(cleanPhone)) {
+          webLeads.push(cleanPhone);
+          localStorage.setItem("broomboom_web_phone_leads", JSON.stringify(webLeads));
+        }
       } catch {}
     } catch (err) {
       console.warn("Backend user sync notice:", err);
@@ -527,18 +537,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   htmlFor="login-email"
                   className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
                 >
-                  Email Address <span className="text-red-500">*</span>
+                  Email Address <span className="text-slate-400 font-normal normal-case">(optional)</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     id="login-email"
                     type="email"
-                    placeholder="e.g. yourname@gmail.com"
+                    placeholder="e.g. yourname@gmail.com (optional)"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 text-base sm:text-sm font-medium outline-none transition placeholder:text-slate-400"
-                    required
                   />
                 </div>
               </div>
