@@ -47,17 +47,48 @@ export function BlogClientPage() {
   // Reading Modal
   const [readingPost, setReadingPost] = useState<BlogPost | null>(null);
 
-  // Sync CMS / LocalStorage if available
+  // Sync CMS / LocalStorage if available + real-time storage & broadcast listeners
   useEffect(() => {
-    try {
-      const cached = localStorage.getItem(STORAGE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && Array.isArray(parsed.posts) && parsed.posts.length >= INITIAL_BLOG_DATA.posts.length) {
-          setData(parsed);
+    const syncFromCache = () => {
+      try {
+        const cached =
+          localStorage.getItem(STORAGE_KEY) ||
+          localStorage.getItem("broomboom_blog_page_cms_data");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && Array.isArray(parsed.posts) && parsed.posts.length > 0) {
+            setData(parsed);
+          }
         }
+      } catch {}
+    };
+
+    syncFromCache();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === STORAGE_KEY ||
+        e.key === "broomboom_blog_page_cms_data"
+      ) {
+        syncFromCache();
       }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("broomboom_blog_channel");
+      bc.onmessage = (event) => {
+        if (event.data && Array.isArray(event.data.posts)) {
+          setData(event.data);
+        }
+      };
     } catch {}
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      if (bc) bc.close();
+    };
   }, []);
 
   // Filter posts based on search and category
@@ -108,18 +139,27 @@ export function BlogClientPage() {
       <Navbar />
 
       {/* Breadcrumb & Header Bar */}
-      <div className="bg-slate-900 border-b border-slate-800 text-white py-10 sm:py-12">
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div
+        className="bg-slate-900 border-b border-slate-800 text-white py-10 sm:py-14 relative overflow-hidden bg-cover bg-center"
+        style={
+          data.hero?.backgroundImage
+            ? {
+                backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), url('${data.hero.backgroundImage}')`,
+              }
+            : undefined
+        }
+      >
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex items-center gap-2 text-xs text-amber-400 font-bold uppercase tracking-wider mb-2">
             <Link href="/" className="hover:underline">Home</Link>
             <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-slate-300">Blog &amp; Travel Guides</span>
+            <span className="text-slate-300">{data.hero?.badge || "Blog & Travel Guides"}</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            BroomBoom Travel Guides &amp; Insights
+            {data.hero?.title || "BroomBoom Travel Guides & Insights"}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-2xl">
-            Explore authentic highway itineraries, festival travel guides, tourist destinations, and fare saving tips curated by BroomBoom Cabs.
+          <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
+            {data.hero?.description || "Explore authentic highway itineraries, festival travel guides, tourist destinations, and fare saving tips curated by BroomBoom Cabs."}
           </p>
         </div>
       </div>

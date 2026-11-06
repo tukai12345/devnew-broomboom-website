@@ -219,19 +219,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         finalName = backendUser.name;
       }
 
-      // Notify open Admin tabs immediately of incoming web lead
+      // Notify open Admin tabs immediately of incoming web lead and persist event in vault
       try {
-        localStorage.setItem(
-          "broomboom_user_login_event",
-          JSON.stringify({
-            phone: cleanPhone,
-            name: finalName,
-            email: email.trim(),
-            timestamp: Date.now(),
-            source: "BroomBoom Web Page",
-            loginTime: currentLoginTimestamp,
-          })
-        );
+        const webEvent = {
+          phone: cleanPhone,
+          name: finalName,
+          email: email.trim(),
+          timestamp: Date.now(),
+          source: "BroomBoom Web",
+          loginTime: currentLoginTimestamp,
+        };
+        localStorage.setItem("broomboom_user_login_event", JSON.stringify(webEvent));
+
+        const rawVault = localStorage.getItem("broomboom_login_events_vault");
+        const vault = rawVault ? JSON.parse(rawVault) : [];
+        vault.unshift({
+          id: `web-${Date.now()}`,
+          phone: cleanPhone,
+          source: "BroomBoom Web",
+          loginTime: currentLoginTimestamp,
+          leadType: "Existing",
+        });
+        localStorage.setItem("broomboom_login_events_vault", JSON.stringify(vault.slice(0, 200)));
       } catch {}
     } catch (err) {
       console.warn("Backend user sync notice:", err);

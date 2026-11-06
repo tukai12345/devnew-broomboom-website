@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import {
   ArrowRightLeft,
   ArrowUpDown,
+  ArrowLeft,
   Search,
   ChevronDown,
   ChevronLeft,
@@ -119,6 +120,63 @@ const formatDateDisplay = (dateStr: string) => {
   return `${day}-${month}-${year}`;
 };
 
+const getTodayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const getCurrentTimeStr = () => {
+  const d = new Date();
+  const currentMinutes = d.getMinutes();
+  const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+  d.setMinutes(roundedMinutes, 0, 0);
+  const hours = d.getHours();
+  const minutes = d.getMinutes();
+  const h12 = hours % 12 === 0 ? 12 : hours % 12;
+  const ampm = hours < 12 ? "AM" : "PM";
+  return `${String(h12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
+};
+
+const isTimeInPastForToday = (timeStr: string, dateStr: string): boolean => {
+  if (!dateStr || !timeStr) return false;
+  const todayStr = getTodayStr();
+  if (dateStr < todayStr) return true;
+  if (dateStr > todayStr) return false;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const { hour, minute, meridiem } = parseTimeDetails(timeStr);
+  let h = parseInt(hour, 10);
+  if (meridiem.toUpperCase() === "PM" && h < 12) h += 12;
+  if (meridiem.toUpperCase() === "AM" && h === 12) h = 0;
+  const targetMinutes = h * 60 + parseInt(minute, 10);
+
+  return targetMinutes < currentMinutes;
+};
+
+const isTimeSlotBeforeNow = (
+  h12Str: string,
+  mStr: string,
+  mer: string,
+  targetDate: string
+): boolean => {
+  if (!targetDate) return false;
+  const todayStr = getTodayStr();
+  if (targetDate < todayStr) return true;
+  if (targetDate > todayStr) return false;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let h = parseInt(h12Str, 10);
+  if (mer.toUpperCase() === "PM" && h < 12) h += 12;
+  if (mer.toUpperCase() === "AM" && h === 12) h = 0;
+  const targetMinutes = h * 60 + parseInt(mStr, 10);
+
+  return targetMinutes < currentMinutes;
+};
+
 /* --------------------------- sub-components --------------------------- */
 
 const MobileDateTimePicker: React.FC<{
@@ -129,8 +187,44 @@ const MobileDateTimePicker: React.FC<{
   onChangeTime: (time: string) => void;
   onClose: () => void;
 }> = ({ title, date, time, onChangeDate, onChangeTime, onClose }) => {
+  const isPickup = title.toLowerCase().includes("pickup");
   const { hour, minute, meridiem } = parseTimeDetails(time);
-  const setTime = (h: string, m: string, mer: string) => onChangeTime(`${h}:${m} ${mer}`);
+
+  useEffect(() => {
+    if (isPickup && date === getTodayStr() && isTimeInPastForToday(time, date)) {
+      onChangeTime(getCurrentTimeStr());
+    }
+  }, [date, isPickup, time, onChangeTime]);
+
+  const handleDateSelect = (selectedDate: string) => {
+    onChangeDate(selectedDate);
+    if (isPickup && selectedDate === getTodayStr() && isTimeInPastForToday(time, selectedDate)) {
+      onChangeTime(getCurrentTimeStr());
+    }
+  };
+
+  const setTime = (h: string, m: string, mer: string) => {
+    if (isPickup && isTimeSlotBeforeNow(h, m, mer, date)) {
+      onChangeTime(getCurrentTimeStr());
+      return;
+    }
+    onChangeTime(`${h}:${m} ${mer}`);
+  };
+
+  const isMeridiemDisabled = (mer: string) => {
+    if (!isPickup || date !== getTodayStr()) return false;
+    return isTimeSlotBeforeNow("11", "45", mer, date);
+  };
+
+  const isHourDisabled = (h: string) => {
+    if (!isPickup || date !== getTodayStr()) return false;
+    return isTimeSlotBeforeNow(h, "45", meridiem, date);
+  };
+
+  const isMinuteDisabled = (m: string) => {
+    if (!isPickup || date !== getTodayStr()) return false;
+    return isTimeSlotBeforeNow(hour, m, meridiem, date);
+  };
 
   const dates = React.useMemo(() => {
     const list = [];
@@ -153,7 +247,7 @@ const MobileDateTimePicker: React.FC<{
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100">
           <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition">
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition cursor-pointer">
             <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
@@ -165,7 +259,7 @@ const MobileDateTimePicker: React.FC<{
             {dates.map((d) => (
               <div
                 key={d.value}
-                onClick={() => onChangeDate(d.value)}
+                onClick={() => handleDateSelect(d.value)}
                 className={`p-3 text-sm font-semibold snap-center cursor-pointer transition-colors ${
                   date === d.value ? "bg-amber-50 text-amber-600" : "text-slate-600 hover:bg-slate-50"
                 }`}
@@ -178,49 +272,97 @@ const MobileDateTimePicker: React.FC<{
           {/* Time */}
           <div className="flex-[1.5] flex">
             <div className="flex-1 overflow-y-auto snap-y snap-mandatory">
-              {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
-                <div
-                  key={h}
-                  onClick={() => setTime(h, minute, meridiem)}
-                  className={`py-3 text-center text-sm font-semibold snap-center cursor-pointer ${
-                    hour === h ? "text-amber-600 bg-amber-50" : "text-slate-600"
-                  }`}
-                >
-                  {h}
-                </div>
-              ))}
+              {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => {
+                const disabled = isHourDisabled(h);
+                return (
+                  <button
+                    type="button"
+                    key={h}
+                    disabled={disabled}
+                    onClick={() => {
+                      if (!disabled) {
+                        let nextMin = minute;
+                        if (isTimeSlotBeforeNow(h, nextMin, meridiem, date)) {
+                          const futureMin = ["00", "15", "30", "45"].find(
+                            (m) => !isTimeSlotBeforeNow(h, m, meridiem, date)
+                          );
+                          nextMin = futureMin || minute;
+                        }
+                        setTime(h, nextMin, meridiem);
+                      }
+                    }}
+                    className={`w-full py-3 text-center text-sm font-semibold snap-center transition-colors ${
+                      disabled
+                        ? "opacity-25 text-slate-300 cursor-not-allowed pointer-events-none"
+                        : hour === h
+                        ? "text-amber-600 bg-amber-50 cursor-pointer font-bold"
+                        : "text-slate-600 cursor-pointer hover:bg-slate-50"
+                    }`}
+                  >
+                    {h}
+                  </button>
+                );
+              })}
             </div>
             <div className="flex-1 overflow-y-auto snap-y snap-mandatory">
-              {["00", "15", "30", "45"].map((m) => (
-                <div
-                  key={m}
-                  onClick={() => setTime(hour, m, meridiem)}
-                  className={`py-3 text-center text-sm font-semibold snap-center cursor-pointer ${
-                    minute === m ? "text-amber-600 bg-amber-50" : "text-slate-600"
-                  }`}
-                >
-                  {m}
-                </div>
-              ))}
+              {["00", "15", "30", "45"].map((m) => {
+                const disabled = isMinuteDisabled(m);
+                return (
+                  <button
+                    type="button"
+                    key={m}
+                    disabled={disabled}
+                    onClick={() => {
+                      if (!disabled) setTime(hour, m, meridiem);
+                    }}
+                    className={`w-full py-3 text-center text-sm font-semibold snap-center transition-colors ${
+                      disabled
+                        ? "opacity-25 text-slate-300 cursor-not-allowed pointer-events-none"
+                        : minute === m
+                        ? "text-amber-600 bg-amber-50 cursor-pointer font-bold"
+                        : "text-slate-600 cursor-pointer hover:bg-slate-50"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
             </div>
             <div className="w-16 overflow-y-auto snap-y snap-mandatory">
-              {["AM", "PM"].map((mer) => (
-                <div
-                  key={mer}
-                  onClick={() => setTime(hour, minute, mer)}
-                  className={`py-3 text-center text-sm font-semibold snap-center cursor-pointer ${
-                    meridiem === mer ? "text-amber-600 bg-amber-50" : "text-slate-600"
-                  }`}
-                >
-                  {mer}
-                </div>
-              ))}
+              {["AM", "PM"].map((mer) => {
+                const disabled = isMeridiemDisabled(mer);
+                return (
+                  <button
+                    type="button"
+                    key={mer}
+                    disabled={disabled}
+                    onClick={() => {
+                      if (!disabled) {
+                        if (isTimeSlotBeforeNow(hour, minute, mer, date)) {
+                          onChangeTime(getCurrentTimeStr());
+                        } else {
+                          setTime(hour, minute, mer);
+                        }
+                      }
+                    }}
+                    className={`w-full py-3 text-center text-sm font-semibold snap-center transition-colors ${
+                      disabled
+                        ? "opacity-25 text-slate-300 cursor-not-allowed pointer-events-none"
+                        : meridiem === mer
+                        ? "text-amber-600 bg-amber-50 cursor-pointer font-bold"
+                        : "text-slate-600 cursor-pointer hover:bg-slate-50"
+                    }`}
+                  >
+                    {mer}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
         {/* Preview & Confirm */}
-        <div className="p-4 space-y-3 pb-8">
+        <div className="p-4 space-y-3 pb-[max(2rem,env(safe-area-inset-bottom))]">
           <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3">
             <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1">
               {title.replace("Select ", "")}
@@ -230,7 +372,7 @@ const MobileDateTimePicker: React.FC<{
             </div>
             <div className="text-sm font-semibold text-slate-600 mt-0.5">{time}</div>
           </div>
-          <button onClick={onClose} className="w-full py-3 rounded-xl bg-amber-400 text-slate-950 font-bold text-sm shadow-md">
+          <button onClick={onClose} className="w-full py-3 rounded-xl bg-amber-400 text-slate-950 font-bold text-sm shadow-md cursor-pointer">
             CONFIRM
           </button>
         </div>
@@ -246,7 +388,15 @@ const PopoverShell: React.FC<{
   width?: string;
   title?: string;
   onClose?: () => void;
-}> = ({ children, align = "left", width = "w-80", title, onClose }) => {
+  fullScreenOnMobile?: boolean;
+}> = ({
+  children,
+  align = "left",
+  width = "w-80",
+  title,
+  onClose,
+  fullScreenOnMobile = false,
+}) => {
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -261,6 +411,62 @@ const PopoverShell: React.FC<{
   if (!mounted) return null;
 
   if (isMobile) {
+    if (fullScreenOnMobile) {
+      return createPortal(
+        <div
+          data-popover-shell
+          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 z-[99999] bg-white flex flex-col animate-in fade-in duration-150"
+        >
+          {/* Mobile Top Header (from the screen above) */}
+          <div className="pt-[max(0.75rem,env(safe-area-inset-top))] px-4 pb-3 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onClose();
+                  }}
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center text-slate-700 transition cursor-pointer"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-4 bg-amber-400 rounded-full" />
+                <h3 className="font-black text-slate-900 text-base tracking-tight">
+                  {title || "Select Location"}
+                </h3>
+              </div>
+            </div>
+            {onClose && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onClose();
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center text-slate-600 transition cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            )}
+          </div>
+
+          {/* Full content area */}
+          <div className="flex-1 overflow-hidden p-4 flex flex-col min-h-0 bg-white">
+            {children}
+          </div>
+        </div>,
+        document.body
+      );
+    }
+
     return createPortal(
       <div
         data-popover-shell
@@ -272,7 +478,7 @@ const PopoverShell: React.FC<{
         />
         <div
           onClick={(e) => e.stopPropagation()}
-          className="relative z-10 w-full max-h-[85vh] bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-4 pb-8 flex flex-col animate-in slide-in-from-bottom duration-200"
+          className="relative z-10 w-full max-h-[85vh] bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-4 pb-[max(2rem,env(safe-area-inset-bottom))] flex flex-col animate-in slide-in-from-bottom duration-200"
         >
           <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3" />
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
@@ -285,8 +491,12 @@ const PopoverShell: React.FC<{
             {onClose && (
               <button
                 type="button"
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onClose();
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4 stroke-[2.5]" />
@@ -402,10 +612,23 @@ const CityPopover: React.FC<{
     }));
   }, [query, mapResults, citiesList]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 80);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <PopoverShell width="w-80 md:w-96" align={align} title={title || (placeholder ? placeholder.replace("Search ", "Select ").replace("...", "") : "Select Location")} onClose={onClose}>
-      <div className="relative mb-2">
-        <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
+    <PopoverShell
+      width="w-80 md:w-96"
+      align={align}
+      title={title || (placeholder ? placeholder.replace("Search ", "Select ").replace("...", "") : "Select Location")}
+      onClose={onClose}
+      fullScreenOnMobile={true}
+    >
+      <div className="relative mb-3 shrink-0">
+        <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
         <input
           ref={inputRef}
           type="text"
@@ -427,18 +650,32 @@ const CityPopover: React.FC<{
               }
             }
           }}
-          className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onQueryChange("");
+            }}
+            className="absolute right-2.5 top-2.5 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center text-xs cursor-pointer"
+            aria-label="Clear"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {isSearching && (
-        <div className="flex items-center gap-2 px-2.5 py-1 mb-1 bg-amber-50 rounded-lg text-[11px] font-bold text-amber-800 animate-pulse border border-amber-200/50">
-          <Loader2 className="w-3 h-3 text-amber-600 animate-spin" />
+        <div className="flex items-center gap-2 px-2.5 py-1.5 mb-2 bg-amber-50 rounded-lg text-[11px] font-bold text-amber-800 animate-pulse border border-amber-200/50 shrink-0">
+          <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />
           <span>Searching map locations across India...</span>
         </div>
       )}
 
-      <div className="max-h-56 sm:max-h-64 overflow-y-auto space-y-0.5 divide-y divide-slate-100">
+      <div className="flex-1 md:max-h-64 overflow-y-auto space-y-0.5 divide-y divide-slate-100 min-h-0">
         {isSearching && displayItems.length === 0 ? (
           <div className="py-8 flex flex-col items-center justify-center gap-2 text-center text-slate-500">
             <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
@@ -446,7 +683,7 @@ const CityPopover: React.FC<{
             <p className="text-[10px] text-slate-400">Searching all cities, towns &amp; places in India</p>
           </div>
         ) : displayItems.length === 0 ? (
-          <p className="text-[11px] text-slate-400 text-center py-4">
+          <p className="text-[11px] text-slate-400 text-center py-6">
             No places found. Type city, town, landmark or PIN
           </p>
         ) : (
@@ -460,18 +697,18 @@ const CityPopover: React.FC<{
                   item.lat && item.lng ? { lat: item.lat, lng: item.lng } : undefined
                 )
               }
-              className={`flex items-start justify-between p-2 rounded-lg cursor-pointer text-xs transition group ${
+              className={`flex items-start justify-between p-2.5 rounded-xl cursor-pointer text-xs transition group ${
                 selected === item.name
                   ? "bg-amber-50 text-amber-950 font-bold"
                   : "hover:bg-slate-50 text-slate-800"
               }`}
             >
               <div className="flex items-start gap-2.5 min-w-0 pr-2">
-                <div className="w-6 h-6 rounded-md bg-slate-100 group-hover:bg-amber-100 text-slate-600 group-hover:text-amber-600 flex items-center justify-center shrink-0 mt-0.5 transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-amber-100 text-slate-600 group-hover:text-amber-600 flex items-center justify-center shrink-0 mt-0.5 transition-colors">
                   {item.name.toLowerCase().includes("airport") ? (
-                    <Plane className="w-3.5 h-3.5" />
+                    <Plane className="w-4 h-4" />
                   ) : (
-                    <MapPin className="w-3.5 h-3.5" />
+                    <MapPin className="w-4 h-4" />
                   )}
                 </div>
                 <div className="min-w-0">
@@ -483,13 +720,13 @@ const CityPopover: React.FC<{
                       </span>
                     )}
                   </div>
-                  <div className="text-[10px] text-slate-500 line-clamp-1 leading-snug">
+                  <div className="text-[11px] text-slate-500 line-clamp-1 leading-snug mt-0.5">
                     {item.displayName !== item.name ? item.displayName : item.state}
                   </div>
                 </div>
               </div>
               {selected === item.name && (
-                <Check className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-1" />
+                <Check className="w-4 h-4 text-amber-600 shrink-0 mt-1.5" />
               )}
             </div>
           ))
@@ -504,27 +741,51 @@ const CalendarPopover: React.FC<{
   onPrev: (e: React.MouseEvent) => void;
   onNext: (e: React.MouseEvent) => void;
   selectedDate: string;
+  minDate?: string;
   onSelect: (day: number) => void;
   align?: "left" | "right";
   title?: string;
   onClose?: () => void;
-}> = ({ month, onPrev, onNext, selectedDate, onSelect, align = "left", title, onClose }) => {
+}> = ({ month, onPrev, onNext, selectedDate, minDate, onSelect, align = "left", title, onClose }) => {
   const year = month.getFullYear();
   const monthIdx = month.getMonth();
   const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
   const startDow = new Date(year, monthIdx, 1).getDay();
   const monthName = month.toLocaleString("en-US", { month: "long" });
 
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonthIdx = today.getMonth();
+  const todayDay = today.getDate();
+
+  // If viewed month is the current month (or earlier), disable navigating back to past months
+  const isPastMonth = year < currentYear || (year === currentYear && monthIdx <= currentMonthIdx);
+
   return (
     <PopoverShell width="w-72" align={align} title={title || "Select Date"} onClose={onClose}>
       <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-        <button type="button" onClick={onPrev} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-700 transition">
+        <button
+          type="button"
+          disabled={isPastMonth}
+          onClick={isPastMonth ? undefined : onPrev}
+          className={`p-1.5 rounded-md transition ${
+            isPastMonth
+              ? "opacity-20 text-slate-300 cursor-not-allowed pointer-events-none"
+              : "hover:bg-slate-100 text-slate-700 cursor-pointer"
+          }`}
+          aria-label="Previous Month"
+        >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <div className="font-bold text-slate-900 text-xs sm:text-[11px]">
           {monthName} {year}
         </div>
-        <button type="button" onClick={onNext} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-700 transition">
+        <button
+          type="button"
+          onClick={onNext}
+          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-700 transition cursor-pointer"
+          aria-label="Next Month"
+        >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -543,12 +804,32 @@ const CalendarPopover: React.FC<{
           const day = i + 1;
           const key = `-${String(monthIdx + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const isSelected = selectedDate.endsWith(key);
+
+          const formattedDayStr = `${year}-${String(monthIdx + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const isBeforeToday =
+            year < currentYear ||
+            (year === currentYear && monthIdx < currentMonthIdx) ||
+            (year === currentYear && monthIdx === currentMonthIdx && day < todayDay);
+          const isBeforeMinDate = minDate ? formattedDayStr < minDate : false;
+          const isPastDate = isBeforeToday || isBeforeMinDate;
+
+          if (isPastDate) {
+            return (
+              <span
+                key={day}
+                className="p-2 sm:p-1 text-xs sm:text-[11px] font-medium text-slate-300 opacity-20 pointer-events-none select-none text-center"
+              >
+                {day}
+              </span>
+            );
+          }
+
           return (
             <button
               key={day}
               type="button"
               onClick={() => onSelect(day)}
-              className={`p-2 sm:p-1 text-xs sm:text-[11px] font-bold rounded-lg sm:rounded-md transition ${
+              className={`p-2 sm:p-1 text-xs sm:text-[11px] font-bold rounded-lg sm:rounded-md transition cursor-pointer ${
                 isSelected
                   ? "bg-amber-400 text-slate-950 font-black shadow-sm"
                   : "hover:bg-slate-100 text-slate-800"
@@ -567,17 +848,48 @@ const TimePopover: React.FC<{
   title: string;
   value: string;
   onChange: (v: string) => void;
+  date?: string;
   align?: "left" | "right";
   onClose?: () => void;
 }> = ({
   title,
   value,
   onChange,
+  date,
   align = "right",
   onClose,
 }) => {
+  const isPickup = title.toLowerCase().includes("pickup");
   const { hour, minute, meridiem } = parseTimeDetails(value);
-  const set = (h: string, m: string, mer: string) => onChange(`${h}:${m} ${mer}`);
+
+  useEffect(() => {
+    if (isPickup && date && isTimeInPastForToday(value, date)) {
+      onChange(getCurrentTimeStr());
+    }
+  }, [date, isPickup, value, onChange]);
+
+  const set = (h: string, m: string, mer: string) => {
+    if (isPickup && date && isTimeSlotBeforeNow(h, m, mer, date)) {
+      onChange(getCurrentTimeStr());
+      return;
+    }
+    onChange(`${h}:${m} ${mer}`);
+  };
+
+  const isMeridiemDisabled = (mer: string) => {
+    if (!isPickup || !date || date !== getTodayStr()) return false;
+    return isTimeSlotBeforeNow("11", "45", mer, date);
+  };
+
+  const isHourDisabled = (h: string) => {
+    if (!isPickup || !date || date !== getTodayStr()) return false;
+    return isTimeSlotBeforeNow(h, "45", meridiem, date);
+  };
+
+  const isMinuteDisabled = (m: string) => {
+    if (!isPickup || !date || date !== getTodayStr()) return false;
+    return isTimeSlotBeforeNow(hour, m, meridiem, date);
+  };
 
   const Column: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
     <div className={`overflow-y-auto snap-y snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${className}`}>
@@ -585,16 +897,22 @@ const TimePopover: React.FC<{
     </div>
   );
 
-  const Option: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({
-    active,
-    onClick,
-    children,
-  }) => (
+  const Option: React.FC<{
+    active: boolean;
+    disabled?: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+  }> = ({ active, disabled = false, onClick, children }) => (
     <button
       type="button"
-      onClick={onClick}
+      disabled={disabled}
+      onClick={disabled ? undefined : onClick}
       className={`w-full py-2.5 sm:py-2 text-[13px] font-bold snap-center transition-colors ${
-        active ? "bg-amber-400 text-slate-950 rounded-lg sm:rounded-none" : "text-slate-700 hover:bg-slate-50"
+        disabled
+          ? "opacity-25 cursor-not-allowed text-slate-300 pointer-events-none"
+          : active
+          ? "bg-amber-400 text-slate-950 rounded-lg sm:rounded-none"
+          : "text-slate-700 hover:bg-slate-50 cursor-pointer"
       }`}
     >
       {children}
@@ -608,25 +926,64 @@ const TimePopover: React.FC<{
       </div>
       <div className="flex h-52 sm:h-48 pt-2">
         <Column className="flex-1 border-r border-slate-100">
-          {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
-            <Option key={h} active={hour === h} onClick={() => set(h, minute, meridiem)}>
-              {h}
-            </Option>
-          ))}
+          {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => {
+            const disabled = isHourDisabled(h);
+            return (
+              <Option
+                key={h}
+                active={hour === h}
+                disabled={disabled}
+                onClick={() => {
+                  let nextMin = minute;
+                  if (date && isTimeSlotBeforeNow(h, nextMin, meridiem, date)) {
+                    const futureMin = ["00", "15", "30", "45"].find(
+                      (m) => !isTimeSlotBeforeNow(h, m, meridiem, date)
+                    );
+                    nextMin = futureMin || minute;
+                  }
+                  set(h, nextMin, meridiem);
+                }}
+              >
+                {h}
+              </Option>
+            );
+          })}
         </Column>
         <Column className="flex-1 border-r border-slate-100">
-          {["00", "15", "30", "45"].map((m) => (
-            <Option key={m} active={minute === m} onClick={() => set(hour, m, meridiem)}>
-              {m}
-            </Option>
-          ))}
+          {["00", "15", "30", "45"].map((m) => {
+            const disabled = isMinuteDisabled(m);
+            return (
+              <Option
+                key={m}
+                active={minute === m}
+                disabled={disabled}
+                onClick={() => set(hour, m, meridiem)}
+              >
+                {m}
+              </Option>
+            );
+          })}
         </Column>
         <Column className="w-16 sm:w-16">
-          {["AM", "PM"].map((mer) => (
-            <Option key={mer} active={meridiem === mer} onClick={() => set(hour, minute, mer)}>
-              {mer}
-            </Option>
-          ))}
+          {["AM", "PM"].map((mer) => {
+            const disabled = isMeridiemDisabled(mer);
+            return (
+              <Option
+                key={mer}
+                active={meridiem === mer}
+                disabled={disabled}
+                onClick={() => {
+                  if (date && isTimeSlotBeforeNow(hour, minute, mer, date)) {
+                    onChange(getCurrentTimeStr());
+                  } else {
+                    set(hour, minute, mer);
+                  }
+                }}
+              >
+                {mer}
+              </Option>
+            );
+          })}
         </Column>
       </div>
 
@@ -635,7 +992,7 @@ const TimePopover: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition active:scale-95"
+            className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition active:scale-95 cursor-pointer"
           >
             Confirm Time ({value})
           </button>
@@ -655,22 +1012,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   initialTo = "",
   heading,
 }) => {
-  const getTodayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  };
-
-  const getCurrentTimeStr = () => {
-    const d = new Date();
-    // Round up to next 30-minute slot
-    const minutes = d.getMinutes() < 30 ? 30 : 0;
-    let hours = d.getMinutes() < 30 ? d.getHours() : d.getHours() + 1;
-    if (hours >= 24) hours = 0;
-    const h12 = hours % 12 === 0 ? 12 : hours % 12;
-    const ampm = hours < 12 ? "AM" : "PM";
-    return `${String(h12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
-  };
-
   const [tripType, setTripType] = useState<TripType>((activeTripType as TripType) || "outstation-round");
   const [fromCity, setFromCity] = useState(initialFrom);
   const [toCity, setToCity] = useState(initialTo);
@@ -691,6 +1032,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const [returnDate, setReturnDate] = useState(getTodayStr());
   const [dropTime, setDropTime] = useState("09:45 PM");
   const [hourlyPackage, setHourlyPackage] = useState("8 hrs 80 kms");
+  const [airportMode, setAirportMode] = useState<"to-airport" | "from-airport">("to-airport");
 
   const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
   const [mobileDateTimeTarget, setMobileDateTimeTarget] = useState<"pickup" | "return" | null>(null);
@@ -904,16 +1246,22 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       } catch {}
     }
 
+    const validPickupTime =
+      pickupDate === getTodayStr() && isTimeInPastForToday(pickupTime, pickupDate)
+        ? getCurrentTimeStr()
+        : pickupTime;
+
     onSearch({
       tripType,
       fromCity,
       toCity,
       pickupDate,
-      pickupTime,
+      pickupTime: validPickupTime,
       returnDate,
       returnTime: dropTime,
       dropTime,
       hourlyPackage,
+      airportMode: tripType === "airport" ? airportMode : undefined,
       distanceKm: finalDist ?? undefined,
       durationMinutes: finalDur ?? undefined,
       fromCoords: fromCoords || undefined,
@@ -925,7 +1273,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   const prevMonth = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1));
+    const today = new Date();
+    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const target = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+    if (target < currentMonth) return;
+    setCalendarMonth(target);
   };
 
   const nextMonth = (e: React.MouseEvent) => {
@@ -935,8 +1287,20 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   const selectCalendarDate = (day: number, isPickup: boolean) => {
     const formatted = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    if (isPickup) setPickupDate(formatted);
-    else setReturnDate(formatted);
+    const today = getTodayStr();
+    if (isPickup) {
+      if (formatted < today) return;
+      setPickupDate(formatted);
+      if (returnDate < formatted) {
+        setReturnDate(formatted);
+      }
+      if (formatted === today && isTimeInPastForToday(pickupTime, formatted)) {
+        setPickupTime(getCurrentTimeStr());
+      }
+    } else {
+      if (formatted < pickupDate) return;
+      setReturnDate(formatted);
+    }
     setOpenDropdown(null);
   };
 
@@ -1027,13 +1391,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         {/* ================================================================================= */}
         <div className="md:hidden">
           <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200">
-            
-            {/* Top Tabs (Compact Height) */}
+
+            {/* Top Tabs */}
             <div className="p-2 bg-white border-b border-slate-100">
               <div className="flex bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-slate-200 overflow-hidden">
                 <button
                   onClick={() => changeTripType("outstation-oneway")}
-                  className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
+                  className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
                     tripType.includes("outstation")
                       ? "bg-amber-400 text-slate-950 shadow-sm"
                       : "text-slate-600 hover:bg-slate-50"
@@ -1041,7 +1405,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 >
                   <Car className={`w-4 h-4 ${tripType.includes("outstation") ? "text-slate-950" : "text-slate-400"}`} />
                   <span className={`text-[10px] font-bold text-center leading-tight ${tripType.includes("outstation") ? "text-slate-950" : "text-slate-700"}`}>
-                    Outstation<br/>Cabs
+                    Outstation<br />Cabs
                   </span>
                 </button>
 
@@ -1049,7 +1413,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
                 <button
                   onClick={() => changeTripType("airport")}
-                  className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
+                  className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
                     tripType === "airport"
                       ? "bg-amber-400 text-slate-950 shadow-sm"
                       : "text-slate-600 hover:bg-slate-50"
@@ -1057,7 +1421,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 >
                   <Plane className={`w-4 h-4 ${tripType === "airport" ? "text-slate-950" : "text-slate-400"}`} />
                   <span className={`text-[10px] font-bold text-center leading-tight ${tripType === "airport" ? "text-slate-950" : "text-slate-700"}`}>
-                    Airport<br/>Cabs
+                    Airport<br />Cabs
                   </span>
                 </button>
 
@@ -1065,7 +1429,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
                 <button
                   onClick={() => changeTripType("hourly")}
-                  className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
+                  className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
                     tripType === "hourly"
                       ? "bg-amber-400 text-slate-950 shadow-sm"
                       : "text-slate-600 hover:bg-slate-50"
@@ -1073,68 +1437,104 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 >
                   <Clock className={`w-4 h-4 ${tripType === "hourly" ? "text-slate-950" : "text-slate-400"}`} />
                   <span className={`text-[10px] font-bold text-center leading-tight ${tripType === "hourly" ? "text-slate-950" : "text-slate-700"}`}>
-                    Hourly<br/>Rentals
+                    Hourly<br />Rentals
                   </span>
                 </button>
               </div>
             </div>
 
             <div className="p-3">
-              {/* Info Banner */}
+              {/* Info banner — outstation only */}
               {tripType.includes("outstation") && (
                 <div className="bg-[#FEF6E7] text-[#B9831B] text-[10px] font-medium p-1.5 rounded-md flex items-center gap-1.5 mb-2.5">
                   <Info className="w-3.5 h-3.5 shrink-0" />
-                  <span>Includes one pick up & drop</span>
+                  <span>Includes one pick up &amp; drop</span>
                 </div>
               )}
 
-              {/* Trip Type Toggle (Swap button removed from here) */}
+              {/* Airport mode toggle — NEW */}
+              {tripType === "airport" && (
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex flex-1 border border-slate-300 rounded-md p-0.5 bg-white h-[34px]">
+                    <button
+                      onClick={() => setAirportMode("to-airport")}
+                      className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
+                        airportMode === "to-airport"
+                          ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Plane className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">To Airport</span>
+                    </button>
+                    <button
+                      onClick={() => setAirportMode("from-airport")}
+                      className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
+                        airportMode === "from-airport"
+                          ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Plane className="w-3.5 h-3.5 shrink-0 -scale-x-100" />
+                      <span className="truncate">From Airport</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Outstation one-way / round toggle */}
               {tripType.includes("outstation") && (
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex flex-1 border border-slate-300 rounded-md p-0.5 bg-white h-[34px]">
                     <button
                       onClick={() => changeTripType("outstation-oneway")}
-                      className={`flex-1 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
                         tripType === "outstation-oneway"
                           ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${tripType === "outstation-oneway" ? "border-amber-500" : "border-slate-400"}`}>
+                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center shrink-0 ${tripType === "outstation-oneway" ? "border-amber-500" : "border-slate-400"}`}>
                         {tripType === "outstation-oneway" && <div className="w-1 h-1 bg-amber-500 rounded-full" />}
                       </div>
-                      One Way
+                      <span className="truncate">One Way</span>
                     </button>
                     <button
                       onClick={() => changeTripType("outstation-round")}
-                      className={`flex-1 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
                         tripType === "outstation-round"
                           ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${tripType === "outstation-round" ? "border-amber-500" : "border-slate-400"}`}>
+                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center shrink-0 ${tripType === "outstation-round" ? "border-amber-500" : "border-slate-400"}`}>
                         {tripType === "outstation-round" && <div className="w-1 h-1 bg-amber-500 rounded-full" />}
                       </div>
-                      Round Trip
+                      <span className="truncate">Round Trip</span>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Pickup & Drop Inputs (Compact) */}
+              {/* Pickup & Drop Inputs — swap button clears text with pr-12 */}
               <div className="relative space-y-2">
                 <div
                   onClick={() => toggle("from")}
-                  className="bg-[#F9FAFB] border border-slate-200 rounded-md p-2.5 flex items-center gap-2.5 cursor-pointer relative"
+                  className="bg-[#F9FAFB] border border-slate-200 rounded-md p-2.5 pr-12 flex items-center gap-2.5 cursor-pointer relative min-w-0"
                 >
                   <div className="flex flex-col items-center gap-1 shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                    <div className="w-px h-3.5 bg-slate-300" />
-                    <div className="w-1.5 h-1.5 rounded-full border border-slate-300 bg-white" />
+                    {tripType === "hourly" ? (
+                      <div className="w-2 h-2 rounded-full border-2 border-amber-500 bg-white" />
+                    ) : (
+                      <>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        <div className="w-px h-3.5 bg-slate-300" />
+                        <div className="w-1.5 h-1.5 rounded-full border border-slate-300 bg-white" />
+                      </>
+                    )}
                   </div>
-                  <span className={`text-[12px] font-bold uppercase tracking-wide truncate ${fromCity ? "text-slate-900" : "text-slate-400"}`}>
-                    {fromCity || "PICK UP ADDRESS"}
+                  <span className={`flex-1 min-w-0 text-[12px] font-bold uppercase tracking-wide truncate ${fromCity ? "text-slate-900" : "text-slate-400"}`}>
+                    {fromCity || (tripType === "hourly" ? "PICKUP LOCATION" : "PICK UP ADDRESS")}
                   </span>
 
                   {openDropdown === "from" && (
@@ -1157,92 +1557,154 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   )}
                 </div>
 
-                {/* NEW VERTICAL SWAP BUTTON */}
-                <button
-                  onClick={handleSwap}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-blue-100 rounded-full flex items-center justify-center shadow-sm hover:bg-blue-50 transition active:scale-95 text-blue-500"
-                  title="Swap Locations"
-                >
-                  <ArrowUpDown className="w-4 h-4" />
-                </button>
-
-                <div
-                  onClick={() => toggle("to")}
-                  className="bg-[#F9FAFB] border border-slate-200 rounded-md p-2.5 flex items-center gap-2.5 cursor-pointer relative"
-                >
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full border border-slate-300 bg-white" />
-                  </div>
-                  <span className={`text-[12px] font-bold uppercase tracking-wide truncate ${toCity ? "text-slate-900" : "text-slate-400"}`}>
-                    {toCity || "DROP ADDRESS"}
-                  </span>
-
-                  {openDropdown === "to" && (
-                    <CityPopover
-                      citiesList={combinedCities}
-                      placeholder="Search destination city..."
-                      query={searchToQuery}
-                      onQueryChange={setSearchToQuery}
-                      selected={toCity}
-                      align="right"
-                      title="Select Destination City"
-                      onClose={() => setOpenDropdown(null)}
-                      onSelect={(n, st, coords) => {
-                        setToCity(n);
-                        if (st) setToState(st);
-                        if (coords) setToCoords(coords);
-                        setOpenDropdown(null);
-                      }}
-                      inputRef={searchInputRef}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Add Stops */}
-              <button className="text-amber-600 text-[12px] font-bold mt-2 mb-2.5 flex items-center">
-                + Add Stops
-              </button>
-
-              {/* ============ NEW DATE & TIME UI ============ */}
-              <div className={`mb-3 ${tripType === 'outstation-round' ? 'grid grid-cols-2 gap-2' : ''}`}>
-                {/* Start Card */}
-                <div
-                  onClick={() => setMobileDateTimeTarget('pickup')}
-                  className="bg-white border border-amber-200 rounded-xl p-3 shadow-sm cursor-pointer hover:border-amber-300 transition-colors"
-                >
-                  <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1.5">TRIP START</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4 text-amber-500" />
-                      <span className="text-[13px] font-bold text-slate-900">{formatDateDisplay(pickupDate)}</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-amber-500" />
-                  </div>
-                  <div className="text-[12px] font-semibold text-slate-500 mt-1">{pickupTime}</div>
-                </div>
-
-                {/* End Card (Only for Round Trip) */}
-                {tripType === 'outstation-round' && (
-                  <div
-                    onClick={() => setMobileDateTimeTarget('return')}
-                    className="bg-white border border-amber-200 rounded-xl p-3 shadow-sm cursor-pointer hover:border-amber-300 transition-colors"
+                {/* Swap — hidden for hourly (no drop field) */}
+                {tripType !== "hourly" && (
+                  <button
+                    onClick={handleSwap}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-blue-100 rounded-full flex items-center justify-center shadow-sm hover:bg-blue-50 transition active:scale-95 text-blue-500"
+                    title="Swap Locations"
                   >
-                    <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1.5">TRIP END</div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-amber-500" />
-                        <span className="text-[13px] font-bold text-slate-900">{formatDateDisplay(returnDate)}</span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-amber-500" />
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Drop field — hidden for hourly */}
+                {tripType !== "hourly" && (
+                  <div
+                    onClick={() => toggle("to")}
+                    className="bg-[#F9FAFB] border border-slate-200 rounded-md p-2.5 pr-12 flex items-center gap-2.5 cursor-pointer relative min-w-0"
+                  >
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full border border-slate-300 bg-white" />
                     </div>
-                    <div className="text-[12px] font-semibold text-slate-500 mt-1">{dropTime}</div>
+                    <span className={`flex-1 min-w-0 text-[12px] font-bold uppercase tracking-wide truncate ${toCity ? "text-slate-900" : "text-slate-400"}`}>
+                      {toCity || "DROP ADDRESS"}
+                    </span>
+
+                    {openDropdown === "to" && (
+                      <CityPopover
+                        citiesList={combinedCities}
+                        placeholder="Search destination city..."
+                        query={searchToQuery}
+                        onQueryChange={setSearchToQuery}
+                        selected={toCity}
+                        align="right"
+                        title="Select Destination City"
+                        onClose={() => setOpenDropdown(null)}
+                        onSelect={(n, st, coords) => {
+                          setToCity(n);
+                          if (st) setToState(st);
+                          if (coords) setToCoords(coords);
+                          setOpenDropdown(null);
+                        }}
+                        inputRef={searchInputRef}
+                      />
+                    )}
                   </div>
                 )}
               </div>
-              {/* =========================================== */}
 
-              {/* Search Button (Compact) */}
+              {/* Add Stops — outstation only */}
+              {tripType.includes("outstation") && (
+                <button className="text-amber-600 text-[12px] font-bold mt-2 mb-2.5 flex items-center">
+                  + Add Stops
+                </button>
+              )}
+
+              {/* Hourly Package Selector — NEW */}
+              {tripType === "hourly" && (
+                <div className="mt-3">
+                  <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1.5">
+                    SELECT PACKAGE
+                  </div>
+                  <div
+                    onClick={() => toggle("package")}
+                    className="bg-white border border-amber-200 rounded-xl p-3 shadow-sm cursor-pointer hover:border-amber-300 transition-colors flex items-center justify-between gap-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-bold text-slate-900 truncate">{hourlyPackage}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 truncate">
+                        {HOURLY_PACKAGES.find((p) => p.label === hourlyPackage)?.desc || "Customizable duration"}
+                      </div>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-amber-500 shrink-0" />
+                  </div>
+                  {openDropdown === "package" && (
+                    <PopoverShell align="right" width="w-72" title="Hourly Rental Plans" onClose={() => setOpenDropdown(null)}>
+                      <div className="space-y-0.5">
+                        {HOURLY_PACKAGES.map((pkg) => (
+                          <div
+                            key={pkg.label}
+                            onClick={() => {
+                              setHourlyPackage(pkg.label);
+                              setOpenDropdown(null);
+                            }}
+                            className={`p-2 rounded-lg cursor-pointer transition flex items-center justify-between ${
+                              hourlyPackage === pkg.label
+                                ? "bg-amber-50 border border-amber-300 text-amber-700"
+                                : "hover:bg-amber-50/60 text-slate-800"
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <div className="font-bold text-[11px] flex items-center gap-1.5">
+                                {pkg.label}
+                                {pkg.tag && (
+                                  <span className="text-[8px] bg-amber-400 text-slate-950 px-1 rounded font-black">
+                                    {pkg.tag}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">{pkg.desc}</div>
+                            </div>
+                            {hourlyPackage === pkg.label && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverShell>
+                  )}
+                </div>
+              )}
+
+              {/* Date & Time cards — min-w-0 + truncate prevents overflow on ≤280px screens */}
+              <div className={`mt-3 mb-3 ${tripType === "outstation-round" ? "grid grid-cols-2 gap-2" : ""}`}>
+                <div
+                  onClick={() => setMobileDateTimeTarget("pickup")}
+                  className="bg-white border border-amber-200 rounded-xl p-3 shadow-sm cursor-pointer hover:border-amber-300 transition-colors min-w-0"
+                >
+                  <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1.5">
+                    TRIP START
+                  </div>
+                  <div className="flex items-center justify-between gap-1.5 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span className="text-[13px] font-bold text-slate-900 truncate">{formatDateDisplay(pickupDate)}</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-amber-500 shrink-0" />
+                  </div>
+                  <div className="text-[12px] font-semibold text-slate-500 mt-1 truncate">{pickupTime}</div>
+                </div>
+
+                {tripType === "outstation-round" && (
+                  <div
+                    onClick={() => setMobileDateTimeTarget("return")}
+                    className="bg-white border border-amber-200 rounded-xl p-3 shadow-sm cursor-pointer hover:border-amber-300 transition-colors min-w-0"
+                  >
+                    <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1.5">
+                      TRIP END
+                    </div>
+                    <div className="flex items-center justify-between gap-1.5 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
+                        <span className="text-[13px] font-bold text-slate-900 truncate">{formatDateDisplay(returnDate)}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-amber-500 shrink-0" />
+                    </div>
+                    <div className="text-[12px] font-semibold text-slate-500 mt-1 truncate">{dropTime}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Search Button */}
               <button
                 type="button"
                 onClick={handleSearchSubmit}
@@ -1405,6 +1867,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={pickupDate}
+                      minDate={getTodayStr()}
                       title="Select Departure Date"
                       onClose={() => setOpenDropdown(null)}
                       onSelect={(d) => selectCalendarDate(d, true)}
@@ -1427,7 +1890,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         e.stopPropagation();
                         changeTripType("outstation-oneway");
                       }}
-                      className="text-amber-400 hover:text-amber-600 transition p-0.5"
+                      className="text-amber-400 hover:text-amber-600 transition p-0.5 cursor-pointer"
                     >
                       <XCircle className="w-3.5 h-3.5 fill-amber-400 text-white" />
                     </button>
@@ -1439,6 +1902,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={returnDate}
+                      minDate={pickupDate}
                       align="right"
                       title="Select Return Date"
                       onClose={() => setOpenDropdown(null)}
@@ -1459,6 +1923,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   {openDropdown === "pickupTime" && (
                     <TimePopover
                       title="Select Pickup Time"
+                      date={pickupDate}
                       value={pickupTime}
                       onChange={setPickupTime}
                       onClose={() => setOpenDropdown(null)}
@@ -1476,6 +1941,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   {openDropdown === "dropTime" && (
                     <TimePopover
                       title="Select Drop Time"
+                      date={returnDate}
                       value={dropTime}
                       onChange={setDropTime}
                       onClose={() => setOpenDropdown(null)}
@@ -1563,6 +2029,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={pickupDate}
+                      minDate={getTodayStr()}
                       title="Select Departure Date"
                       onClose={() => setOpenDropdown(null)}
                       onSelect={(d) => selectCalendarDate(d, true)}
@@ -1599,6 +2066,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   {openDropdown === "pickupTime" && (
                     <TimePopover
                       title="Select Pickup Time"
+                      date={pickupDate}
                       value={pickupTime}
                       onChange={setPickupTime}
                       onClose={() => setOpenDropdown(null)}
@@ -1653,6 +2121,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={pickupDate}
+                      minDate={getTodayStr()}
                       title="Select Pickup Date"
                       onClose={() => setOpenDropdown(null)}
                       onSelect={(d) => selectCalendarDate(d, true)}
@@ -1672,6 +2141,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   {openDropdown === "pickupTime" && (
                     <TimePopover
                       title="Select Pickup Time"
+                      date={pickupDate}
                       value={pickupTime}
                       onChange={setPickupTime}
                       onClose={() => setOpenDropdown(null)}
@@ -1795,6 +2265,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={pickupDate}
+                      minDate={getTodayStr()}
                       title="Select Date"
                       onClose={() => setOpenDropdown(null)}
                       onSelect={(d) => selectCalendarDate(d, true)}
@@ -1814,6 +2285,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   {openDropdown === "pickupTime" && (
                     <TimePopover
                       title="Select Pickup Time"
+                      date={pickupDate}
                       value={pickupTime}
                       onChange={setPickupTime}
                       onClose={() => setOpenDropdown(null)}

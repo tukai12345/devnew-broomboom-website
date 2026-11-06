@@ -51,7 +51,45 @@ export const ReviewClientPage: React.FC = () => {
   const dropDate = searchParams.get("dropDate") || (() => { const d = new Date(); d.setDate(d.getDate()+1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const pickupDateDisplay = searchParams.get("pickupDateDisplay") || pickupDate;
   const dropDateDisplay = searchParams.get("dropDateDisplay") || dropDate;
-  const pickupTime = searchParams.get("pickupTime") || "11:00 AM";
+
+  const pickupTime = (() => {
+    const raw = searchParams.get("pickupTime") || searchParams.get("time");
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const getCurrentTimeStr = () => {
+      const now = new Date();
+      const currentMinutes = now.getMinutes();
+      const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+      now.setMinutes(roundedMinutes, 0, 0);
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const h12 = hours % 12 === 0 ? 12 : hours % 12;
+      const ampm = hours < 12 ? "AM" : "PM";
+      return `${String(h12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
+    };
+
+    if (raw) {
+      if (pickupDate === today) {
+        const cleaned = raw.replace(/^till\s+/i, "").trim();
+        const match = cleaned.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+        if (match) {
+          let h = parseInt(match[1], 10);
+          const m = parseInt(match[2], 10);
+          const ampm = (match[3] || "AM").toUpperCase();
+          if (ampm === "PM" && h < 12) h += 12;
+          if (ampm === "AM" && h === 12) h = 0;
+          const targetMinutes = h * 60 + m;
+          const currentMinutes = d.getHours() * 60 + d.getMinutes();
+          if (targetMinutes >= currentMinutes) {
+            return raw;
+          }
+        }
+      } else if (pickupDate > today) {
+        return raw;
+      }
+    }
+    return getCurrentTimeStr();
+  })();
   const dropTime = searchParams.get("dropTime") || "till 09:45 PM";
   const baseFareParam = parseInt(
     searchParams.get("baseFare") || searchParams.get("discountedPrice") || "0",
@@ -194,8 +232,8 @@ export const ReviewClientPage: React.FC = () => {
     if (isAirport) {
       return [
         {
-          title: `${includedKms.toLocaleString("en-IN")} Kms Included`,
-          desc: `₹${extraKmRate}/km applies beyond the included distance`,
+          title: `${includedKms.toLocaleString("en-IN")} Kms `,
+          desc: `₹${extraKmRate}/km applies in distance`,
         },
         {
           title: "Complimentary Airport Waiting",
@@ -215,7 +253,7 @@ export const ReviewClientPage: React.FC = () => {
     if (isRental) {
       return [
         {
-          title: `Package: ${hourlyPackage || `${includedKms} Kms Included`}`,
+          title: `Package: ${hourlyPackage || `${includedKms} Kms`}`,
           desc: "Dedicated chauffeur & cab at your disposal within package limits",
         },
         {
@@ -232,8 +270,8 @@ export const ReviewClientPage: React.FC = () => {
     if (isRound) {
       return [
         {
-          title: `${includedKms.toLocaleString("en-IN")} Kms Roundtrip Included`,
-          desc: `₹${extraKmRate}/km applies beyond included distance for return trip`,
+          title: `${includedKms.toLocaleString("en-IN")} Kms Roundtrip`,
+          desc: `₹${extraKmRate}/km applies in distance for return trip`,
         },
         {
           title: "Driver Allowance & Night Stay",
@@ -249,8 +287,8 @@ export const ReviewClientPage: React.FC = () => {
     // Outstation One-way default
     return [
       {
-        title: `${includedKms.toLocaleString("en-IN")} Kms One-way Included`,
-        desc: `₹${extraKmRate}/km applies beyond included distance`,
+        title: `${includedKms.toLocaleString("en-IN")} Kms One-way`,
+        desc: `₹${extraKmRate}/km applies in distance`,
       },
       {
         title: "Driver Allowance",

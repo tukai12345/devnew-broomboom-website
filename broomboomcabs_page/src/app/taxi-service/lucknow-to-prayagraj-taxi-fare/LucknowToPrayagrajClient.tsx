@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +17,7 @@ import {
   Users,
   Compass,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -26,6 +27,59 @@ import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { WhyChooseUs } from "@/components/WhyChooseUs";
 import { FaqSection } from "@/components/FaqSection";
 import { isUserLoggedIn } from "@/utils/auth";
+import { api, PricingCalculationResult } from "@/services/api";
+
+interface VehicleCategoryRow {
+  categoryKey: string;
+  vehicle: string;
+  seats: string;
+  bags: string;
+  idealFor: string;
+  popular?: boolean;
+}
+
+const VEHICLE_CATEGORIES: VehicleCategoryRow[] = [
+  {
+    categoryKey: "Hatchback",
+    vehicle: "Hatchback (WagonR, Swift)",
+    seats: "4 Passengers",
+    bags: "2 Bags",
+    idealFor: "Solo travelers, couples & budget trips",
+    popular: false,
+  },
+  {
+    categoryKey: "Sedan",
+    vehicle: "Sedan (Dzire, Etios)",
+    seats: "4 Passengers",
+    bags: "3 Large Bags",
+    idealFor: "Family comfort, luggage & business visits",
+    popular: true,
+  },
+  {
+    categoryKey: "SUV",
+    vehicle: "SUV (Ertiga)",
+    seats: "6-7 Passengers",
+    bags: "4 Bags",
+    idealFor: "Family pilgrimage & group travel",
+    popular: false,
+  },
+  {
+    categoryKey: "SUV+",
+    vehicle: "Premium SUV (Innova Crysta)",
+    seats: "6-7 Passengers",
+    bags: "5 Bags",
+    idealFor: "VIP luxury comfort & elderly pilgrimage",
+    popular: false,
+  },
+  {
+    categoryKey: "13 Seater Traveller",
+    vehicle: "Tempo Traveller (13/17 Seater)",
+    seats: "13-17 Passengers",
+    bags: "Ample carrier room",
+    idealFor: "Kumbh/Magh Mela & joint family yatra",
+    popular: false,
+  },
+];
 
 export const LucknowToPrayagrajClient: React.FC = () => {
   const router = useRouter();
@@ -75,53 +129,99 @@ export const LucknowToPrayagrajClient: React.FC = () => {
     proceedWithSearch(params);
   };
 
-  const fareTable = [
-    {
-      vehicle: "Hatchback (WagonR, Swift)",
-      seats: "4 Passengers",
-      bags: "2 Bags",
-      onewayFare: "₹1,999",
-      roundtripFare: "₹3,799",
-      idealFor: "Solo travelers, couples & budget trips",
-      popular: false,
-    },
-    {
-      vehicle: "Sedan (Dzire, Etios)",
-      seats: "4 Passengers",
-      bags: "3 Large Bags",
-      onewayFare: "₹2,399",
-      roundtripFare: "₹4,499",
-      idealFor: "Family comfort, luggage & business visits",
-      popular: true,
-    },
-    {
-      vehicle: "SUV (Ertiga)",
-      seats: "6-7 Passengers",
-      bags: "4 Bags",
-      onewayFare: "₹3,499",
-      roundtripFare: "₹6,299",
-      idealFor: "Family pilgrimage & group travel",
-      popular: false,
-    },
-    {
-      vehicle: "Premium SUV (Innova Crysta)",
-      seats: "6-7 Passengers",
-      bags: "5 Bags",
-      onewayFare: "₹4,299",
-      roundtripFare: "₹7,899",
-      idealFor: "VIP luxury comfort & elderly pilgrimage",
-      popular: false,
-    },
-    {
-      vehicle: "Tempo Traveller (13/17 Seater)",
-      seats: "13-17 Passengers",
-      bags: "Ample carrier room",
-      onewayFare: "₹7,499",
-      roundtripFare: "₹13,999",
-      idealFor: "Kumbh/Magh Mela & joint family yatra",
-      popular: false,
-    },
-  ];
+  const [liveFares, setLiveFares] = useState<
+    Record<string, { oneway?: PricingCalculationResult; roundtrip?: PricingCalculationResult }>
+  >({});
+  const [isLoadingFares, setIsLoadingFares] = useState<boolean>(true);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number>(200);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBackendPricing() {
+      setIsLoadingFares(true);
+      let calculatedDist = 200;
+
+      try {
+        const distResult = await api.calculateDistance({
+          from: "Lucknow, Uttar Pradesh",
+          to: "Prayagraj, Uttar Pradesh",
+        });
+        if (distResult && distResult.distance > 0) {
+          calculatedDist = distResult.distance;
+          if (!cancelled) setRouteDistanceKm(calculatedDist);
+        }
+      } catch (err) {
+        console.warn("Could not calculate live distance, falling back to 200km:", err);
+      }
+
+      const faresMap: Record<
+        string,
+        { oneway?: PricingCalculationResult; roundtrip?: PricingCalculationResult }
+      > = {};
+
+      await Promise.all(
+        VEHICLE_CATEGORIES.map(async (item) => {
+          try {
+            const [onewayRes, roundtripRes] = await Promise.all([
+              api.calculatePrice({
+                rideType: "Oneway",
+                sourceCity: "Lucknow",
+                destinationCity: "Prayagraj",
+                category: item.categoryKey,
+                state: "Uttar Pradesh",
+                distance: calculatedDist,
+                oneWayDistance: calculatedDist,
+              }),
+              api.calculatePrice({
+                rideType: "Roundtrip",
+                sourceCity: "Lucknow",
+                destinationCity: "Prayagraj",
+                category: item.categoryKey,
+                state: "Uttar Pradesh",
+                distance: calculatedDist * 2,
+                days: 1,
+              }),
+            ]);
+
+            faresMap[item.categoryKey] = {
+              oneway: onewayRes || undefined,
+              roundtrip: roundtripRes || undefined,
+            };
+          } catch (err) {
+            console.warn(`Error fetching backend fare for ${item.categoryKey}:`, err);
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setLiveFares(faresMap);
+        setIsLoadingFares(false);
+      }
+    }
+
+    loadBackendPricing();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleBookCategory = (categoryKey: string, tripType: "outstation-oneway" | "outstation-round") => {
+    const isRound = tripType === "outstation-round";
+    const params: SearchParams = {
+      tripType,
+      fromCity: "Lucknow",
+      toCity: "Prayagraj",
+      pickupDate: getTodayStr(),
+      pickupTime: "10:00 AM",
+      returnDate: isRound ? getTodayStr() : "",
+      returnTime: isRound ? "08:00 PM" : "",
+      hourlyPackage: "8 hrs 80 kms",
+      distanceKm: isRound ? routeDistanceKm * 2 : routeDistanceKm,
+    };
+    handleSearch(params);
+  };
 
   const routeHighlights = [
     {
@@ -160,7 +260,7 @@ export const LucknowToPrayagrajClient: React.FC = () => {
       category: "Fare & Inclusions",
       question: "What is the typical one-way taxi fare from Lucknow to Prayagraj?",
       answer:
-        "BroomBoom one-way taxi fare from Lucknow to Prayagraj starts at ₹1,999 for an AC Hatchback and ₹2,399 for an AC Sedan (Dzire/Etios). Fares include fuel, driver allowance, and door-to-door pickup/drop.",
+        "BroomBoom taxi fares from Lucknow to Prayagraj are calculated dynamically by our backend pricing engine based on verified road distance and vehicle category. All fares include fuel, driver allowance, and door-to-door pickup/drop with zero return fare charges.",
     },
     {
       category: "Return Charges",
@@ -262,12 +362,16 @@ export const LucknowToPrayagrajClient: React.FC = () => {
       <section className="py-8 sm:py-12 max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
           <div>
-            <div className="text-xs font-black uppercase tracking-wider text-amber-600 mb-1">
-              Transparent Fare Rate Card
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold mb-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Live Dynamic Rates &bull; Connected to Backend Engine</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Lucknow to Prayagraj Cab Rate Card (2026)
+              Lucknow to Prayagraj Live Cab Fares
             </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Fares are computed in real-time by the BroomBoom backend pricing engine based on verified road distance (~{routeDistanceKm} km).
+            </p>
           </div>
           <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 shrink-0">
             ✓ Inclusive of Fuel &amp; Driver Allowance
@@ -284,41 +388,89 @@ export const LucknowToPrayagrajClient: React.FC = () => {
                   <th className="py-4 px-4 sm:px-6 text-center">One-Way Drop</th>
                   <th className="py-4 px-4 sm:px-6 text-center">Same-Day / Round-Trip</th>
                   <th className="py-4 px-4 sm:px-6">Ideal For</th>
+                  <th className="py-4 px-4 sm:px-6 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {fareTable.map((item, idx) => (
-                  <tr
-                    key={idx}
-                    className={`hover:bg-amber-50/50 transition-colors ${
-                      item.popular ? "bg-amber-50/20" : ""
-                    }`}
-                  >
-                    <td className="py-4 px-4 sm:px-6 font-bold text-slate-900">
-                      <div className="flex items-center gap-2">
-                        <span>{item.vehicle}</span>
-                        {item.popular && (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-400 text-slate-950">
-                            POPULAR
-                          </span>
+                {VEHICLE_CATEGORIES.map((item) => {
+                  const fareData = liveFares[item.categoryKey];
+                  const oneway = fareData?.oneway?.fare;
+                  const roundtrip = fareData?.roundtrip?.fare;
+
+                  return (
+                    <tr
+                      key={item.categoryKey}
+                      className={`hover:bg-amber-50/50 transition-colors ${
+                        item.popular ? "bg-amber-50/20" : ""
+                      }`}
+                    >
+                      <td className="py-4 px-4 sm:px-6 font-bold text-slate-900">
+                        <div className="flex items-center gap-2">
+                          <span>{item.vehicle}</span>
+                          {item.popular && (
+                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-400 text-slate-950">
+                              POPULAR
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-slate-600">
+                        <div>{item.seats}</div>
+                        <div className="text-[11px] text-slate-400">{item.bags}</div>
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-center font-black text-slate-950 text-base">
+                        {isLoadingFares ? (
+                          <div className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-normal">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                            <span>Calculating...</span>
+                          </div>
+                        ) : oneway && oneway > 0 ? (
+                          <div className="flex flex-col items-center">
+                            <span>₹{oneway.toLocaleString("en-IN")}</span>
+                            {fareData?.oneway?.discountPercent ? (
+                              <span className="text-[10px] text-emerald-600 font-bold">
+                                {fareData.oneway.discountPercent}% OFF
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-normal">Check Live</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 sm:px-6 text-slate-600">
-                      <div>{item.seats}</div>
-                      <div className="text-[11px] text-slate-400">{item.bags}</div>
-                    </td>
-                    <td className="py-4 px-4 sm:px-6 text-center font-black text-slate-950 text-base">
-                      {item.onewayFare}
-                    </td>
-                    <td className="py-4 px-4 sm:px-6 text-center font-black text-slate-950 text-base">
-                      {item.roundtripFare}
-                    </td>
-                    <td className="py-4 px-4 sm:px-6 text-slate-500 text-xs">
-                      {item.idealFor}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-center font-black text-slate-950 text-base">
+                        {isLoadingFares ? (
+                          <div className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-normal">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                            <span>Calculating...</span>
+                          </div>
+                        ) : roundtrip && roundtrip > 0 ? (
+                          <div className="flex flex-col items-center">
+                            <span>₹{roundtrip.toLocaleString("en-IN")}</span>
+                            {fareData?.roundtrip?.discountPercent ? (
+                              <span className="text-[10px] text-emerald-600 font-bold">
+                                {fareData.roundtrip.discountPercent}% OFF
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-normal">Check Live</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-slate-500 text-xs">
+                        {item.idealFor}
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-center">
+                        <button
+                          onClick={() => handleBookCategory(item.categoryKey, "outstation-oneway")}
+                          className="px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow-xs transition active:scale-95 inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Book</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

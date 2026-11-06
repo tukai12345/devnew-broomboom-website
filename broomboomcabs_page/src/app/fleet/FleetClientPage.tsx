@@ -139,6 +139,49 @@ const format24Hour = (time12: string): string => {
   return `${hStr}:${m}`;
 };
 
+const getCurrentTimeStr = (): string => {
+  const d = new Date();
+  const currentMinutes = d.getMinutes();
+  const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+  d.setMinutes(roundedMinutes, 0, 0);
+  const hours = d.getHours();
+  const minutes = d.getMinutes();
+  const h12 = hours % 12 === 0 ? 12 : hours % 12;
+  const ampm = hours < 12 ? "AM" : "PM";
+  return `${String(h12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
+};
+
+const getCurrentTime24 = (): string => {
+  const d = new Date();
+  const currentMinutes = d.getMinutes();
+  const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+  d.setMinutes(roundedMinutes, 0, 0);
+  const hours = d.getHours();
+  const minutes = d.getMinutes();
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+const isTimeInPastForToday = (timeStr: string, dateIso: string): boolean => {
+  if (!dateIso || !timeStr) return false;
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  if (dateIso < today) return true;
+  if (dateIso > today) return false;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const cleaned = timeStr.replace(/^till\s+/i, "").trim();
+  const match = cleaned.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (!match) return false;
+  let h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  const ampm = (match[3] || "AM").toUpperCase();
+  if (ampm === "PM" && h < 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+  return (h * 60 + m) < currentMinutes;
+};
+
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 /* -------------------------------------------------------------------------- */
@@ -287,9 +330,14 @@ const FleetPageContent: React.FC = () => {
   const [dropDateIso, setDropDateIso] = useState<string>(
     searchParams.get("dropDate") || searchParams.get("returnDate") || searchParams.get("date") || getTomorrowStr()
   );
-  const [pickupTime, setPickupTime] = useState<string>(
-    searchParams.get("time") || searchParams.get("pickupTime") || "11:00 AM"
-  );
+  const [pickupTime, setPickupTime] = useState<string>(() => {
+    const raw = searchParams.get("time") || searchParams.get("pickupTime");
+    const pDate = searchParams.get("date") || searchParams.get("pickupDate") || getTodayStr();
+    if (raw && !isTimeInPastForToday(raw, pDate)) {
+      return raw;
+    }
+    return getCurrentTimeStr();
+  });
   const [dropTime, setDropTime] = useState<string>(
     searchParams.get("dropTime") || searchParams.get("returnTime") || "till 09:45 PM"
   );
@@ -1384,10 +1432,16 @@ const FleetPageContent: React.FC = () => {
                 <span>{formatDisplayDate(pickupDateIso)}</span>
                 <input
                   type="date"
+                  min={getTodayStr()}
                   value={pickupDateIso}
                   onChange={(e) => {
-                    setPickupDateIso(e.target.value);
-                    if (dropDateIso < e.target.value) setDropDateIso(e.target.value);
+                    if (e.target.value) {
+                      setPickupDateIso(e.target.value);
+                      if (e.target.value === getTodayStr() && isTimeInPastForToday(pickupTime, e.target.value)) {
+                        setPickupTime(getCurrentTimeStr());
+                      }
+                      if (dropDateIso < e.target.value) setDropDateIso(e.target.value);
+                    }
                   }}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   aria-label="Pick-up date"
@@ -1405,9 +1459,16 @@ const FleetPageContent: React.FC = () => {
                 <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 opacity-80 group-hover:opacity-100" />
                 <input
                   type="time"
+                  min={pickupDateIso === getTodayStr() ? getCurrentTime24() : undefined}
                   value={format24Hour(pickupTime)}
                   onChange={(e) => {
-                    if (e.target.value) setPickupTime(format12Hour(e.target.value));
+                    if (e.target.value) {
+                      if (pickupDateIso === getTodayStr() && e.target.value < getCurrentTime24()) {
+                        setPickupTime(getCurrentTimeStr());
+                      } else {
+                        setPickupTime(format12Hour(e.target.value));
+                      }
+                    }
                   }}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   aria-label="Pick-up time timer"
@@ -1425,8 +1486,12 @@ const FleetPageContent: React.FC = () => {
                     <input
                       type="date"
                       value={dropDateIso}
-                      min={pickupDateIso}
-                      onChange={(e) => setDropDateIso(e.target.value)}
+                      min={pickupDateIso || getTodayStr()}
+                      onChange={(e) => {
+                        if (e.target.value && e.target.value >= (pickupDateIso || getTodayStr())) {
+                          setDropDateIso(e.target.value);
+                        }
+                      }}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       aria-label="Return date"
                     />
@@ -1721,17 +1786,11 @@ const FleetPageContent: React.FC = () => {
                           </span>
                         </div>
                         <div className="text-[11px] text-slate-600 font-medium mt-0.5">
-                          {cab.includedKms.toLocaleString("en-IN")} kms included
+                          Total km {cab.includedKms.toLocaleString("en-IN")}
                         </div>
                         {cab.extraKmRate && (
                           <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                            Extra fare: ₹{cab.extraKmRate}/km
-                          </div>
-                        )}
-                        {cab.advanceAmount != null && cab.advanceAmount > 0 && (
-                          <div className="text-[10px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                            Pay ₹{cab.advanceAmount.toLocaleString("en-IN")} advance now
+                            Exact fare: ₹{cab.extraKmRate}/km
                           </div>
                         )}
                       </div>

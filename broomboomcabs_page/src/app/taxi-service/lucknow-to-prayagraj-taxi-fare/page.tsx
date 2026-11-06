@@ -3,9 +3,9 @@ import { Metadata } from "next";
 import { LucknowToPrayagrajClient } from "./LucknowToPrayagrajClient";
 
 export const metadata: Metadata = {
-  title: "Lucknow to Prayagraj Taxi Fare — Lowest One-Way & Round-Trip Cabs | BroomBoom",
+  title: "Lucknow to Prayagraj Taxi Fare — Live One-Way & Round-Trip Rates | BroomBoom",
   description:
-    "Book Lucknow to Prayagraj cab starting at ₹1,999 with BroomBoom. Transparent taxi fares, zero return fare on one-way drops, verified highway chauffeurs, clean AC Sedans & Innova Crysta for Triveni Sangam visits.",
+    "Book Lucknow to Prayagraj cab with BroomBoom. Transparent live taxi fares, zero return fare on one-way drops, verified highway chauffeurs, clean AC Sedans & Innova Crysta for Triveni Sangam visits.",
   alternates: {
     canonical: "https://dev.broomboomcabs.com/taxi-service/lucknow-to-prayagraj-taxi-fare",
   },
