@@ -1139,7 +1139,12 @@ const FleetPageContent: React.FC = () => {
       oneWayDistance: (routeMeta.oneWayKms || "").toString(),
       duration: (routeMeta.durationMinutes || "").toString(),
     });
+    if (pickupCoords?.lat != null) params.set("pickupLat", pickupCoords.lat.toString());
+    if (pickupCoords?.lng != null) params.set("pickupLng", pickupCoords.lng.toString());
+    if (dropCoords?.lat != null) params.set("dropLat", dropCoords.lat.toString());
+    if (dropCoords?.lng != null) params.set("dropLng", dropCoords.lng.toString());
     if (isHourly) params.set("package", hourlyPackage);
+    if (searchParams.get("petFriendly") === "true") params.set("petFriendly", "true");
     if (vehicle.advanceAmount) params.set("advance", vehicle.advanceAmount.toString());
     if (vehicle.dueAmount) params.set("dueFare", vehicle.dueAmount.toString());
 

@@ -5,27 +5,30 @@ import Link from "next/link";
 import { PhoneCall, Mail, MapPin, ShieldCheck } from "lucide-react";
 
 const cityLinks = [
-  { label: "Cabs in Kolkata", href: "/" },
-  { label: "Cabs in Delhi", href: "/" },
-  { label: "Cabs in Mumbai", href: "/" },
-  { label: "Cabs in Bangalore", href: "/" },
-  { label: "Cabs in Pune", href: "/" },
-  { label: "Cabs in Hyderabad", href: "/" },
-  { label: "Cabs in Ahmedabad", href: "/" },
-  { label: "Cabs in Kochi", href: "/" },
-  { label: "Cabs in Chandigarh", href: "/" },
+  { label: "Cabs in Kolkata", href: "/outstation-cabs/kolkata" },
+  { label: "Cabs in Delhi", href: "/outstation-cabs/delhi" },
+  { label: "Cabs in Mumbai", href: "/outstation-cabs/mumbai" },
+  { label: "Cabs in Bangalore", href: "/outstation-cabs/bangalore" },
+  { label: "Cabs in Pune", href: "/outstation-cabs/pune" },
+  { label: "Cabs in Hyderabad", href: "/outstation-cabs/hyderabad" },
+  { label: "Cabs in Ahmedabad", href: "/outstation-cabs/ahmedabad" },
+  { label: "Cabs in Kochi", href: "/outstation-cabs/kochi" },
+  { label: "Cabs in Chandigarh", href: "/outstation-cabs/chandigarh" },
 ];
 
 const serviceLinks = [
-  { label: "Local Taxi Services", href: "#" },
+  { label: "All Cab Services", href: "/services" },
   { label: "Rental Car Services", href: "/car-rental" },
   { label: "Outstation Cab Booking", href: "/outstation-cabs" },
+  { label: "Airport Transfer Cabs", href: "/services/airport" },
+  { label: "Hourly Cab Rentals", href: "/services/rental" },
 ];
 
 const legalLinks = [
   { label: "About Us", href: "/about-us" },
   { label: "Blog & Guides", href: "/blogs" },
   { label: "Contact Us", href: "/contact-us" },
+  { label: "Sitemap", href: "/sitemap" },
   { label: "Privacy Policy", href: "https://broomboomcabs.com/privacy-policy" },
   { label: "Terms & Conditions", href: "https://broomboomcabs.com/user-terms" },
 ];

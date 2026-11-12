@@ -95,14 +95,21 @@ export const ReviewClientPage: React.FC = () => {
     searchParams.get("baseFare") || searchParams.get("discountedPrice") || "0",
     10
   );
+  const discountPercent = parseFloat(searchParams.get("discountPercent") || "0");
   const advanceParam = parseInt(searchParams.get("advance") || "0", 10);
   const dueFareParam = parseInt(searchParams.get("dueFare") || "0", 10);
   const distanceParam = parseFloat(searchParams.get("distance") || "0");
+  const durationParam = searchParams.get("duration") || "";
   const oneWayDistanceParam = parseFloat(searchParams.get("oneWayDistance") || "0");
   const includedKmsParam = parseInt(searchParams.get("includedKms") || "0", 10);
   const imageType = searchParams.get("imageType") || "sedan";
   const extraKmRate = searchParams.get("extraKmRate") || "15";
   const hourlyPackage = searchParams.get("package") || "";
+  const flightNumber = searchParams.get("flightNumber") || "";
+  const pickupLatParam = searchParams.get("pickupLat") || "";
+  const pickupLngParam = searchParams.get("pickupLng") || "";
+  const dropLatParam = searchParams.get("dropLat") || "";
+  const dropLngParam = searchParams.get("dropLng") || "";
 
   const tLower = tripType.toLowerCase();
   const isRound = tLower.includes("round");
@@ -412,6 +419,7 @@ export const ReviewClientPage: React.FC = () => {
   /* ------------------------------- State -------------------------------- */
   // User Form
   const [pickupAddress, setPickupAddress] = useState("");
+  const [pickupPincode, setPickupPincode] = useState("");
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("Male");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -429,7 +437,9 @@ export const ReviewClientPage: React.FC = () => {
   }, []);
 
   // Add-ons
-  const [addonPet, setAddonPet] = useState(false);
+  const [addonPet, setAddonPet] = useState<boolean>(() => {
+    return searchParams.get("petFriendly") === "true";
+  });
   const [petCount, setPetCount] = useState(1);
   const [addonRoofCarrier, setAddonRoofCarrier] = useState(false);
   const [addonLanguage, setAddonLanguage] = useState(false);
@@ -501,6 +511,8 @@ export const ReviewClientPage: React.FC = () => {
 
     try {
       const sourceState = CITIES.find((c) => c.name.toLowerCase() === fromCity.trim().toLowerCase())?.state || "West Bengal";
+      const pinMatch = pickupAddress.match(/\b[1-9][0-9]{5}\b/);
+      const finalPin = pickupPincode.trim() || (pinMatch ? pinMatch[0] : "");
 
       // Connect to BroomBoom User Backend
       const backendBooking = await api.createBooking({
@@ -516,8 +528,42 @@ export const ReviewClientPage: React.FC = () => {
             ? "Hourly"
             : "Airport",
         state: sourceState,
+        pincode: finalPin,
         pickupAddress: pickupAddress.trim(),
         dropAddress: `${toCity}, India`,
+        fromCity: fromCity.trim(),
+        toCity: toCity.trim(),
+        distance: distanceParam ? `${distanceParam} km` : undefined,
+        duration: durationParam ? (durationParam.includes('min') || durationParam.includes('hr') ? durationParam : `${Math.max(1, Math.round(parseInt(durationParam, 10)/60))} hrs`) : undefined,
+        pickupLat: pickupLatParam || undefined,
+        pickupLng: pickupLngParam || undefined,
+        dropLat: dropLatParam || undefined,
+        dropLng: dropLngParam || undefined,
+        petFriendly: Boolean(addonPet),
+        petCount: addonPet ? petCount : 0,
+        addons: {
+          petAllowance: addonPet,
+          petCount: addonPet ? petCount : 0,
+          roofCarrier: addonRoofCarrier,
+          language: addonLanguage,
+          newVehicle: addonNewVehicle,
+          sightseeing: addonSightseeing,
+        },
+        source: "BroomBoom Web",
+        searchDetails: {
+          tripType,
+          fromCity,
+          toCity,
+          hourlyPackage,
+          airportMode: isAirport,
+          flightNumber,
+          cabName,
+          cabCategory,
+          addonsTotal,
+          baseFare,
+          discountPercent,
+          petFee: addonPet ? PET_FEE * petCount : 0,
+        },
         pickupDate: pickupDate || new Date().toISOString().split("T")[0],
         pickupTime: pickupTime || "10:00 AM",
         returnDate: dropDate || "",

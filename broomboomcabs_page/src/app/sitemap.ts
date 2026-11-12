@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { TOP_10_CITIES_SERVICES, SERVICES_LIST, getServiceUrl } from "@/data/cityServicesData";
+import { INITIAL_BLOG_DATA } from "@/data/blogData";
 import { getApiBaseUrl } from "@/services/api";
 
 const DEFAULT_SITE_URL = "https://dev.broomboomcabs.com";
@@ -84,6 +85,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.88,
     },
+    {
+      url: `${siteUrl}/car-rental`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/about-us`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${siteUrl}/contact-us`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${siteUrl}/blogs`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/sitemap`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
   ];
 
   // 2. Service Category Landing Pages (/outstation-cabs, /services/rental, /services/airport)
@@ -136,10 +167,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  const blogPages: MetadataRoute.Sitemap = INITIAL_BLOG_DATA.posts.map((post) => ({
+    url: `${siteUrl}/blog/${post.slug}`,
+    lastModified: currentDate,
+    changeFrequency: "monthly",
+    priority: 0.72,
+  }));
+
   return [
     ...corePages,
     ...serviceCategoryPages,
     ...builtInCityServicePages,
+    ...blogPages,
     ...additionalCityPages,
   ];
 }

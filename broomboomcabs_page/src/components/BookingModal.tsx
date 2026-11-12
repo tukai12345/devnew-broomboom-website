@@ -44,6 +44,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [pickupAddress, setPickupAddress] = useState("");
+  const [pickupPincode, setPickupPincode] = useState("");
   const [paymentChoice, setPaymentChoice] = useState<"advance" | "full" | "driver">("advance");
   const [bookingStatus, setBookingStatus] = useState<"filling" | "processing" | "confirmed">("filling");
   const [bookingId, setBookingId] = useState("");
@@ -90,6 +91,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setBookingStatus("processing");
     let officialBookingId = `BB-${Math.floor(100000 + Math.random() * 900000)}`;
 
+    const pinMatch = pickupAddress.match(/\b[1-9][0-9]{5}\b/);
+    const finalPin = pickupPincode.trim() || (pinMatch ? pinMatch[0] : "");
+
     try {
       // Connect to BroomBoom User Backend
       const backendBooking = await api.createBooking({
@@ -104,9 +108,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             : searchParams.tripType === "hourly"
             ? "Hourly"
             : "Airport",
-        state: "Maharashtra",
+        state: "West Bengal",
+        pincode: finalPin,
         pickupAddress: pickupAddress.trim(),
         dropAddress: `${searchParams.toCity}, India`,
+        pickupLat: searchParams.fromCoords ? String(searchParams.fromCoords.lat) : undefined,
+        pickupLng: searchParams.fromCoords ? String(searchParams.fromCoords.lng) : undefined,
+        dropLat: searchParams.toCoords ? String(searchParams.toCoords.lat) : undefined,
+        dropLng: searchParams.toCoords ? String(searchParams.toCoords.lng) : undefined,
         pickupDate: searchParams.pickupDate || new Date().toISOString().split("T")[0],
         pickupTime: searchParams.pickupTime || "10:00 AM",
         returnDate: searchParams.returnDate || "",
@@ -435,8 +444,32 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     required
                     placeholder="House/Flat No, Landmark, Street, City"
                     value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPickupAddress(val);
+                      const m = val.match(/\b[1-9][0-9]{5}\b/);
+                      if (m && !pickupPincode) {
+                        setPickupPincode(m[0]);
+                      }
+                    }}
                     className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Pickup Area Pincode (6 Digits)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">📍 PIN</span>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="e.g. 712124 or 700052"
+                    value={pickupPincode}
+                    onChange={(e) => setPickupPincode(e.target.value.replace(/\D/g, ""))}
+                    className="w-full pl-16 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 font-medium font-mono"
                   />
                 </div>
               </div>

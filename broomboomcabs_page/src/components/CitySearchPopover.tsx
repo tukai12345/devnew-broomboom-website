@@ -177,7 +177,7 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
       {isSearching && displayItems.length === 0 ? (
         <div className="py-8 flex flex-col items-center justify-center gap-2 text-center text-slate-500">
           <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-          <p className="text-xs font-bold text-slate-700">Connecting to OpenStreetMap...</p>
+          <p className="text-xs font-bold text-slate-700">Searching live map locations...</p>
           <p className="text-[10px] text-slate-400">Searching all cities, towns &amp; places in India</p>
         </div>
       ) : displayItems.length === 0 ? (
@@ -219,7 +219,7 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
               <div className="min-w-0 text-left">
                 <div className="font-bold text-[13px] text-slate-950 truncate flex items-center gap-1.5">
                   <span>{item.name}</span>
-                  {(item.source === "Nominatim" || item.source === "Map") && (
+                  {["Nominatim", "Map", "GooglePlaces", "GoogleMaps", "OSRM"].includes(item.source || "") && (
                     <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded font-black tracking-wider uppercase">
                       MAP
                     </span>

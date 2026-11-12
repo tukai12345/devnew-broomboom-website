@@ -33,7 +33,19 @@ export interface BackendBooking {
   pincode?: string;
   pickupAddress: string;
   dropAddress: string;
+  fromCity?: string;
+  toCity?: string;
   distance?: string;
+  duration?: string;
+  pickupLat?: string;
+  pickupLng?: string;
+  dropLat?: string;
+  dropLng?: string;
+  petFriendly?: boolean;
+  petCount?: number;
+  addons?: any;
+  source?: string;
+  searchDetails?: any;
   pickupDate: string;
   pickupTime: string;
   returnDate?: string;
@@ -520,6 +532,56 @@ export const api = {
           }
         }
       } catch {}
+    }
+
+    // Direct Google Routes API (New) Fallback if OSRM failed
+    if (pLat && pLng && dLat && dLng) {
+      try {
+        const googleRes = await fetchWithTimeout(
+          "https://routes.googleapis.com/directions/v2:computeRoutes",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Goog-Api-Key": "AIzaSyBdAaSarc60pYSXzYE9o6OTVnF7PMGFsHs",
+              "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
+            },
+            body: JSON.stringify({
+              origin: {
+                location: {
+                  latLng: { latitude: pLat, longitude: pLng },
+                },
+              },
+              destination: {
+                location: {
+                  latLng: { latitude: dLat, longitude: dLng },
+                },
+              },
+              travelMode: "DRIVE",
+              routingPreference: "TRAFFIC_UNAWARE",
+            }),
+          },
+          6000
+        );
+        if (googleRes.ok) {
+          const gData = await googleRes.json();
+          if (Array.isArray(gData.routes) && gData.routes.length > 0) {
+            const meters = parseFloat(gData.routes[0].distanceMeters) || 0;
+            const secStr = gData.routes[0].duration || "0s";
+            const seconds = parseInt(secStr.replace("s", ""), 10) || 0;
+            return {
+              success: true,
+              distance: parseFloat((meters / 1000).toFixed(1)),
+              durationMinutes: Math.round(seconds / 60),
+              source: "GoogleMaps",
+              pickupCoords: { lat: pLat, lng: pLng },
+              dropCoords: { lat: dLat, lng: dLng },
+            };
+          }
+        }
+      } catch (gErr) {
+        console.warn("Direct Google Routes fallback notice:", gErr);
+      }
     }
 
     return null;
