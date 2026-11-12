@@ -50,11 +50,11 @@ export const Footer: React.FC = () => {
               aria-label="BroomBoom Cabs — Go to home page"
               className="flex items-center gap-2.5 rounded transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-amber-400 p-0.5 shadow-md shadow-amber-400/20">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-amber-400 p-0.5 shadow-md shadow-amber-400/20">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Cabs"
-                  className="h-full w-full rounded-full object-contain"
+                  className="h-full w-full rounded-lg object-contain"
                 />
               </div>
               <div className="text-xl font-black leading-none text-white">

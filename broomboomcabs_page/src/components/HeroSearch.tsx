@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   ArrowRightLeft,
@@ -49,7 +50,8 @@ interface HeroSearchProps {
   onSearch: (params: SearchParams) => void;
   initialFrom?: string;
   initialTo?: string;
-  heading?: { title: string; subtitle?: string; badge?: string };
+  heading?: { title: React.ReactNode; subtitle?: string; badge?: string };
+  navigateOnTabClick?: boolean;
 }
 
 type TripType = "outstation-oneway" | "outstation-round" | "airport" | "hourly" | "daily";
@@ -1011,7 +1013,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   initialFrom = "",
   initialTo = "",
   heading,
+  navigateOnTabClick = false,
 }) => {
+  const router = useRouter();
   const [tripType, setTripType] = useState<TripType>((activeTripType as TripType) || "outstation-round");
   const [fromCity, setFromCity] = useState(initialFrom);
   const [toCity, setToCity] = useState(initialTo);
@@ -1047,8 +1051,18 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
-    if (activeTripType) setTripType(activeTripType as TripType);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (activeTripType) {
+      setHasInteracted(true);
+      setTripType(activeTripType as TripType);
+    }
   }, [activeTripType]);
 
   useEffect(() => {
@@ -1182,8 +1196,33 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const toggle = (key: DropdownKey) => setOpenDropdown((cur) => (cur === key ? null : key));
 
   const changeTripType = (t: TripType) => {
+    setHasInteracted(true);
     setTripType(t);
     onTripTypeChange(t);
+
+    if (navigateOnTabClick && typeof window !== "undefined") {
+      const path = window.location.pathname;
+      const parts = path.split("/").filter(Boolean);
+      const currentCity = parts.length >= 2 ? parts[1] : null;
+
+      if (t === "outstation-oneway") {
+        if (!path.startsWith("/outstation-cabs")) {
+          router.push(currentCity ? `/outstation-cabs/${currentCity}` : "/outstation-cabs");
+        }
+      } else if (t === "outstation-round") {
+        if (!path.startsWith("/outstation-cabs")) {
+          router.push(currentCity ? `/outstation-cabs/${currentCity}?type=outstation-round` : "/outstation-cabs?type=outstation-round");
+        }
+      } else if (t === "airport") {
+        if (!path.startsWith("/airport-cabs")) {
+          router.push(currentCity ? `/airport-cabs/${currentCity}` : "/airport-cabs");
+        }
+      } else if (t === "hourly") {
+        if (!path.startsWith("/car-rental")) {
+          router.push(currentCity ? `/car-rental/${currentCity}` : "/car-rental");
+        }
+      }
+    }
   };
 
   const handleSwap = (e: React.MouseEvent) => {
@@ -1319,32 +1358,52 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const dateLine = "flex items-baseline gap-1 tracking-tight leading-none truncate";
   const timeLine = "flex items-baseline gap-1 tracking-tight leading-none";
 
-  const activeTitle = heading?.title || (
-    tripType === "outstation-oneway" ? (
-      <>
-        Book Verified Outstation Cabs on <span className="text-amber-400">BroomBoom</span> at Lowest Fares
-      </>
-    ) : tripType === "outstation-round" ? (
-      <>
-        Outstation Round-Trip Cabs with <span className="text-amber-400">Zero Hidden Charges</span>
-      </>
-    ) : tripType === "airport" ? (
-      <>
-        Reliable Airport Transfers with <span className="text-amber-400">100% On-Time Guarantee</span>
-      </>
-    ) : tripType === "hourly" ? (
-      <>
-        Hourly Car Rentals with <span className="text-amber-400">Unlimited Stops</span> in Your City
-      </>
-    ) : (
-      <>
-        Book Verified Outstation Cabs &amp; <span className="text-amber-400">Airport Taxi at Lowest Fares</span>
-      </>
-    )
+  const isSelected = hasInteracted || Boolean(heading);
+
+  const defaultTitle = (
+    <>
+      ALL INDIA CAR RENTAL APP &amp; <span className="text-amber-400">OUTSTATION CAB SERVICES</span> NEARBY.
+    </>
   );
 
-  const activeSubtitle = heading?.subtitle || (
-    tripType === "outstation-oneway"
+  const defaultSubtitle =
+    "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station.";
+
+  const activeTitle =
+    heading?.title ||
+    (!isSelected
+      ? defaultTitle
+      : tripType === "outstation-oneway"
+      ? (
+        <>
+          Book Verified Outstation Cabs on <span className="text-amber-400">BroomBoom</span> at Lowest Fares
+        </>
+      )
+      : tripType === "outstation-round"
+      ? (
+        <>
+          Outstation Round-Trip Cabs with <span className="text-amber-400">Zero Hidden Charges</span>
+        </>
+      )
+      : tripType === "airport"
+      ? (
+        <>
+          Reliable Airport Transfers with <span className="text-amber-400">100% On-Time Guarantee</span>
+        </>
+      )
+      : tripType === "hourly"
+      ? (
+        <>
+          Hourly Car Rentals with <span className="text-amber-400">Unlimited Stops</span> in Your City
+        </>
+      )
+      : defaultTitle);
+
+  const activeSubtitle =
+    heading?.subtitle ||
+    (!isSelected
+      ? defaultSubtitle
+      : tripType === "outstation-oneway"
       ? "Pay only for one-way drop • Zero return fare • 100% AC verified cars & professional highway chauffeurs"
       : tripType === "outstation-round"
       ? "Intercity road trips made effortless • Assured car models & transparent all-inclusive pricing"
@@ -1352,8 +1411,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       ? "Live flight tracking • 45 minutes free wait time • Doorstep to terminal pickups & drops"
       : tripType === "hourly"
       ? "Chauffeur on standby • Flexible 1 to 12-hour rental packages for meetings, shopping & errands"
-      : "One-Way Drops • Round Trips • Airport Transfers • Local Hourly Rentals across 100+ Cities"
-  );
+      : defaultSubtitle);
 
   return (
     <div
@@ -1372,7 +1430,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         {/* =============================== HEADER (SHOWN ON ALL) ==================================== */}
         <div className="mb-2 sm:mb-3 hidden sm:flex items-center justify-center animate-in fade-in duration-200">
           <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 text-[10px] sm:text-xs md:text-[13px] font-black uppercase tracking-wider text-center leading-tight shadow-md shadow-amber-400/25 border border-amber-300 max-w-[calc(100vw-2rem)]">
-            <img src="/logo.png" alt="BroomBoom Logo" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full object-contain shrink-0" />
+            <img src="/logo.png" alt="BroomBoom Logo" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-md object-contain shrink-0" />
             <span>India&apos;s #1 Most Trusted Cab Booking Service</span>
           </div>
         </div>
@@ -1381,7 +1439,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
           <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-[32px] font-black text-white tracking-tight leading-tight max-w-4xl mx-auto drop-shadow-md">
             {activeTitle}
           </h1>
-          <p className="hidden sm:block text-xs sm:text-sm text-slate-200 mt-1 max-w-2xl mx-auto leading-relaxed font-semibold drop-shadow-sm">
+          <p className="text-xs sm:text-sm text-slate-200 mt-1 sm:mt-1.5 max-w-2xl mx-auto leading-relaxed font-semibold drop-shadow-sm px-2">
             {activeSubtitle}
           </p>
         </div>
@@ -1398,13 +1456,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 <button
                   onClick={() => changeTripType("outstation-oneway")}
                   className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
-                    tripType.includes("outstation")
+                    isSelected && tripType.includes("outstation")
                       ? "bg-amber-400 text-slate-950 shadow-sm"
                       : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  <Car className={`w-4 h-4 ${tripType.includes("outstation") ? "text-slate-950" : "text-slate-400"}`} />
-                  <span className={`text-[10px] font-bold text-center leading-tight ${tripType.includes("outstation") ? "text-slate-950" : "text-slate-700"}`}>
+                  <Car className={`w-4 h-4 ${isSelected && tripType.includes("outstation") ? "text-slate-950" : "text-slate-400"}`} />
+                  <span className={`text-[10px] font-bold text-center leading-tight ${isSelected && tripType.includes("outstation") ? "text-slate-950" : "text-slate-700"}`}>
                     Outstation<br />Cabs
                   </span>
                 </button>
@@ -1414,13 +1472,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 <button
                   onClick={() => changeTripType("airport")}
                   className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
-                    tripType === "airport"
+                    isSelected && tripType === "airport"
                       ? "bg-amber-400 text-slate-950 shadow-sm"
                       : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  <Plane className={`w-4 h-4 ${tripType === "airport" ? "text-slate-950" : "text-slate-400"}`} />
-                  <span className={`text-[10px] font-bold text-center leading-tight ${tripType === "airport" ? "text-slate-950" : "text-slate-700"}`}>
+                  <Plane className={`w-4 h-4 ${isSelected && tripType === "airport" ? "text-slate-950" : "text-slate-400"}`} />
+                  <span className={`text-[10px] font-bold text-center leading-tight ${isSelected && tripType === "airport" ? "text-slate-950" : "text-slate-700"}`}>
                     Airport<br />Cabs
                   </span>
                 </button>
@@ -1430,13 +1488,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 <button
                   onClick={() => changeTripType("hourly")}
                   className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
-                    tripType === "hourly"
+                    isSelected && tripType === "hourly"
                       ? "bg-amber-400 text-slate-950 shadow-sm"
                       : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  <Clock className={`w-4 h-4 ${tripType === "hourly" ? "text-slate-950" : "text-slate-400"}`} />
-                  <span className={`text-[10px] font-bold text-center leading-tight ${tripType === "hourly" ? "text-slate-950" : "text-slate-700"}`}>
+                  <Clock className={`w-4 h-4 ${isSelected && tripType === "hourly" ? "text-slate-950" : "text-slate-400"}`} />
+                  <span className={`text-[10px] font-bold text-center leading-tight ${isSelected && tripType === "hourly" ? "text-slate-950" : "text-slate-700"}`}>
                     Hourly<br />Rentals
                   </span>
                 </button>
@@ -1489,26 +1547,26 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <button
                       onClick={() => changeTripType("outstation-oneway")}
                       className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
-                        tripType === "outstation-oneway"
+                        isSelected && tripType === "outstation-oneway"
                           ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center shrink-0 ${tripType === "outstation-oneway" ? "border-amber-500" : "border-slate-400"}`}>
-                        {tripType === "outstation-oneway" && <div className="w-1 h-1 bg-amber-500 rounded-full" />}
+                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center shrink-0 ${isSelected && tripType === "outstation-oneway" ? "border-amber-500" : "border-slate-400"}`}>
+                        {isSelected && tripType === "outstation-oneway" && <div className="w-1 h-1 bg-amber-500 rounded-full" />}
                       </div>
                       <span className="truncate">One Way</span>
                     </button>
                     <button
                       onClick={() => changeTripType("outstation-round")}
                       className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
-                        tripType === "outstation-round"
+                        isSelected && tripType === "outstation-round"
                           ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center shrink-0 ${tripType === "outstation-round" ? "border-amber-500" : "border-slate-400"}`}>
-                        {tripType === "outstation-round" && <div className="w-1 h-1 bg-amber-500 rounded-full" />}
+                      <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center shrink-0 ${isSelected && tripType === "outstation-round" ? "border-amber-500" : "border-slate-400"}`}>
+                        {isSelected && tripType === "outstation-round" && <div className="w-1 h-1 bg-amber-500 rounded-full" />}
                       </div>
                       <span className="truncate">Round Trip</span>
                     </button>
@@ -1750,7 +1808,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 sm:pb-5 gap-2.5 sm:gap-3 border-b border-amber-100/80 mb-3.5 sm:mb-5">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 w-full sm:w-auto">
                 {TRIP_TABS.map((tab) => {
-                  const active = tripType === tab.id;
+                  const active = isSelected && tripType === tab.id;
                   return (
                     <button
                       key={tab.id}
@@ -1784,7 +1842,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 })}
               </div>
               <div className="hidden md:flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-950 bg-amber-400/20 px-3 py-1.5 rounded-lg border border-amber-400/40">
-                <img src="/logo.png" alt="BroomBoom" className="w-4 h-4 rounded-full object-contain" />
+                <img src="/logo.png" alt="BroomBoom" className="w-4 h-4 rounded-md object-contain" />
                 <span>BroomBoom Cabs Booking</span>
               </div>
             </div>

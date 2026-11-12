@@ -143,11 +143,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               aria-label="BroomBoom Cabs — home"
               className="flex items-center gap-2 sm:gap-2.5 group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 min-w-0"
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-md shadow-amber-400/20 transition-transform group-hover:scale-105 shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-md shadow-amber-400/20 transition-transform group-hover:scale-105 shrink-0">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Cabs"
-                  className="w-full h-full object-contain rounded-full"
+                  className="w-full h-full object-contain rounded-lg"
                 />
               </div>
               <div className="flex items-center gap-1 sm:gap-1.5 leading-none min-w-0">

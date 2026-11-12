@@ -20,6 +20,7 @@ interface OfferItem {
   category: string;
   tab: OfferCategory;
   image: string;
+  alt: string;
   badge?: string;
   title: string;
   validity: string;
@@ -39,7 +40,9 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       id: "cab-1",
       tab: "Outstation",
       category: "Outstation Cabs",
-      image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80",
+      // Replace with your local path or hosted URL for the convertible sunset image
+      image: "/images/outstation-sunset.jpg",
+      alt: "book-car-rental",
       badge: "MEGA CAB SALE",
       title: "Outstation Cabs @ up to 25% OFF*",
       validity: "Ends Today",
@@ -50,7 +53,9 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       id: "cab-2",
       tab: "Airport",
       category: "Airport Transfers",
-      image: "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80",
+      // Replace with your local path or hosted URL for the airport suitcase image
+      image: "/images/airport-suitcase.jpg",
+      alt: "pre-schedule-ride",
       badge: "AIRPORT SPECIAL",
       title: "Flat ₹150 OFF on All Airport Transfers",
       validity: "Valid till 31st Oct",
@@ -61,7 +66,9 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       id: "cab-3",
       tab: "Hourly Rentals",
       category: "Hourly Car Rentals",
-      image: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=600&q=80",
+      // Replace with your local path or hosted URL for the phone/taxi night image
+      image: "/images/hourly-phone-taxi.jpg",
+      alt: "book-intercity-cabs",
       badge: "ZERO SURGE",
       title: "Book Hourly Rental Cabs & Enjoy Zero Surge!",
       validity: "Valid all 7 days",
@@ -73,6 +80,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       tab: "Outstation",
       category: "Outstation • Round Trips",
       image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80",
+      alt: "outstation-round-trip-offer",
       badge: "WEEKEND GETAWAY",
       title: "Flat ₹500 OFF on Outstation Round Trips!",
       validity: "Valid on Weekends",
@@ -84,6 +92,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       tab: "Hourly Rentals",
       category: "Green EV Cabs",
       image: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=600&q=80",
+      alt: "eco-electric-cab-offer",
       badge: "ECO RIDES",
       title: "Save 15% on 100% Electric Eco Cabs",
       validity: "Valid till 15th Nov",
@@ -95,6 +104,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       tab: "Airport",
       category: "Airport • Early Bird",
       image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80",
+      alt: "first-ride-airport-offer",
       badge: "FIRST RIDE",
       title: "Flat ₹200 OFF on Your First BroomBoom Ride",
       validity: "New Users Only",
@@ -216,7 +226,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
                       <div className="relative h-32 sm:h-36 w-full rounded-xl overflow-hidden bg-slate-100">
                         <img
                           src={item.image}
-                          alt={item.title}
+                          alt={item.alt}
                           className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                           onError={(e) => {
                             e.currentTarget.onerror = null;
@@ -314,7 +324,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
                       <div className="relative h-32 sm:h-36 w-full rounded-xl overflow-hidden bg-slate-100">
                         <img
                           src={item.image}
-                          alt={item.title}
+                          alt={item.alt}
                           className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                           onError={(e) => {
                             e.currentTarget.onerror = null;

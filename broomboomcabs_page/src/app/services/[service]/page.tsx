@@ -62,6 +62,9 @@ export default async function ServiceCategoryPage(props: PageProps) {
   if (resolved.service === "rental") {
     redirect("/car-rental");
   }
+  if (resolved.service === "airport") {
+    redirect("/airport-cabs");
+  }
 
   const serviceMeta = getServiceMeta(resolved.service);
   if (!serviceMeta) {

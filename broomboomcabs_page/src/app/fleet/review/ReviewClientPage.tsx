@@ -706,7 +706,7 @@ export const ReviewClientPage: React.FC = () => {
               <img
                 src="/logo.png"
                 alt="BroomBoom Logo"
-                className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-contain"
+                className="w-4 h-4 sm:w-5 sm:h-5 rounded-md object-contain"
               />
               <span>BROOMBOOM</span>
             </Link>

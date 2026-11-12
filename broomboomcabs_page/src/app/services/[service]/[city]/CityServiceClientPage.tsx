@@ -145,6 +145,7 @@ export const CityServiceClientPage: React.FC<CityServiceClientPageProps> = ({
         onSearch={handleSearch}
         initialFrom={cityData.cityName}
         initialTo={initialToCity}
+        navigateOnTabClick={true}
         heading={{
           title: pageHeadingTitle,
           subtitle: pageHeadingSubtitle,

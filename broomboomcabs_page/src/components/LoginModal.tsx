@@ -328,11 +328,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {/* Top Brand Logo */}
           <div className="relative z-10">
             <div className="flex items-center gap-2.5 mb-6">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-sm shrink-0">
+              <div className="w-9 h-9 rounded-xl overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-sm shrink-0">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Logo"
-                  className="w-full h-full object-contain rounded-full"
+                  className="w-full h-full object-contain rounded-lg"
                 />
               </div>
               <span className="font-black text-lg text-white">
@@ -418,11 +418,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
             {/* Header */}
             <div className="mb-5 sm:mb-6 pr-10 sm:pr-8 flex items-start gap-3">
-              <div className="md:hidden w-10 h-10 rounded-full overflow-hidden bg-amber-400 p-0.5 shrink-0 shadow-sm">
+              <div className="md:hidden w-10 h-10 rounded-xl overflow-hidden bg-amber-400 p-0.5 shrink-0 shadow-sm">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Logo"
-                  className="w-full h-full object-contain rounded-full"
+                  className="w-full h-full object-contain rounded-lg"
                 />
               </div>
               <div>
