@@ -249,9 +249,12 @@ async function fetchWithTimeout(
       ...options,
       signal: controller.signal,
     });
-  } catch (err) {
-    // If local URL was attempted and failed, attempt cloud fallback immediately
-    if (url.includes("localhost:5004")) {
+  } catch (err: any) {
+    // Only fall back to cloud backend on connection failure (not on AbortError timeout for mutating POSTs,
+    // which could otherwise create a booking on prod while paying on local)
+    const isGet = !options.method || options.method.toUpperCase() === "GET";
+    const isTimeout = err?.name === "AbortError";
+    if (url.includes("localhost:5004") && (isGet || !isTimeout)) {
       const fallbackUrl = url.replace(LOCAL_API_BASE_URL, PROD_API_BASE_URL);
       try {
         return await fetch(fallbackUrl, {
@@ -360,11 +363,15 @@ export const api = {
       ...bookingData,
     };
 
-    const res = await fetchWithTimeout(`${baseUrl}/bookings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fullPayload),
-    });
+    const res = await fetchWithTimeout(
+      `${baseUrl}/bookings`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fullPayload),
+      },
+      15000
+    );
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
@@ -451,7 +458,7 @@ export const api = {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         },
-        7000
+        10000
       );
       if (res.ok) {
         const data = (await res.json()) as DistanceCalculationResult;
@@ -532,56 +539,6 @@ export const api = {
           }
         }
       } catch {}
-    }
-
-    // Direct Google Routes API (New) Fallback if OSRM failed
-    if (pLat && pLng && dLat && dLng) {
-      try {
-        const googleRes = await fetchWithTimeout(
-          "https://routes.googleapis.com/directions/v2:computeRoutes",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Goog-Api-Key": "AIzaSyBdAaSarc60pYSXzYE9o6OTVnF7PMGFsHs",
-              "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
-            },
-            body: JSON.stringify({
-              origin: {
-                location: {
-                  latLng: { latitude: pLat, longitude: pLng },
-                },
-              },
-              destination: {
-                location: {
-                  latLng: { latitude: dLat, longitude: dLng },
-                },
-              },
-              travelMode: "DRIVE",
-              routingPreference: "TRAFFIC_UNAWARE",
-            }),
-          },
-          6000
-        );
-        if (googleRes.ok) {
-          const gData = await googleRes.json();
-          if (Array.isArray(gData.routes) && gData.routes.length > 0) {
-            const meters = parseFloat(gData.routes[0].distanceMeters) || 0;
-            const secStr = gData.routes[0].duration || "0s";
-            const seconds = parseInt(secStr.replace("s", ""), 10) || 0;
-            return {
-              success: true,
-              distance: parseFloat((meters / 1000).toFixed(1)),
-              durationMinutes: Math.round(seconds / 60),
-              source: "GoogleMaps",
-              pickupCoords: { lat: pLat, lng: pLng },
-              dropCoords: { lat: dLat, lng: dLng },
-            };
-          }
-        }
-      } catch (gErr) {
-        console.warn("Direct Google Routes fallback notice:", gErr);
-      }
     }
 
     return null;
@@ -1014,7 +971,11 @@ export const api = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Failed to create Cashfree payment order (${res.status})`);
+      throw new Error(
+        err?.cashfree?.message ||
+          err?.message ||
+          `Failed to create Cashfree payment order (${res.status})`
+      );
     }
 
     return (await res.json()) as CashfreeOrderResponse;

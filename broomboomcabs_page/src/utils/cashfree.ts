@@ -27,13 +27,22 @@ export function loadCashfreeSdk(): Promise<any> {
       if ((window as any).Cashfree) {
         return resolve((window as any).Cashfree);
       }
-      existing.addEventListener("load", () => {
-        resolve((window as any).Cashfree);
-      });
-      existing.addEventListener("error", () => {
-        reject(new Error("Failed to load Cashfree SDK script"));
-      });
-      return;
+      if (existing.dataset.error === "true") {
+        existing.remove();
+      } else {
+        existing.addEventListener("load", () => {
+          if ((window as any).Cashfree) {
+            resolve((window as any).Cashfree);
+          } else {
+            reject(new Error("Cashfree SDK loaded but global object missing"));
+          }
+        });
+        existing.addEventListener("error", () => {
+          existing.dataset.error = "true";
+          reject(new Error("Failed to load Cashfree SDK script"));
+        });
+        return;
+      }
     }
 
     const script = document.createElement("script");
@@ -50,6 +59,7 @@ export function loadCashfreeSdk(): Promise<any> {
     };
 
     script.onerror = () => {
+      script.dataset.error = "true";
       reject(new Error("Failed to load Cashfree JavaScript SDK"));
     };
 
@@ -63,27 +73,26 @@ export function loadCashfreeSdk(): Promise<any> {
 export async function triggerCashfreePayment(config: CashfreeCheckoutConfig): Promise<void> {
   if (typeof window === "undefined") return;
 
+  if (!config.paymentSessionId) {
+    throw new Error("Missing Cashfree paymentSessionId");
+  }
+
   const mode = config.environment === "production" ? "production" : "sandbox";
 
-  try {
-    const Cashfree = await loadCashfreeSdk();
-    const cashfree = Cashfree({ mode });
+  const Cashfree = await loadCashfreeSdk();
+  const cashfree = await Promise.resolve(Cashfree({ mode }));
 
-    // Redirect the current browser window directly to Cashfree
-    cashfree.checkout({
-      paymentSessionId: config.paymentSessionId,
-      redirectTarget: config.redirectTarget || "_self",
-    });
-  } catch (err) {
-    console.warn("Cashfree SDK failed to initialize, attempting fallback checkout redirect:", err);
+  if (!cashfree || typeof cashfree.checkout !== "function") {
+    throw new Error("Cashfree checkout SDK did not initialize properly");
+  }
 
-    // Fallback: direct browser redirect to hosted checkout
-    const host =
-      mode === "production"
-        ? "https://api.cashfree.com/pg/view/sessions/checkout"
-        : "https://sandbox.cashfree.com/pg/view/sessions/checkout";
+  const result = await cashfree.checkout({
+    paymentSessionId: config.paymentSessionId,
+    redirectTarget: config.redirectTarget || "_self",
+  });
 
-    window.location.href = `${host}?payment_session_id=${encodeURIComponent(config.paymentSessionId)}`;
+  if (result?.error) {
+    throw new Error(result.error.message || "Cashfree checkout failed");
   }
 }
 

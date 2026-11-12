@@ -579,9 +579,18 @@ export const ReviewClientPage: React.FC = () => {
 
       if (backendBooking?.bookingId) {
         finalId = backendBooking.bookingId;
+      } else {
+        throw new Error("Backend did not return a valid booking ID.");
       }
-    } catch (err) {
-      console.warn("Backend booking sync notice:", err);
+    } catch (err: any) {
+      console.error("Backend booking sync error:", err);
+      alert(
+        `Could not create booking before payment: ${
+          err?.message || "Please check backend connection on port 5004"
+        }`
+      );
+      setIsSubmitting(false);
+      return;
     }
 
     setBookingId(finalId);
