@@ -24,7 +24,7 @@ import {
   BlogPost,
 } from "@/data/blogData";
 
-const STORAGE_KEY = "broomboom_blog_page_cms_data_v8";
+const STORAGE_KEY = "broomboom_blog_page_cms_data_v9";
 const POSTS_PER_PAGE = 6;
 
 export function BlogClientPage() {
@@ -587,8 +587,35 @@ export function BlogClientPage() {
               </p>
 
               <div className="text-xs sm:text-sm text-slate-600 leading-relaxed space-y-4">
-                <p>{readingPost.content}</p>
-                <p>
+                {readingPost.content ? (
+                  readingPost.content.split("\n\n").map((block, i) => {
+                    const trimmed = block.trim();
+                    if (trimmed.startsWith("### ")) {
+                      return (
+                        <h4
+                          key={i}
+                          className="text-sm sm:text-base font-bold text-slate-900 mt-4 text-amber-600"
+                        >
+                          {trimmed.replace(/^###\s+/, "")}
+                        </h4>
+                      );
+                    }
+                    if (trimmed.startsWith("## ")) {
+                      return (
+                        <h3
+                          key={i}
+                          className="text-base sm:text-lg font-black text-slate-900 mt-5 pt-3 border-t border-slate-100"
+                        >
+                          {trimmed.replace(/^##\s+/, "")}
+                        </h3>
+                      );
+                    }
+                    return <p key={i}>{trimmed}</p>;
+                  })
+                ) : (
+                  <p>{readingPost.excerpt}</p>
+                )}
+                <p className="font-semibold text-slate-800 pt-2">
                   Need a reliable cab for this trip? BroomBoom Cabs offers guaranteed upfront fares, clean AC vehicles, and courteous drivers with zero return charges.
                 </p>
               </div>

@@ -97,17 +97,25 @@ const BASE_CARS: SelfDriveCar[] = [
 interface SelfDrivenCityClientProps {
   cityName: string;
   citySlug: string;
+  customHeading?: string;
+  customBadge?: string;
+  customSubheading?: string;
+  customHubs?: string[];
 }
 
 export const SelfDrivenCityClient: React.FC<SelfDrivenCityClientProps> = ({
   cityName,
   citySlug,
+  customHeading,
+  customBadge,
+  customSubheading,
+  customHubs,
 }) => {
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<SelfDriveCar | null>(null);
   const cityData = getCityServiceData(citySlug);
 
-  const localHubs = cityData?.airportTerminalDrops || [
+  const localHubs = customHubs || cityData?.airportTerminalDrops || [
     `${cityName} Airport Terminal 1 & 2`,
     `${cityName} Central Railway Station`,
     "City Center & Tech Hub Pickup",
@@ -159,13 +167,13 @@ export const SelfDrivenCityClient: React.FC<SelfDrivenCityClientProps> = ({
           <div className="max-w-3xl mb-8">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30 text-xs font-black uppercase tracking-wider mb-3">
               <KeyRound className="w-3.5 h-3.5 fill-purple-400 text-purple-400" />
-              <span>{cityName} Self-Drive Fleet &bull; Unlimited KMs</span>
+              <span>{customBadge || `${cityName} Self-Drive Fleet • Unlimited KMs`}</span>
             </div>
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-              Self-Drive Car Rental in {cityName}
+              {customHeading || `Self-Drive Car Rental in ${cityName}`}
             </h1>
             <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed max-w-2xl">
-              Drive on your own terms in {cityName}. Hatchbacks, Sedans, Creta, Thar 4x4, and Innova Crysta available with doorstep delivery and zero security deposit options.
+              {customSubheading || `Drive on your own terms in ${cityName}. Hatchbacks, Sedans, Creta, Thar 4x4, and Innova Crysta available with doorstep delivery and zero security deposit options.`}
             </p>
           </div>
         </div>

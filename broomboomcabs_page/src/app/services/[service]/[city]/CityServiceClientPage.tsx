@@ -18,11 +18,15 @@ import { isUserLoggedIn } from "@/utils/auth";
 interface CityServiceClientPageProps {
   cityData: CityServiceInfo;
   serviceMeta: ServiceMeta;
+  children?: React.ReactNode;
+  showServiceContentSection?: boolean;
 }
 
 export const CityServiceClientPage: React.FC<CityServiceClientPageProps> = ({
   cityData,
   serviceMeta,
+  children,
+  showServiceContentSection = true,
 }) => {
   const router = useRouter();
   const [activeTripType, setActiveTripType] = useState<string>(serviceMeta.tripType);
@@ -153,13 +157,18 @@ export const CityServiceClientPage: React.FC<CityServiceClientPageProps> = ({
         }}
       />
 
+      {/* OPTIONAL CUSTOM CHILDREN (e.g. Outstation Editorial & Fare Table) */}
+      {children}
+
       {/* 3. DEDICATED EDITORIAL CONTENT & IMAGE SECTION (Varies by Service & City) */}
-      <div id="service-content-section">
-        <ServiceContentSection
-          serviceId={serviceMeta.id}
-          cityData={cityData}
-        />
-      </div>
+      {showServiceContentSection && (
+        <div id="service-content-section">
+          <ServiceContentSection
+            serviceId={serviceMeta.id}
+            cityData={cityData}
+          />
+        </div>
+      )}
 
       {/* 4. WHY CHOOSE US */}
       <WhyChooseUs />
@@ -185,7 +194,9 @@ export const CityServiceClientPage: React.FC<CityServiceClientPageProps> = ({
         onSearchClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         onMyBookingsClick={() => setIsMyBookingsOpen(true)}
         onOffersClick={() => {
-          const el = document.getElementById("service-content-section");
+          const el =
+            document.getElementById("service-content-section") ||
+            document.getElementById("outstation-custom-sections");
           if (el) el.scrollIntoView({ behavior: "smooth" });
         }}
       />

@@ -215,7 +215,9 @@ function ServiceCategoryClientContent({ serviceId }: ServiceCategoryClientPagePr
       </section>
 
       {/* Service Highlights / Editorial Content */}
-      <ServiceContentSection serviceId={serviceMeta.id} cityData={defaultCity} />
+      {serviceId !== "rental" && serviceId !== "outstation" && serviceId !== "airport" && (
+        <ServiceContentSection serviceId={serviceMeta.id} cityData={defaultCity} />
+      )}
 
       {/* Why Choose Us */}
       <WhyChooseUs />

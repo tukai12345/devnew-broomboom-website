@@ -7,6 +7,26 @@ import {
   getServiceMeta,
 } from "@/data/cityServicesData";
 import { CityServiceClientPage } from "@/app/services/[service]/[city]/CityServiceClientPage";
+import { OutstationCityClientSections } from "./OutstationCityClientSections";
+
+export const EXTRA_OUTSTATION_CITIES = [
+  "kochi",
+  "chandigarh",
+  "ahmedabad",
+  "kolkata1",
+  "bareilly",
+  "ernakulam",
+  "sabarimala",
+  "jamnagar",
+  "jamshedpur",
+  "amritsar",
+  "visakhapatnam",
+  "gwalior",
+  "ambala",
+  "ranikhet",
+  "belgaum",
+  "madurai",
+];
 
 type PageProps = {
   params: Promise<{
@@ -17,9 +37,13 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  return TOP_10_CITIES_SERVICES.map((c) => ({
+  const topCities = TOP_10_CITIES_SERVICES.map((c) => ({
     city: c.cityId,
   }));
+  const extraCities = EXTRA_OUTSTATION_CITIES.map((city) => ({
+    city,
+  }));
+  return [...topCities, ...extraCities];
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
@@ -29,22 +53,22 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
   if (!cityData || !serviceMeta) {
     return {
-      robots: 'noindex, nofollow',
       title: "Outstation Cabs | BroomBoom Cabs",
     };
   }
 
+  const cleanCity = resolved.city.toLowerCase();
+
   return {
-      robots: 'noindex, nofollow',
     title: `Outstation Cabs in ${cityData.cityName} | Lowest Fares & Zero Return Fare — BroomBoom Cabs`,
     description: `Book verified one-way & round-trip outstation cabs in ${cityData.cityName}, ${cityData.state}. Zero return fare, 100% AC cars, GPS live tracking, and 24x7 customer support.`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/outstation-cabs/${cityData.cityId}`,
+      canonical: `https://dev.broomboomcabs.com/outstation-cabs/${cleanCity}`,
     },
     openGraph: {
       title: `Outstation Cabs in ${cityData.cityName} | Lowest Fares — BroomBoom Cabs`,
       description: `Book verified outstation cabs from ${cityData.cityName}. Zero return fare on one-way drops, GPS tracking & 24x7 support.`,
-      url: `https://dev.broomboomcabs.com/outstation-cabs/${cityData.cityId}`,
+      url: `https://dev.broomboomcabs.com/outstation-cabs/${cleanCity}`,
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",
@@ -65,7 +89,9 @@ export default async function OutstationCityPage(props: PageProps) {
     <CityServiceClientPage
       cityData={cityData}
       serviceMeta={serviceMeta}
-    />
+      showServiceContentSection={false}
+    >
+      <OutstationCityClientSections cityData={cityData} />
+    </CityServiceClientPage>
   );
 }
-

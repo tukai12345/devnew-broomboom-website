@@ -7,6 +7,25 @@ import {
   getServiceMeta,
 } from "@/data/cityServicesData";
 import { CityServiceClientPage } from "@/app/services/[service]/[city]/CityServiceClientPage";
+import { AirportCityClientSections } from "./AirportCityClientSections";
+
+export const EXTRA_AIRPORT_CITIES = [
+  "kochi",
+  "chandigarh",
+  "ahmedabad",
+  "bareilly",
+  "ernakulam",
+  "sabarimala",
+  "jamnagar",
+  "jamshedpur",
+  "amritsar",
+  "visakhapatnam",
+  "gwalior",
+  "ambala",
+  "ranikhet",
+  "belgaum",
+  "madurai",
+];
 
 type PageProps = {
   params: Promise<{
@@ -17,9 +36,13 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  return TOP_10_CITIES_SERVICES.map((c) => ({
+  const topCities = TOP_10_CITIES_SERVICES.map((c) => ({
     city: c.cityId,
   }));
+  const extraCities = EXTRA_AIRPORT_CITIES.map((city) => ({
+    city,
+  }));
+  return [...topCities, ...extraCities];
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
@@ -55,7 +78,10 @@ export default async function AirportCityPage(props: PageProps) {
     <CityServiceClientPage
       cityData={cityData}
       serviceMeta={serviceMeta}
-    />
+      showServiceContentSection={false}
+    >
+      <AirportCityClientSections cityData={cityData} />
+    </CityServiceClientPage>
   );
 }
 

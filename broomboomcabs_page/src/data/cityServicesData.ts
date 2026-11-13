@@ -512,12 +512,310 @@ export const SERVICES_LIST: ServiceMeta[] = [
   },
 ];
 
+const KNOWN_EXTRA_CITIES_REGISTRY: Record<
+  string,
+  {
+    name: string;
+    state: string;
+    airportCode?: string;
+    airportName?: string;
+    routes: CityOutstationRoute[];
+  }
+> = {
+  kochi: {
+    name: "Kochi",
+    state: "Kerala",
+    airportCode: "COK",
+    airportName: "Cochin International Airport (Nedumbassery)",
+    routes: [
+      { destination: "Munnar", distance: "128 km", duration: "3h 45m", hatchPrice: 2850, sedanPrice: 3250, suvPrice: 4650, tag: "Hill Station" },
+      { destination: "Alleppey (Alappuzha)", distance: "53 km", duration: "1h 30m", hatchPrice: 1450, sedanPrice: 1750, suvPrice: 2450, tag: "Backwaters" },
+      { destination: "Trivandrum", distance: "205 km", duration: "5h 15m", hatchPrice: 3850, sedanPrice: 4450, suvPrice: 6200 },
+      { destination: "Coimbatore", distance: "190 km", duration: "4h 30m", hatchPrice: 3650, sedanPrice: 4150, suvPrice: 5850 },
+    ],
+  },
+  chandigarh: {
+    name: "Chandigarh",
+    state: "Punjab & Haryana",
+    airportCode: "IXC",
+    airportName: "Shaheed Bhagat Singh International Airport",
+    routes: [
+      { destination: "Shimla", distance: "112 km", duration: "3h 15m", hatchPrice: 2199, sedanPrice: 2499, suvPrice: 3599, tag: "Scenic Hills" },
+      { destination: "Manali", distance: "270 km", duration: "7h 30m", hatchPrice: 4899, sedanPrice: 5499, suvPrice: 7899, tag: "Snow & Adventure" },
+      { destination: "Delhi", distance: "245 km", duration: "4h 15m", hatchPrice: 2499, sedanPrice: 2899, suvPrice: 4199, tag: "NH44 Corridor" },
+      { destination: "Amritsar", distance: "225 km", duration: "4h 00m", hatchPrice: 3199, sedanPrice: 3699, suvPrice: 5199, tag: "Golden Temple" },
+    ],
+  },
+  ahmedabad: {
+    name: "Ahmedabad",
+    state: "Gujarat",
+    airportCode: "AMD",
+    airportName: "Sardar Vallabhbhai Patel International Airport",
+    routes: [
+      { destination: "Udaipur", distance: "260 km", duration: "4h 45m", hatchPrice: 3699, sedanPrice: 4199, suvPrice: 5899, tag: "Lakes & Forts" },
+      { destination: "Vadodara", distance: "110 km", duration: "1h 50m", hatchPrice: 1599, sedanPrice: 1899, suvPrice: 2699, tag: "Expressway" },
+      { destination: "Surat", distance: "265 km", duration: "4h 30m", hatchPrice: 3499, sedanPrice: 3999, suvPrice: 5599 },
+      { destination: "Rajkot", distance: "215 km", duration: "3h 45m", hatchPrice: 2899, sedanPrice: 3299, suvPrice: 4599 },
+    ],
+  },
+  bareilly: {
+    name: "Bareilly",
+    state: "Uttar Pradesh",
+    airportCode: "BEK",
+    airportName: "Bareilly Airport Hub",
+    routes: [
+      { destination: "Delhi NCR", distance: "250 km", duration: "4h 45m", hatchPrice: 3199, sedanPrice: 3699, suvPrice: 5199 },
+      { destination: "Lucknow", distance: "250 km", duration: "4h 30m", hatchPrice: 3199, sedanPrice: 3699, suvPrice: 5199 },
+      { destination: "Nainital", distance: "140 km", duration: "3h 45m", hatchPrice: 2699, sedanPrice: 3099, suvPrice: 4299, tag: "Lake City" },
+      { destination: "Agra", distance: "220 km", duration: "4h 30m", hatchPrice: 3099, sedanPrice: 3499, suvPrice: 4899 },
+    ],
+  },
+  ernakulam: {
+    name: "Ernakulam",
+    state: "Kerala",
+    airportCode: "COK",
+    airportName: "Cochin International Airport Hub",
+    routes: [
+      { destination: "Munnar", distance: "125 km", duration: "3h 45m", hatchPrice: 2850, sedanPrice: 3250, suvPrice: 4650 },
+      { destination: "Sabarimala (Nilakkal)", distance: "165 km", duration: "4h 30m", hatchPrice: 3450, sedanPrice: 3950, suvPrice: 5650, tag: "Pilgrimage" },
+      { destination: "Alleppey", distance: "55 km", duration: "1h 30m", hatchPrice: 1450, sedanPrice: 1750, suvPrice: 2450 },
+      { destination: "Thrissur", distance: "75 km", duration: "1h 45m", hatchPrice: 1850, sedanPrice: 2150, suvPrice: 2950 },
+    ],
+  },
+  sabarimala: {
+    name: "Sabarimala",
+    state: "Kerala",
+    airportCode: "TRV",
+    airportName: "Thiruvananthapuram / Cochin Airport Hub",
+    routes: [
+      { destination: "Ernakulam / Kochi", distance: "165 km", duration: "4h 30m", hatchPrice: 3450, sedanPrice: 3950, suvPrice: 5650 },
+      { destination: "Trivandrum", distance: "160 km", duration: "4h 15m", hatchPrice: 3350, sedanPrice: 3850, suvPrice: 5450 },
+      { destination: "Kottayam", distance: "95 km", duration: "2h 45m", hatchPrice: 2250, sedanPrice: 2650, suvPrice: 3750 },
+      { destination: "Madurai", distance: "210 km", duration: "5h 15m", hatchPrice: 4150, sedanPrice: 4750, suvPrice: 6550 },
+    ],
+  },
+  jamnagar: {
+    name: "Jamnagar",
+    state: "Gujarat",
+    airportCode: "JGA",
+    airportName: "Jamnagar Civil Enclave Airport",
+    routes: [
+      { destination: "Dwarka", distance: "130 km", duration: "2h 30m", hatchPrice: 1999, sedanPrice: 2399, suvPrice: 3399, tag: "Pilgrimage" },
+      { destination: "Rajkot", distance: "90 km", duration: "1h 45m", hatchPrice: 1499, sedanPrice: 1799, suvPrice: 2499 },
+      { destination: "Ahmedabad", distance: "305 km", duration: "5h 30m", hatchPrice: 4299, sedanPrice: 4899, suvPrice: 6799 },
+      { destination: "Somnath", distance: "205 km", duration: "4h 15m", hatchPrice: 3199, sedanPrice: 3699, suvPrice: 5199 },
+    ],
+  },
+  jamshedpur: {
+    name: "Jamshedpur",
+    state: "Jharkhand",
+    airportCode: "IXW",
+    airportName: "Sonari Airport",
+    routes: [
+      { destination: "Ranchi", distance: "130 km", duration: "3h 00m", hatchPrice: 2199, sedanPrice: 2499, suvPrice: 3499 },
+      { destination: "Kolkata", distance: "285 km", duration: "5h 45m", hatchPrice: 4199, sedanPrice: 4799, suvPrice: 6699 },
+      { destination: "Dhanbad", distance: "145 km", duration: "3h 30m", hatchPrice: 2499, sedanPrice: 2899, suvPrice: 3999 },
+      { destination: "Puri", distance: "390 km", duration: "8h 00m", hatchPrice: 5699, sedanPrice: 6499, suvPrice: 8999 },
+    ],
+  },
+  amritsar: {
+    name: "Amritsar",
+    state: "Punjab",
+    airportCode: "ATQ",
+    airportName: "Sri Guru Ram Dass Jee International Airport",
+    routes: [
+      { destination: "Chandigarh", distance: "225 km", duration: "4h 00m", hatchPrice: 3199, sedanPrice: 3699, suvPrice: 5199 },
+      { destination: "Jalandhar", distance: "80 km", duration: "1h 30m", hatchPrice: 1399, sedanPrice: 1699, suvPrice: 2399 },
+      { destination: "Dharamshala", distance: "200 km", duration: "4h 45m", hatchPrice: 3499, sedanPrice: 3999, suvPrice: 5599, tag: "Hill Station" },
+      { destination: "Delhi NCR", distance: "450 km", duration: "7h 45m", hatchPrice: 5499, sedanPrice: 6199, suvPrice: 8599 },
+    ],
+  },
+  visakhapatnam: {
+    name: "Visakhapatnam",
+    state: "Andhra Pradesh",
+    airportCode: "VTZ",
+    airportName: "Visakhapatnam International Airport",
+    routes: [
+      { destination: "Araku Valley", distance: "115 km", duration: "3h 15m", hatchPrice: 2299, sedanPrice: 2699, suvPrice: 3799, tag: "Valley & Coffee" },
+      { destination: "Rajahmundry", distance: "190 km", duration: "3h 45m", hatchPrice: 3199, sedanPrice: 3699, suvPrice: 5099 },
+      { destination: "Vijayawada", distance: "350 km", duration: "6h 30m", hatchPrice: 5199, sedanPrice: 5899, suvPrice: 8199 },
+      { destination: "Bhubaneswar", distance: "440 km", duration: "7h 45m", hatchPrice: 5999, sedanPrice: 6899, suvPrice: 9499 },
+    ],
+  },
+  gwalior: {
+    name: "Gwalior",
+    state: "Madhya Pradesh",
+    airportCode: "GWL",
+    airportName: "Rajmata Vijaya Raje Scindia Airport",
+    routes: [
+      { destination: "Agra", distance: "120 km", duration: "2h 15m", hatchPrice: 1899, sedanPrice: 2299, suvPrice: 3199 },
+      { destination: "Jhansi", distance: "100 km", duration: "2h 00m", hatchPrice: 1699, sedanPrice: 1999, suvPrice: 2799 },
+      { destination: "Delhi NCR", distance: "330 km", duration: "5h 30m", hatchPrice: 4299, sedanPrice: 4899, suvPrice: 6799 },
+      { destination: "Jaipur", distance: "330 km", duration: "6h 00m", hatchPrice: 4399, sedanPrice: 4999, suvPrice: 6899 },
+    ],
+  },
+  ambala: {
+    name: "Ambala",
+    state: "Haryana",
+    airportCode: "IXC",
+    airportName: "Chandigarh / Ambala Regional Hub",
+    routes: [
+      { destination: "Chandigarh", distance: "45 km", duration: "50m", hatchPrice: 899, sedanPrice: 1099, suvPrice: 1599 },
+      { destination: "Delhi NCR", distance: "200 km", duration: "3h 30m", hatchPrice: 2499, sedanPrice: 2899, suvPrice: 4099 },
+      { destination: "Shimla", distance: "150 km", duration: "4h 00m", hatchPrice: 2799, sedanPrice: 3199, suvPrice: 4499 },
+      { destination: "Patiala", distance: "50 km", duration: "1h 00m", hatchPrice: 999, sedanPrice: 1199, suvPrice: 1699 },
+    ],
+  },
+  ranikhet: {
+    name: "Ranikhet",
+    state: "Uttarakhand",
+    airportCode: "PGH",
+    airportName: "Pantnagar Airport Hub",
+    routes: [
+      { destination: "Kathgodam", distance: "75 km", duration: "2h 30m", hatchPrice: 1899, sedanPrice: 2299, suvPrice: 3199 },
+      { destination: "Nainital", distance: "60 km", duration: "2h 00m", hatchPrice: 1699, sedanPrice: 1999, suvPrice: 2799 },
+      { destination: "Delhi NCR", distance: "360 km", duration: "7h 45m", hatchPrice: 4999, sedanPrice: 5699, suvPrice: 7899 },
+      { destination: "Almora", distance: "45 km", duration: "1h 30m", hatchPrice: 1299, sedanPrice: 1499, suvPrice: 2099 },
+    ],
+  },
+  belgaum: {
+    name: "Belgaum",
+    state: "Karnataka",
+    airportCode: "IXG",
+    airportName: "Belagavi Airport",
+    routes: [
+      { destination: "Goa (North/South)", distance: "110 km", duration: "3h 00m", hatchPrice: 2499, sedanPrice: 2899, suvPrice: 3999, tag: "Beach Gateway" },
+      { destination: "Kolhapur", distance: "115 km", duration: "2h 15m", hatchPrice: 1899, sedanPrice: 2299, suvPrice: 3199 },
+      { destination: "Hubli", distance: "95 km", duration: "1h 45m", hatchPrice: 1699, sedanPrice: 1999, suvPrice: 2799 },
+      { destination: "Pune", distance: "340 km", duration: "6h 00m", hatchPrice: 4699, sedanPrice: 5299, suvPrice: 7299 },
+    ],
+  },
+  madurai: {
+    name: "Madurai",
+    state: "Tamil Nadu",
+    airportCode: "IXM",
+    airportName: "Madurai International Airport",
+    routes: [
+      { destination: "Rameswaram", distance: "175 km", duration: "3h 30m", hatchPrice: 2799, sedanPrice: 3299, suvPrice: 4599, tag: "Pilgrimage" },
+      { destination: "Kodaikanal", distance: "120 km", duration: "3h 15m", hatchPrice: 2499, sedanPrice: 2899, suvPrice: 4099, tag: "Princess of Hill Stations" },
+      { destination: "Tirunelveli", distance: "160 km", duration: "2h 45m", hatchPrice: 2599, sedanPrice: 2999, suvPrice: 4199 },
+      { destination: "Chennai", distance: "460 km", duration: "7h 30m", hatchPrice: 5699, sedanPrice: 6499, suvPrice: 8999 },
+    ],
+  },
+};
+
+const defaultRentalPackages: CityRentalPackage[] = [
+  {
+    packageId: "2h-20km",
+    duration: "2 Hours",
+    km: "20 KM",
+    hatchPrice: 499,
+    sedanPrice: 599,
+    suvPrice: 899,
+    idealFor: "Quick meetings, railway station drop, shopping trips",
+  },
+  {
+    packageId: "4h-40km",
+    duration: "4 Hours",
+    km: "40 KM",
+    hatchPrice: 899,
+    sedanPrice: 1049,
+    suvPrice: 1499,
+    idealFor: "Hospital visits, multiple bank visits, city errands",
+  },
+  {
+    packageId: "8h-80km",
+    duration: "8 Hours",
+    km: "80 KM",
+    hatchPrice: 1699,
+    sedanPrice: 1999,
+    suvPrice: 2799,
+    popular: true,
+    idealFor: "Full day city sightseeing, corporate meetings, wedding duties",
+  },
+  {
+    packageId: "12h-120km",
+    duration: "12 Hours",
+    km: "120 KM",
+    hatchPrice: 2499,
+    sedanPrice: 2899,
+    suvPrice: 3899,
+    idealFor: "Extended day rentals, outer bypass travel, family outings",
+  },
+];
+
 export function getCityServiceData(cityId?: string): CityServiceInfo | undefined {
   if (!cityId || typeof cityId !== "string") return undefined;
-  const target = cityId.trim().toLowerCase();
-  return TOP_10_CITIES_SERVICES.find(
+  let target = cityId.trim().toLowerCase();
+  if (target === "kolkata1") target = "kolkata";
+
+  // Check top 10 first
+  const foundTop10 = TOP_10_CITIES_SERVICES.find(
     (c) => c?.cityId && c.cityId.toLowerCase() === target
   );
+  if (foundTop10) return foundTop10;
+
+  // Check extra registry
+  const extra = KNOWN_EXTRA_CITIES_REGISTRY[target];
+  const cityName = extra
+    ? extra.name
+    : target
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+  const state = extra ? extra.state : "India";
+  const airportCode = extra?.airportCode || "";
+  const airportName = extra?.airportName || `${cityName} Airport`;
+  const outstationRoutes = extra?.routes || [
+    { destination: "Nearby Metro / City Hub", distance: "150 km", duration: "3h 00m", hatchPrice: 2199, sedanPrice: 2599, suvPrice: 3599 },
+    { destination: "Airport / Railway Junction", distance: "85 km", duration: "1h 45m", hatchPrice: 1499, sedanPrice: 1799, suvPrice: 2499 },
+    { destination: "Weekend Hill Station / Retreat", distance: "220 km", duration: "4h 30m", hatchPrice: 3199, sedanPrice: 3699, suvPrice: 5099 },
+  ];
+
+  return {
+    cityId: target,
+    cityName,
+    state,
+    airportName,
+    airportCode,
+    airportStartingPrice: 599,
+    airportTerminalDrops: [
+      `${cityName} Airport Arrivals / Departures`,
+      "City Center & Prime Commercial Area",
+      "Main Railway Station",
+      "Key Hotels & IT Enclaves",
+    ],
+    outstationOverview: `Book verified 24x7 one-way and round-trip outstation cabs from ${cityName}, ${state} with BroomBoom Cabs. Enjoy zero return fare on one-way drops, transparent billing, sanitized AC vehicles, and experienced highway chauffeurs.`,
+    rentalOverview: `Hire chauffeur-driven local cabs in ${cityName} with flexible hourly rental packages from 2 hours to 12 hours. Includes multiple stops, clean AC cars, and polite drivers.`,
+    airportOverview: `Reliable airport taxi transfers in ${cityName}. Enjoy guaranteed on-time doorstep pickup, live flight delay monitoring, and complimentary wait time.`,
+    popularLocalHotspots: [
+      "City Center & Main Shopping Markets",
+      "Main Railway Junction",
+      "Commercial & Business Centers",
+      "Prominent Pilgrimage & Heritage Sites",
+    ],
+    rentalPackages: defaultRentalPackages,
+    outstationRoutes,
+    cityFaqs: [
+      {
+        question: `How do I book an outstation cab in ${cityName}?`,
+        answer: `Booking is simple: enter your pickup address in ${cityName}, select your drop destination, travel date, and choose your preferred car (Hatchback, Sedan, or SUV). Confirm with zero advance penalties.`,
+      },
+      {
+        question: `Do I need to pay return fare for a one-way trip from ${cityName}?`,
+        answer: `No! BroomBoom provides transparent one-way outstation taxi fares. You only pay for the distance travelled from ${cityName} without any empty return charges.`,
+      },
+      {
+        question: `What vehicle options are available in ${cityName}?`,
+        answer: `We provide AC Hatchbacks (WagonR/Tiago), comfortable Sedans (Dzire/Etios), 6-seater SUVs (Ertiga), and executive 7-seater vehicles (Innova Crysta).`,
+      },
+      {
+        question: `Is 24x7 customer support available for trips from ${cityName}?`,
+        answer: `Yes, our dedicated support team is available 24x7 at +91 8240765499 to assist with your bookings, driver details, and highway travel requirements.`,
+      },
+    ],
+  };
 }
 
 export function getServiceMeta(serviceId?: string): ServiceMeta | undefined {

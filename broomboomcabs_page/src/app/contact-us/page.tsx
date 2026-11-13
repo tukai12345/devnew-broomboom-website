@@ -143,7 +143,7 @@ export default function ContactPage() {
             Contact BroomBoom Cabs
           </h1>
           <p className="text-sm sm:text-base text-slate-300 mt-4 leading-relaxed">
-            Have questions about your booking, route pricing, corporate tie-ups, or driver partnership? Our 24x7 desk is here for you.
+           BroomBoom Cabs- Get verified top rated pilots and experience the most economical intercity ride anytime from anywhere in West Bengal.
           </p>
         </div>
       </section>

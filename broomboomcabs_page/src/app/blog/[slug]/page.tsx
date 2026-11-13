@@ -148,11 +148,95 @@ export default async function BlogPostPage({ params }: PageProps) {
             {/* Main Content Body */}
             <div className="prose prose-slate max-w-none text-sm sm:text-base text-slate-700 leading-relaxed space-y-5">
               {post.content ? (
-                post.content.split("\n\n").map((para, i) => (
-                  <p key={i} className="leading-relaxed">
-                    {para}
-                  </p>
-                ))
+                post.content.split("\n\n").map((block, i) => {
+                  const trimmed = block.trim();
+                  if (trimmed.startsWith("### ")) {
+                    return (
+                      <h3
+                        key={i}
+                        className="text-lg sm:text-xl font-bold text-slate-900 mt-6 mb-2 text-amber-600"
+                      >
+                        {trimmed.replace(/^###\s+/, "")}
+                      </h3>
+                    );
+                  }
+                  if (trimmed.startsWith("## ")) {
+                    return (
+                      <h2
+                        key={i}
+                        className="text-xl sm:text-2xl font-black text-slate-900 mt-8 mb-3 pt-4 border-t border-slate-100"
+                      >
+                        {trimmed.replace(/^##\s+/, "")}
+                      </h2>
+                    );
+                  }
+                  if (trimmed.startsWith("# ")) {
+                    return (
+                      <h2
+                        key={i}
+                        className="text-2xl sm:text-3xl font-black text-slate-900 mt-8 mb-4"
+                      >
+                        {trimmed.replace(/^#\s+/, "")}
+                      </h2>
+                    );
+                  }
+                  // Check if all lines are bullets
+                  const lines = trimmed.split("\n");
+                  if (
+                    lines.length > 0 &&
+                    lines.every(
+                      (line) =>
+                        line.trim().startsWith("- ") ||
+                        line.trim().startsWith("* ")
+                    )
+                  ) {
+                    return (
+                      <ul key={i} className="space-y-2 my-4 pl-2">
+                        {lines.map((line, liIdx) => (
+                          <li
+                            key={liIdx}
+                            className="flex items-start gap-2.5 text-slate-700 leading-relaxed"
+                          >
+                            <span className="text-amber-500 font-bold shrink-0 mt-0.5">
+                              &bull;
+                            </span>
+                            <span>{line.trim().replace(/^[-*]\s+/, "")}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  }
+                  // Check if lines are numbered list
+                  if (
+                    lines.length > 0 &&
+                    lines.every((line) => /^\d+\.\s+/.test(line.trim()))
+                  ) {
+                    return (
+                      <ol key={i} className="space-y-3 my-4 pl-1">
+                        {lines.map((line, liIdx) => {
+                          const match = line.trim().match(/^(\d+)\.\s+(.*)$/);
+                          if (!match) return <li key={liIdx}>{line}</li>;
+                          return (
+                            <li
+                              key={liIdx}
+                              className="flex items-start gap-3 text-slate-700 leading-relaxed"
+                            >
+                              <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                {match[1]}
+                              </span>
+                              <span>{match[2]}</span>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    );
+                  }
+                  return (
+                    <p key={i} className="leading-relaxed">
+                      {trimmed}
+                    </p>
+                  );
+                })
               ) : (
                 <p>{post.excerpt}</p>
               )}

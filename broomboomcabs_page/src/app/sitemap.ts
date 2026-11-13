@@ -1,6 +1,18 @@
 import { MetadataRoute } from "next";
 import { TOP_10_CITIES_SERVICES, SERVICES_LIST, getServiceUrl } from "@/data/cityServicesData";
 import { INITIAL_BLOG_DATA } from "@/data/blogData";
+import { TAXI_SERVICE_ROUTES } from "@/data/taxiServiceRoutes";
+import { KOLKATA_ROUTES } from "@/data/kolkataRoutes";
+import { EXTRA_OUTSTATION_CITIES } from "@/app/outstation-cabs/[city]/page";
+import { EXTRA_AIRPORT_CITIES } from "@/app/airport-cabs/[city]/page";
+import { CAR_RENTAL_SPECIAL_ROUTES } from "@/data/carRentalRoutes";
+import { BOOK_TAXI_ROUTES } from "@/data/bookTaxiRoutes";
+import { SELF_DRIVE_ROUTES } from "@/data/selfDriveRoutes";
+import { TAXI_NEAR_ROUTES } from "@/data/taxiNearRoutes";
+import { CANONICAL_TEMPLE_SLUGS } from "@/data/templeKolkataRoutes";
+import { CORPORATE_PICK_DROP_SLUGS } from "@/data/corporatePickDropRoutes";
+import { RESERVED_CABS_SLUGS } from "@/data/reservedCabsRoutes";
+import { SHOPPING_MALL_SLUGS } from "@/data/shoppingMallKolkataRoutes";
 
 const DEFAULT_SITE_URL = "https://dev.broomboomcabs.com";
 
@@ -158,14 +170,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // 3b. Dynamic Taxi Service, Taxi Near & Self-Drive City Pages
+  // 3b. Dynamic Taxi Near & Self-Drive City Pages for Top 10
   for (const city of TOP_10_CITIES_SERVICES) {
-    builtInCityServicePages.push({
-      url: `${siteUrl}/taxi-service/pet-friendly-cab-in-${city.cityId}`,
-      lastModified: currentDate,
-      changeFrequency: "weekly",
-      priority: 0.82,
-    });
     builtInCityServicePages.push({
       url: `${siteUrl}/taxi-near/${city.cityId}`,
       lastModified: currentDate,
@@ -180,6 +186,151 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
+  // 3c. All Taxi Service Routes (Pet Friendly, Intercity, Airport & Area routes)
+  const taxiRoutesPages: MetadataRoute.Sitemap = TAXI_SERVICE_ROUTES.map((slug) => ({
+    url: `${siteUrl}/taxi-service/${slug}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  // 3d. Kolkata Outstation Corridors (/kolkata/*)
+  const kolkataRoutesPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/kolkata`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.88,
+    },
+    ...KOLKATA_ROUTES.map((slug) => ({
+      url: `${siteUrl}/kolkata/${slug}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
+  ];
+
+  // 3e. Additional Outstation Cities (/outstation-cabs/*)
+  const extraOutstationPages: MetadataRoute.Sitemap = EXTRA_OUTSTATION_CITIES.map((city) => ({
+    url: `${siteUrl}/outstation-cabs/${city.toLowerCase()}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+  }));
+
+  // 3e2. Additional Airport Cab Cities (/airport-cabs/*)
+  const extraAirportPages: MetadataRoute.Sitemap = EXTRA_AIRPORT_CITIES.map((city) => ({
+    url: `${siteUrl}/airport-cabs/${city.toLowerCase()}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+  }));
+
+  // 3f. Special Car Rentals & Tempo Travellers (/car-rental/*)
+  const carRentalSpecialPages: MetadataRoute.Sitemap = CAR_RENTAL_SPECIAL_ROUTES.map((slug) => ({
+    url: `${siteUrl}/car-rental/${slug.toLowerCase()}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+  }));
+
+  // 3g. Book Taxi Dedicated Corridors (/book-taxi/*)
+  const bookTaxiPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/book-taxi`,
+      lastModified: currentDate,
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    ...BOOK_TAXI_ROUTES.map((slug) => ({
+      url: `${siteUrl}/book-taxi/${slug}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
+  ];
+
+  // 3h. Self-Drive Routes (/self-driven/*)
+  const selfDrivePages: MetadataRoute.Sitemap = SELF_DRIVE_ROUTES.map((slug) => ({
+    url: `${siteUrl}/self-driven/${slug}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+  }));
+
+  // 3i. Taxi Near Hubs (/taxi-near/*)
+  const taxiNearPages: MetadataRoute.Sitemap = TAXI_NEAR_ROUTES.map((slug) => ({
+    url: `${siteUrl}/taxi-near/${slug.toLowerCase()}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+  }));
+
+  // 3j. Kolkata & Bengal Temple Pilgrimage Routes (/taxi-service-temple-kolkata/*)
+  const templeKolkataPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/taxi-service-temple-kolkata`,
+      lastModified: currentDate,
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    ...CANONICAL_TEMPLE_SLUGS.map((slug) => ({
+      url: `${siteUrl}/taxi-service-temple-kolkata/${encodeURIComponent(slug)}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
+  ];
+
+  // 3k. Corporate Employee Pick & Drop Kolkata (/corporate-pick-drop-kolkata/*)
+  const corporateKolkataPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/corporate-pick-drop-kolkata`,
+      lastModified: currentDate,
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    ...CORPORATE_PICK_DROP_SLUGS.map((slug) => ({
+      url: `${siteUrl}/corporate-pick-drop-kolkata/${encodeURIComponent(slug)}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
+  ];
+
+  // 3l. Reserved Airport Cabs - Himalayan & Northeast Routes (/reserved-cabs/*)
+  const reservedCabsPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/reserved-cabs`,
+      lastModified: currentDate,
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    ...RESERVED_CABS_SLUGS.map((slug) => ({
+      url: `${siteUrl}/reserved-cabs/${encodeURIComponent(slug)}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
+  ];
+
+  // 3m. Kolkata Shopping Malls Taxi Service (/taxi-service-shoppingmalls-kolkata/*)
+  const shoppingMallPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/taxi-service-shoppingmalls-kolkata`,
+      lastModified: currentDate,
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    ...SHOPPING_MALL_SLUGS.map((slug) => ({
+      url: `${siteUrl}/taxi-service-shoppingmalls-kolkata/${encodeURIComponent(slug)}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
+  ];
+
+  // 4. Blog Posts
   const blogPages: MetadataRoute.Sitemap = INITIAL_BLOG_DATA.posts.map((post) => ({
     url: `${siteUrl}/blog/${post.slug}`,
     lastModified: currentDate,
@@ -187,11 +338,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.72,
   }));
 
-  return [
+  const allEntries = [
     ...corePages,
     ...serviceCategoryPages,
     ...builtInCityServicePages,
+    ...extraOutstationPages,
+    ...extraAirportPages,
+    ...carRentalSpecialPages,
+    ...bookTaxiPages,
+    ...selfDrivePages,
+    ...taxiNearPages,
+    ...templeKolkataPages,
+    ...corporateKolkataPages,
+    ...reservedCabsPages,
+    ...shoppingMallPages,
+    ...kolkataRoutesPages,
+    ...taxiRoutesPages,
     ...blogPages,
   ];
-}
 
+  // Deduplicate by URL
+  const seenUrls = new Set<string>();
+  const uniqueEntries: MetadataRoute.Sitemap = [];
+  for (const entry of allEntries) {
+    if (!seenUrls.has(entry.url)) {
+      seenUrls.add(entry.url);
+      uniqueEntries.push(entry);
+    }
+  }
+
+  return uniqueEntries;
+}

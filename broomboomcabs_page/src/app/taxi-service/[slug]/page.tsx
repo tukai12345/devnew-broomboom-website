@@ -1,7 +1,10 @@
 import React from "react";
 import { Metadata } from "next";
 import { PetFriendlyCityClient } from "./PetFriendlyCityClient";
-import { getCityServiceData } from "@/data/cityServicesData";
+import { RouteTaxiClient } from "./RouteTaxiClient";
+import { AreaTaxiClient } from "./AreaTaxiClient";
+import { parseTaxiServiceSlug } from "@/utils/taxiRouteParser";
+import { TAXI_SERVICE_ROUTES } from "@/data/taxiServiceRoutes";
 
 interface PageProps {
   params: Promise<{
@@ -9,62 +12,45 @@ interface PageProps {
   }>;
 }
 
-function parseCityFromSlug(slug: string): { cityName: string; isPetFriendly: boolean } {
-  const isPet = /^pet-friendly-cabs?-in-/i.test(slug);
-  const raw = isPet ? slug.replace(/^pet-friendly-cabs?-in-/i, "") : slug;
-
-  const known = getCityServiceData(raw);
-  if (known) {
-    return {
-      cityName: known.cityName,
-      isPetFriendly: isPet,
-    };
-  }
-
-  const formatted = raw
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-
-  return {
-    cityName: formatted || "India",
-    isPetFriendly: isPet,
-  };
+// Generate static params for top routes for high-speed prerendering
+export async function generateStaticParams() {
+  return TAXI_SERVICE_ROUTES.slice(0, 100).map((slug) => ({
+    slug,
+  }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const { cityName, isPetFriendly } = parseCityFromSlug(slug);
-
-  if (isPetFriendly) {
-    return {
-      title: `Pet Friendly Cabs in ${cityName} | Travel with Dogs & Cats | BroomBoom Cabs`,
-      description: `Book 100% verified pet-friendly cabs in ${cityName} with BroomBoom. Safe, clean, and spacious AC cabs for dogs, cats & pets. Local clinic visits, vet rides, airport drops & outstation trips.`,
-      alternates: {
-        canonical: `https://dev.broomboomcabs.com/taxi-service/${slug}`,
-      },
-      openGraph: {
-        title: `Pet Friendly Cabs in ${cityName} — Dog & Cat Friendly Rides | BroomBoom`,
-        description: `Travel stress-free with your fur babies across ${cityName}. Verified pet-loving drivers, seat covers, sanitized AC Hatchback, Sedan & SUV cabs.`,
-        url: `https://dev.broomboomcabs.com/taxi-service/${slug}`,
-        siteName: "BroomBoom Cabs",
-        locale: "en_IN",
-        type: "website",
-      },
-    };
-  }
+  const parsed = parseTaxiServiceSlug(slug);
 
   return {
-    title: `Taxi Service in ${cityName} | Cab Booking Online | BroomBoom Cabs`,
-    description: `Book verified 24x7 taxi service in ${cityName}. One-way outstation cabs, airport drops, and hourly rentals with zero cancellation and best rates.`,
+    title: parsed.pageTitle,
+    description: parsed.pageDescription,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/taxi-service/${slug}`,
+      canonical: parsed.canonicalUrl,
+    },
+    openGraph: {
+      title: parsed.pageTitle,
+      description: parsed.pageDescription,
+      url: parsed.canonicalUrl,
+      siteName: "BroomBoom Cabs",
+      locale: "en_IN",
+      type: "website",
     },
   };
 }
 
 export default async function TaxiServiceSlugPage({ params }: PageProps) {
   const { slug } = await params;
-  const { cityName } = parseCityFromSlug(slug);
+  const parsed = parseTaxiServiceSlug(slug);
 
-  return <PetFriendlyCityClient cityName={cityName} citySlug={slug} />;
+  if (parsed.type === "pet") {
+    return <PetFriendlyCityClient cityName={parsed.cityName} citySlug={slug} />;
+  }
+
+  if (parsed.type === "route") {
+    return <RouteTaxiClient route={parsed} />;
+  }
+
+  return <AreaTaxiClient route={parsed} />;
 }

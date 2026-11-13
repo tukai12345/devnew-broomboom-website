@@ -7,6 +7,12 @@ import {
   getServiceMeta,
 } from "@/data/cityServicesData";
 import { CityServiceClientPage } from "@/app/services/[service]/[city]/CityServiceClientPage";
+import {
+  CAR_RENTAL_SPECIAL_ROUTES,
+  parseSpecialCarRentalSlug,
+} from "@/data/carRentalRoutes";
+import { SpecialCarRentalClient } from "./SpecialCarRentalClient";
+import { CarRentalCityClientSections } from "./CarRentalCityClientSections";
 
 type PageProps = {
   params: Promise<{
@@ -17,14 +23,41 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  return TOP_10_CITIES_SERVICES.map((c) => ({
+  const topCities = TOP_10_CITIES_SERVICES.map((c) => ({
     city: c.cityId,
   }));
+  const specialRoutes = CAR_RENTAL_SPECIAL_ROUTES.map((city) => ({
+    city,
+  }));
+  return [...topCities, ...specialRoutes];
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const resolved = await props.params;
-  const cityData = getCityServiceData(resolved.city);
+  const rawSlug = resolved.city;
+
+  // Check special vehicle / package first
+  const specialInfo = parseSpecialCarRentalSlug(rawSlug);
+  if (specialInfo) {
+    return {
+      title: specialInfo.pageTitle,
+      description: specialInfo.pageDescription,
+      alternates: {
+        canonical: specialInfo.canonicalUrl,
+      },
+      openGraph: {
+        title: specialInfo.pageTitle,
+        description: specialInfo.pageDescription,
+        url: specialInfo.canonicalUrl,
+        siteName: "BroomBoom Cabs",
+        locale: "en_IN",
+        type: "website",
+      },
+    };
+  }
+
+  // Check city service data
+  const cityData = getCityServiceData(rawSlug);
   const serviceMeta = getServiceMeta("rental");
 
   if (!cityData || !serviceMeta) {
@@ -33,18 +66,37 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     };
   }
 
+  const cleanCity = rawSlug.toLowerCase();
+
   return {
     title: `Car Rentals in ${cityData.cityName} | Chauffeur & Unlimited Stops — BroomBoom Cabs`,
-    description: `Book private car rentals in ${cityData.cityName}, ${cityData.state}. Flexible 5h to 12h packages, unlimited local stops, professional chauffeur, and transparent pricing.`,
+    description: `Book private car rentals in ${cityData.cityName}, ${cityData.state}. Flexible 2h to 12h packages, unlimited local stops, professional chauffeur, and transparent pricing.`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/car-rental/${cityData.cityId}`,
+      canonical: `https://dev.broomboomcabs.com/car-rental/${cleanCity}`,
+    },
+    openGraph: {
+      title: `Car Rentals in ${cityData.cityName} | BroomBoom Cabs`,
+      description: `Book private car rentals in ${cityData.cityName}. Transparent pricing with chauffeur.`,
+      url: `https://dev.broomboomcabs.com/car-rental/${cleanCity}`,
+      siteName: "BroomBoom Cabs",
+      locale: "en_IN",
+      type: "website",
     },
   };
 }
 
 export default async function HourlyRentalCityPage(props: PageProps) {
   const resolved = await props.params;
-  const cityData = getCityServiceData(resolved.city);
+  const rawSlug = resolved.city;
+
+  // 1. Check special vehicle rental / tempo traveller / tour package
+  const specialInfo = parseSpecialCarRentalSlug(rawSlug);
+  if (specialInfo) {
+    return <SpecialCarRentalClient info={specialInfo} />;
+  }
+
+  // 2. City car rental
+  const cityData = getCityServiceData(rawSlug);
   const serviceMeta = getServiceMeta("rental");
 
   if (!cityData || !serviceMeta) {
@@ -55,7 +107,9 @@ export default async function HourlyRentalCityPage(props: PageProps) {
     <CityServiceClientPage
       cityData={cityData}
       serviceMeta={serviceMeta}
-    />
+      showServiceContentSection={false}
+    >
+      <CarRentalCityClientSections cityData={cityData} />
+    </CityServiceClientPage>
   );
 }
-
