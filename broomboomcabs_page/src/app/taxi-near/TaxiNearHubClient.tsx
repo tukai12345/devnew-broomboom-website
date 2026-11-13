@@ -163,51 +163,36 @@ export const TaxiNearHubClient: React.FC = () => {
     <main className="min-h-screen flex flex-col bg-slate-50 selection:bg-amber-400 selection:text-slate-950">
       <Navbar onMyBookingsClick={() => setIsMyBookingsOpen(true)} />
 
-      {/* Hero Banner */}
-      <section
-        className="relative pt-10 sm:pt-14 pb-14 sm:pb-20 bg-cover bg-center text-white border-b border-white/10"
-        style={{
-          backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.88), rgba(10, 16, 26, 0.94)), url('https://images.unsplash.com/photo-1514316454349-750a7fd3da3a?auto=format&fit=crop&w=1920&q=80')`,
+      {/* 2. Hero Search Banner (Identical layout to Main & Outstation Pages) */}
+      <HeroSearch
+        activeTripType={activeTripType}
+        onTripTypeChange={(type) => setActiveTripType(type)}
+        onSearch={handleSearch}
+        initialFrom="Kolkata"
+        initialTo="Howrah"
+        navigateOnTabClick={true}
+        heading={{
+          title: (
+            <>
+              Taxi Near Me &mdash;{" "}
+              <span className="text-amber-400">24x7 Instant Cab Booking</span>
+            </>
+          ),
+          subtitle:
+            "Enter your pickup location to locate nearest available BroomBoom cabs • 3 to 8 mins average ETA",
+          badge: "Live Dispatch • Fastest Doorstep Pickup",
         }}
-      >
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex items-center gap-2 text-xs text-amber-400 font-bold uppercase tracking-wider mb-4">
-            <Link href="/" className="hover:underline">
-              Home
-            </Link>
-            <span>&rsaquo;</span>
-            <span className="text-slate-300">Taxi Near Me</span>
-          </nav>
+      />
 
-          <div className="max-w-3xl mb-8">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-black uppercase tracking-wider mb-3">
-              <Zap className="w-3.5 h-3.5 fill-emerald-400 text-emerald-400" />
-              <span>Fastest Doorstep Pickup &bull; 3 to 8 Mins Average ETA</span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-              Taxi Near Me — 24x7 Instant Cab Booking
-            </h1>
-            <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed max-w-2xl">
-              Need a cab right now? Find the nearest available BroomBoom taxi in your area. Zero surge pricing, clean air-conditioned cars, and verified local chauffeurs ready at your doorstep.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Hero Search Box */}
-      <div className="relative -mt-12 max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 w-full z-20">
-        <HeroSearch
-          activeTripType={activeTripType}
-          onTripTypeChange={(type) => setActiveTripType(type)}
-          onSearch={handleSearch}
-          initialFrom="Kolkata"
-          initialTo="Howrah"
-          heading={{
-            title: "Book Taxi Near You Instantly",
-            subtitle: "Enter your pickup location to locate nearest available BroomBoom cabs",
-            badge: "Live Dispatch • 3-8 Min Pickup Guarantee",
-          }}
-        />
+      {/* Breadcrumb */}
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1">
+        <nav className="flex items-center text-xs sm:text-sm text-slate-500 space-x-2">
+          <Link href="/" className="hover:text-amber-600 transition-colors">
+            Home
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-800 font-semibold truncate">Taxi Near Me</span>
+        </nav>
       </div>
 
       {/* 4 Pillars of Taxi Near Me */}

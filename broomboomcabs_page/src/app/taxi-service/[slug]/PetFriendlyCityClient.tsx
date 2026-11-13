@@ -415,74 +415,43 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-50 selection:bg-amber-400 selection:text-slate-950">
+      {/* 1. Top Navbar */}
       <Navbar onMyBookingsClick={() => setIsMyBookingsOpen(true)} />
 
-      {/* Top Announcement Banner */}
-      <div className="w-full bg-amber-400 text-slate-950 border-b border-amber-500">
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-center sm:justify-between gap-1 text-[11px] sm:text-sm font-black tracking-wide">
-          <span className="inline-flex items-center gap-1.5">
-            <PawPrint className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Pet Friendly Cab Service in {cityName}
-          </span>
-          <a
-            href="tel:+918240765499"
-            className="inline-flex items-center gap-1.5 hover:underline"
-          >
-            <PhoneCall className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Book Now @ 8240765499
-          </a>
-        </div>
-      </div>
-
-      {/* Hero Banner */}
-      <section
-        className="relative pt-10 sm:pt-14 pb-14 sm:pb-20 bg-cover bg-center text-white border-b border-white/10"
-        style={{
-          backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.88), rgba(10, 16, 26, 0.94)), url('https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1920&q=80')`,
+      {/* 2. Hero Search Banner (Identical layout to Main & Outstation Pages) */}
+      <HeroSearch
+        activeTripType={activeTripType}
+        onTripTypeChange={(type) => setActiveTripType(type)}
+        onSearch={handleSearch}
+        initialFrom={cityName}
+        initialTo={cityData.defaultDropCity}
+        navigateOnTabClick={true}
+        heading={{
+          title: (
+            <>
+              Pet Friendly Cab Service in <span className="text-amber-400">{cityName}</span>
+            </>
+          ),
+          subtitle: `Never leave your furry family behind. Book clean, sanitized AC cabs in ${cityName} with caring chauffeurs for vet visits, weekend trips & airport drops.`,
+          badge: `${cityName} • 100% Pet-Welcoming Cabs`,
         }}
-      >
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex items-center gap-2 text-xs text-amber-400 font-bold uppercase tracking-wider mb-4">
-            <Link href="/" className="hover:underline">
-              Home
-            </Link>
-            <span>&rsaquo;</span>
-            <Link href="/taxi-service" className="hover:underline">
-              Taxi Service
-            </Link>
-            <span>&rsaquo;</span>
-            <span className="text-slate-300">Pet Friendly Cabs in {cityName}</span>
-          </nav>
+      />
 
-          <div className="max-w-3xl mb-8">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30 text-xs font-black uppercase tracking-wider mb-3">
-              <Heart className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
-              <span>100% Pet-Welcoming Drivers &bull; {cityName} &amp; Highway Trips</span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-              Pet Friendly Cab Service in {cityName}
-            </h1>
-            <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed max-w-2xl">
-              Never leave your furry family behind. Book clean, sanitized AC cabs in {cityName} with compassionate chauffeurs for vet visits, weekend trips, airport drops, and city errands. Dogs, cats, birds & small mammals — all welcome.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Hero Search Box */}
-      <div className="relative -mt-12 max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 w-full z-20">
-        <HeroSearch
-          activeTripType={activeTripType}
-          onTripTypeChange={(type) => setActiveTripType(type)}
-          onSearch={handleSearch}
-          initialFrom={cityName}
-          initialTo={cityData.defaultDropCity}
-          heading={{
-            title: `Book Pet Friendly Ride in ${cityName}`,
-            subtitle: "Prime Hatchback, Sedan, SUV & Traveller AC — clean seat covers & caring chauffeurs",
-            badge: `${cityName} • Pet Friendly Cab Service`,
-          }}
-        />
+      {/* Breadcrumb */}
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1">
+        <nav className="flex items-center text-xs sm:text-sm text-slate-500 space-x-2">
+          <Link href="/" className="hover:text-amber-600 transition-colors">
+            Home
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+          <Link href="/taxi-service" className="hover:text-amber-600 transition-colors">
+            Taxi Service
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-800 font-semibold truncate">
+            Pet Friendly Cabs in {cityName}
+          </span>
+        </nav>
       </div>
 
       {/* Number of Pets & Pet Type Selector */}

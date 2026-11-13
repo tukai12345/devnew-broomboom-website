@@ -203,53 +203,39 @@ export const TaxiServiceDirectoryClient: React.FC = () => {
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-50 selection:bg-amber-400 selection:text-slate-950">
+      {/* 1. Top Navbar */}
       <Navbar onMyBookingsClick={() => setIsMyBookingsOpen(true)} />
 
-      {/* Top Banner */}
-      <section
-        className="relative pt-10 sm:pt-14 pb-14 sm:pb-20 bg-cover bg-center text-white border-b border-white/10"
-        style={{
-          backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.88), rgba(10, 16, 26, 0.94)), url('https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1920&q=80')`,
+      {/* 2. Hero Search Banner (Identical layout to Main & Outstation Pages) */}
+      <HeroSearch
+        activeTripType={activeTripType}
+        onTripTypeChange={(type) => setActiveTripType(type)}
+        onSearch={handleSearch}
+        initialFrom="Kolkata"
+        initialTo="Digha"
+        navigateOnTabClick={true}
+        heading={{
+          title: (
+            <>
+              All India Taxi Service &amp;{" "}
+              <span className="text-amber-400">Online Cab Booking</span>
+            </>
+          ),
+          subtitle:
+            "Book one-way outstation cabs, 24x7 airport drops, hourly city rentals & pet-friendly rides across 100+ cities",
+          badge: "All India Coverage • Best Price Guaranteed",
         }}
-      >
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex items-center gap-2 text-xs text-amber-400 font-bold uppercase tracking-wider mb-4">
-            <Link href="/" className="hover:underline">
-              Home
-            </Link>
-            <span>&rsaquo;</span>
-            <span className="text-slate-300">Taxi Service</span>
-          </nav>
+      />
 
-          <div className="max-w-3xl mb-8">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-black uppercase tracking-wider mb-3">
-              <Car className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              <span>India&apos;s Trusted Cab Booking Network &bull; 100+ Cities</span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-              All India Taxi Service &amp; Online Cab Booking
-            </h1>
-            <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed max-w-2xl">
-              Book one-way outstation cabs, 24x7 airport drops, hourly city rentals, pet-friendly rides, or self-driven cars with guaranteed on-time pickup and zero cancellation.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Hero Search Box */}
-      <div className="relative -mt-12 max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 w-full z-20">
-        <HeroSearch
-          activeTripType={activeTripType}
-          onTripTypeChange={(type) => setActiveTripType(type)}
-          onSearch={handleSearch}
-          initialFrom="Kolkata"
-          initialTo="Digha"
-          heading={{
-            title: "Book Taxi Service Across India",
-            subtitle: "Hatchback, Sedan & SUV cabs equipped with chilled AC & verified commercial chauffeurs",
-            badge: "All India Coverage • Best Price Guaranteed",
-          }}
-        />
+      {/* Breadcrumb */}
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1">
+        <nav className="flex items-center text-xs sm:text-sm text-slate-500 space-x-2">
+          <Link href="/" className="hover:text-amber-600 transition-colors">
+            Home
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-800 font-semibold truncate">Taxi Service</span>
+        </nav>
       </div>
 
       {/* 6 Core Taxi Service Categories */}
