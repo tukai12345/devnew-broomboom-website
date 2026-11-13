@@ -17,11 +17,14 @@ const cityLinks = [
 ];
 
 const serviceLinks = [
-  { label: "All Cab Services", href: "/services" },
-  { label: "Rental Car Services", href: "/car-rental" },
+  { label: "Taxi Services Directory", href: "/taxi-service" },
+  { label: "Taxi Near Me", href: "/taxi-near" },
+  { label: "Pet-Friendly Cabs", href: "/taxi-service/pet-friendly-cabs-in-kolkata" },
+  { label: "Self-Drive Car Rentals", href: "/self-driven" },
   { label: "Outstation Cab Booking", href: "/outstation-cabs" },
-  { label: "Airport Transfer Cabs", href: "/services/airport" },
-  { label: "Hourly Cab Rentals", href: "/services/rental" },
+  { label: "Airport Transfer Cabs", href: "/airport-cabs" },
+  { label: "Hourly Cab Rentals", href: "/car-rental" },
+  { label: "Become a Pilot / Driver", href: "/driver-job" },
 ];
 
 const legalLinks = [
@@ -29,8 +32,8 @@ const legalLinks = [
   { label: "Blog & Guides", href: "/blogs" },
   { label: "Contact Us", href: "/contact-us" },
   { label: "Sitemap", href: "/sitemap" },
-  { label: "Privacy Policy", href: "https://broomboomcabs.com/privacy-policy" },
-  { label: "Terms & Conditions", href: "https://broomboomcabs.com/user-terms" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Terms & Conditions", href: "/user-terms" },
 ];
 
 const linkClass =
@@ -50,11 +53,11 @@ export const Footer: React.FC = () => {
               aria-label="BroomBoom Cabs — Go to home page"
               className="flex items-center gap-2.5 rounded transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-amber-400 p-0.5 shadow-md shadow-amber-400/20">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Cabs"
-                  className="h-full w-full rounded-lg object-contain"
+                  className="h-full w-full object-contain drop-shadow-md"
                 />
               </div>
               <div className="text-xl font-black leading-none text-white">

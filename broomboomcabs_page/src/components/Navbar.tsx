@@ -143,21 +143,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               aria-label="BroomBoom Cabs — home"
               className="flex items-center gap-2 sm:gap-2.5 group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 min-w-0"
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-md shadow-amber-400/20 transition-transform group-hover:scale-105 shrink-0">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
                 <img
                   src="/logo.png"
                   alt="BroomBoom Cabs"
-                  className="w-full h-full object-contain rounded-lg"
+                  className="w-full h-full object-contain drop-shadow-md"
                 />
               </div>
-              <div className="flex items-center gap-1 sm:gap-1.5 leading-none min-w-0">
-                <span className="text-xl sm:text-2xl font-black tracking-tight text-white truncate">
-                  Broom<span className="text-amber-400">Boom</span>
-                </span>
-                <span className="text-[9px] sm:text-[10px] font-black uppercase bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-mono shadow-sm shrink-0">
-                  CABS
-                </span>
-              </div>
+              <div className="inline-flex items-center gap-2 group select-none">
+  <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-white truncate">
+    Broom
+    <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">
+      BoomCabs
+    </span>
+  </span>
+</div>
             </Link>
           </div>
 
@@ -248,6 +248,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
             <Link href="/about-us" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">About Us</Link>
             <Link href="/blogs" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">Blog</Link>
             <Link href="/contact-us" className="px-3 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 text-xs font-bold transition">Contact</Link>
+            <Link
+              href="/driver-job"
+              className="px-3.5 py-1.5 rounded-full border border-amber-400/90 bg-amber-400/10 hover:bg-amber-400 text-amber-300 hover:text-slate-950 text-xs font-black transition-all shadow-xs shrink-0"
+            >
+              Become a pilot
+            </Link>
             <div className="h-6 w-px bg-white/20 mx-1" aria-hidden="true" />
 
             <a href="tel:+918240765499" className="flex items-center gap-2 hover:bg-white/5 py-2 px-3 rounded-lg transition-colors text-white text-xs font-semibold">
@@ -482,6 +488,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                   <Mail className="w-4 h-4 text-amber-400" />
                 </div>
                 <span className="font-bold text-[15px]">Contact Us</span>
+              </Link>
+
+              <Link href="/driver-job" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl bg-amber-400/10 border border-amber-400/30 hover:bg-amber-400/20 transition text-amber-300">
+                <div className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black">
+                  <Car className="w-4 h-4" />
+                </div>
+                <span className="font-bold text-[15px]">Become a Pilot</span>
               </Link>
             </div>
 

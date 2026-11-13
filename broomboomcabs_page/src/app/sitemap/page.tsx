@@ -5,7 +5,6 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { TOP_10_CITIES_SERVICES } from "@/data/cityServicesData";
 import { INITIAL_BLOG_DATA } from "@/data/blogData";
-import { getApiBaseUrl } from "@/services/api";
 import {
   MapPin,
   Car,
@@ -13,7 +12,6 @@ import {
   FileText,
   Building2,
   ArrowRight,
-  Globe,
   Plane,
   Clock,
   Sparkles,
@@ -25,43 +23,6 @@ export const metadata: Metadata = {
   description:
     "Explore all pages on BroomBoom Cabs including outstation cab routes, hourly car rentals, airport transfers, city cab services, travel blogs, and company pages.",
 };
-
-interface BackendCityItem {
-  id?: string;
-  name?: string;
-  state?: string;
-  status?: string;
-}
-
-async function getDynamicCities(): Promise<{ slug: string; name: string; state?: string }[]> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2500);
-    const res = await fetch(`${baseUrl}/cities`, {
-      signal: controller.signal,
-      next: { revalidate: 3600 },
-    });
-    clearTimeout(timeout);
-    if (!res.ok) return [];
-    const data: BackendCityItem[] = await res.json();
-    if (!Array.isArray(data)) return [];
-    return data
-      .filter((c) => (c.status === "Active" || !c.status) && c.name)
-      .map((c) => ({
-        name: c.name!.trim(),
-        state: c.state,
-        slug: c.name!
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, ""),
-      }))
-      .filter((c) => c.slug.length >= 3);
-  } catch {
-    return [];
-  }
-}
 
 function SitemapLink({ href, label }: { href: string; label: string }) {
   return (
@@ -78,19 +39,20 @@ function SitemapLink({ href, label }: { href: string; label: string }) {
 }
 
 export default async function SitemapPage() {
-  const dynamicCities = await getDynamicCities();
-  const knownSlugs = new Set(TOP_10_CITIES_SERVICES.map((c) => c.cityId.toLowerCase()));
-  const extraCities = dynamicCities.filter((c) => !knownSlugs.has(c.slug));
-
   const corePages = [
     { label: "Home — Book Cabs Online", href: "/" },
     { label: "Fleet & Cab Search", href: "/fleet" },
     { label: "Booking Review & Checkout", href: "/fleet/review" },
+    { label: "Taxi Service Directory", href: "/taxi-service" },
+    { label: "Taxi Near Me Hub", href: "/taxi-near" },
+    { label: "Self-Drive Car Rentals", href: "/self-driven" },
     { label: "All Cab Services", href: "/services" },
     { label: "Outstation Cab Booking", href: "/outstation-cabs" },
     { label: "Car Rental Services", href: "/car-rental" },
+    { label: "Airport Cabs Across India", href: "/airport-cabs" },
     { label: "Airport Transfer Cabs", href: "/services/airport" },
     { label: "Hourly Cab Rentals", href: "/services/rental" },
+    { label: "Become a Pilot / Driver Partner", href: "/driver-job" },
   ];
 
   const specialRoutes = [
@@ -102,17 +64,54 @@ export default async function SitemapPage() {
       label: "Pet-Friendly Cabs in Kolkata",
       href: "/taxi-service/pet-friendly-cabs-in-kolkata",
     },
+    {
+      label: "Pet-Friendly Cabs in Delhi NCR",
+      href: "/taxi-service/pet-friendly-cab-in-delhi",
+    },
+    {
+      label: "Pet-Friendly Cabs in Mumbai",
+      href: "/taxi-service/pet-friendly-cab-in-mumbai",
+    },
+    {
+      label: "Pet-Friendly Cabs in Bangalore",
+      href: "/taxi-service/pet-friendly-cab-in-bangalore",
+    },
+    {
+      label: "Taxi Near Me in Kolkata",
+      href: "/taxi-near/kolkata",
+    },
+    {
+      label: "Taxi Near Me in Delhi NCR",
+      href: "/taxi-near/delhi",
+    },
+    {
+      label: "Taxi Near Me in Mumbai",
+      href: "/taxi-near/mumbai",
+    },
+    {
+      label: "Self-Drive Cars in Kolkata",
+      href: "/self-driven/kolkata",
+    },
+    {
+      label: "Self-Drive Cars in Delhi NCR",
+      href: "/self-driven/delhi",
+    },
+    {
+      label: "Self-Drive Cars in Goa",
+      href: "/self-driven/goa",
+    },
   ];
 
   const companyPages = [
     { label: "About Us", href: "/about-us" },
     { label: "Contact Us", href: "/contact-us" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms & Conditions", href: "/user-terms" },
     { label: "Travel Blog & Guides", href: "/blogs" },
     { label: "Blog Archive", href: "/blog" },
-    { label: "XML Sitemap", href: "/sitemap.xml" },
   ];
 
-  const totalCities = TOP_10_CITIES_SERVICES.length + extraCities.length;
+  const totalCities = TOP_10_CITIES_SERVICES.length;
   const totalPages =
     corePages.length +
     specialRoutes.length +
@@ -369,28 +368,6 @@ export default async function SitemapPage() {
                   </div>
                 ))}
               </div>
-
-              {extraCities.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-slate-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Globe className="w-4 h-4 text-slate-400" />
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                      More Cities from Live Network
-                    </h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {extraCities.slice(0, 40).map((city) => (
-                      <Link
-                        key={city.slug}
-                        href={`/outstation-cabs/${city.slug}`}
-                        className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-gradient-to-r hover:from-amber-400 hover:to-orange-500 text-xs font-semibold text-slate-700 hover:text-white transition-all hover:shadow-md hover:shadow-amber-500/20"
-                      >
-                        Cabs in {city.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </section>
         </div>

@@ -1,7 +1,6 @@
 import { MetadataRoute } from "next";
 import { TOP_10_CITIES_SERVICES, SERVICES_LIST, getServiceUrl } from "@/data/cityServicesData";
 import { INITIAL_BLOG_DATA } from "@/data/blogData";
-import { getApiBaseUrl } from "@/services/api";
 
 const DEFAULT_SITE_URL = "https://dev.broomboomcabs.com";
 
@@ -15,38 +14,6 @@ function getSiteUrl(): string {
     return clean;
   }
   return DEFAULT_SITE_URL;
-}
-
-interface BackendCityItem {
-  id?: string;
-  name?: string;
-  state?: string;
-  status?: string;
-}
-
-async function fetchBackendCities(): Promise<string[]> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2500);
-
-    const res = await fetch(`${baseUrl}/cities`, {
-      signal: controller.signal,
-      next: { revalidate: 86400 }, // Cache for 24 hours
-    });
-    clearTimeout(timeout);
-
-    if (!res.ok) return [];
-    const data: BackendCityItem[] = await res.json();
-    if (!Array.isArray(data)) return [];
-
-    return data
-      .filter((c) => c.status === "Active" || !c.status)
-      .map((c) => (c.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-"))
-      .filter((slug) => slug.length >= 3);
-  } catch {
-    return [];
-  }
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -74,6 +41,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${siteUrl}/taxi-service`,
+      lastModified: currentDate,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/taxi-near`,
+      lastModified: currentDate,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/self-driven`,
+      lastModified: currentDate,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
       url: `${siteUrl}/taxi-service/pet-friendly-cabs-in-kolkata`,
       lastModified: currentDate,
       changeFrequency: "weekly",
@@ -92,6 +77,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     },
     {
+      url: `${siteUrl}/airport-cabs`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/driver-job`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
       url: `${siteUrl}/about-us`,
       lastModified: currentDate,
       changeFrequency: "monthly",
@@ -102,6 +99,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: currentDate,
       changeFrequency: "monthly",
       priority: 0.7,
+    },
+    {
+      url: `${siteUrl}/privacy-policy`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${siteUrl}/user-terms`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
     {
       url: `${siteUrl}/blogs`,
@@ -149,22 +158,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // 4. Dynamic Backend Cities (if any additional cities exist in database)
-  const backendCitySlugs = await fetchBackendCities();
-  const additionalCityPages: MetadataRoute.Sitemap = [];
-
-  for (const slug of backendCitySlugs) {
-    if (!knownCityIds.has(slug)) {
-      knownCityIds.add(slug);
-      for (const service of SERVICES_LIST) {
-        additionalCityPages.push({
-          url: `${siteUrl}${getServiceUrl(service.id, slug)}`,
-          lastModified: currentDate,
-          changeFrequency: "weekly",
-          priority: 0.75,
-        });
-      }
-    }
+  // 3b. Dynamic Taxi Service, Taxi Near & Self-Drive City Pages
+  for (const city of TOP_10_CITIES_SERVICES) {
+    builtInCityServicePages.push({
+      url: `${siteUrl}/taxi-service/pet-friendly-cab-in-${city.cityId}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    });
+    builtInCityServicePages.push({
+      url: `${siteUrl}/taxi-near/${city.cityId}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    });
+    builtInCityServicePages.push({
+      url: `${siteUrl}/self-driven/${city.cityId}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    });
   }
 
   const blogPages: MetadataRoute.Sitemap = INITIAL_BLOG_DATA.posts.map((post) => ({
@@ -179,7 +192,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...serviceCategoryPages,
     ...builtInCityServicePages,
     ...blogPages,
-    ...additionalCityPages,
   ];
 }
 

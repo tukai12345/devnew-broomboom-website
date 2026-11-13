@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Calendar,
   Clock,
@@ -11,9 +11,9 @@ import {
   X,
   MapPin,
   ChevronRight,
-  Sparkles,
   BookOpen,
   Car,
+  ChevronLeft,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -24,10 +24,17 @@ import {
   BlogPost,
 } from "@/data/blogData";
 
-const STORAGE_KEY = "broomboom_blog_page_cms_data_v6";
+const STORAGE_KEY = "broomboom_blog_page_cms_data_v8";
+const POSTS_PER_PAGE = 6;
 
 export function BlogClientPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Page state from URL query or default to 1
+  const initialPage = parseInt(searchParams.get("page") || "1", 10) || 1;
+  const [currentPage, setCurrentPage] = useState<number>(initialPage);
+
   const [data, setData] = useState<BlogPageData>(INITIAL_BLOG_DATA);
 
   // Search & Filter State
@@ -41,35 +48,41 @@ export function BlogClientPage() {
   const [dropCity, setDropCity] = useState("");
   const [serviceType, setServiceType] = useState("outstation-oneway");
 
-  // Center Promo Modal State (matching user image)
+  // Center Promo Modal State (matching user screenshot)
   const [showPromoModal, setShowPromoModal] = useState(true);
 
   // Reading Modal
   const [readingPost, setReadingPost] = useState<BlogPost | null>(null);
 
+  // Sync with URL query parameter changes
+  useEffect(() => {
+    const pageFromUrl = parseInt(searchParams.get("page") || "1", 10) || 1;
+    setCurrentPage(pageFromUrl);
+  }, [searchParams]);
+
   // Sync CMS / LocalStorage if available + real-time storage & broadcast listeners
   useEffect(() => {
     const syncFromCache = () => {
       try {
-        const cached =
-          localStorage.getItem(STORAGE_KEY) ||
-          localStorage.getItem("broomboom_blog_page_cms_data");
+        const cached = localStorage.getItem(STORAGE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (parsed && Array.isArray(parsed.posts) && parsed.posts.length > 0) {
             setData(parsed);
           }
+        } else {
+          // Always default to updated INITIAL_BLOG_DATA
+          setData(INITIAL_BLOG_DATA);
         }
-      } catch {}
+      } catch {
+        setData(INITIAL_BLOG_DATA);
+      }
     };
 
     syncFromCache();
 
     const handleStorage = (e: StorageEvent) => {
-      if (
-        e.key === STORAGE_KEY ||
-        e.key === "broomboom_blog_page_cms_data"
-      ) {
+      if (e.key === STORAGE_KEY) {
         syncFromCache();
       }
     };
@@ -106,13 +119,26 @@ export function BlogClientPage() {
     return matchesCategory && matchesSearch;
   });
 
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE) || 1;
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
+  const startIndex = (safeCurrentPage - 1) * POSTS_PER_PAGE;
+  const currentPosts = filteredPosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 300, behavior: "smooth" });
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setActiveSearch(searchTerm.trim());
+    setCurrentPage(1);
   };
 
   const handleCategorySearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setCurrentPage(1);
   };
 
   const handleGetQuote = (e: React.FormEvent) => {
@@ -156,7 +182,7 @@ export function BlogClientPage() {
             <span className="text-slate-300">{data.hero?.badge || "Blog & Travel Guides"}</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            {data.hero?.title || "BroomBoom Travel Guides & Insights"}
+            {data.hero?.title || "BroomBoom Travel Blog & Guides"}
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
             {data.hero?.description || "Explore authentic highway itineraries, festival travel guides, tourist destinations, and fare saving tips curated by BroomBoom Cabs."}
@@ -168,8 +194,8 @@ export function BlogClientPage() {
       <section className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           
-          {/* LEFT COLUMN: 2-Column Blog Grid (matching screenshot) */}
-          <div className="lg:col-span-8">
+          {/* LEFT COLUMN: 2-Column Blog Grid with 4 cards per page */}
+          <div className="lg:col-span-8 flex flex-col justify-between">
             {/* Active Filter Pill if search/category is set */}
             {(activeSearch || selectedCategory !== "All Categories") && (
               <div className="flex items-center gap-2 mb-6 bg-amber-50 border border-amber-200 text-amber-900 px-4 py-2.5 rounded-xl text-xs font-semibold">
@@ -182,6 +208,7 @@ export function BlogClientPage() {
                       onClick={() => {
                         setActiveSearch("");
                         setSearchTerm("");
+                        setCurrentPage(1);
                       }}
                       className="text-slate-400 hover:text-slate-700 font-bold"
                     >
@@ -194,7 +221,10 @@ export function BlogClientPage() {
                     {selectedCategory}
                     <button
                       type="button"
-                      onClick={() => setSelectedCategory("All Categories")}
+                      onClick={() => {
+                        setSelectedCategory("All Categories");
+                        setCurrentPage(1);
+                      }}
                       className="text-slate-400 hover:text-slate-700 font-bold"
                     >
                       &times;
@@ -207,6 +237,7 @@ export function BlogClientPage() {
                     setActiveSearch("");
                     setSearchTerm("");
                     setSelectedCategory("All Categories");
+                    setCurrentPage(1);
                   }}
                   className="ml-auto text-amber-700 hover:underline font-bold"
                 >
@@ -215,7 +246,7 @@ export function BlogClientPage() {
               </div>
             )}
 
-            {filteredPosts.length === 0 ? (
+            {currentPosts.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs">
                 <BookOpen className="w-12 h-12 text-amber-400 mx-auto mb-3" />
                 <h3 className="text-base font-bold text-slate-800">No blog articles found</h3>
@@ -226,6 +257,7 @@ export function BlogClientPage() {
                     setActiveSearch("");
                     setSearchTerm("");
                     setSelectedCategory("All Categories");
+                    setCurrentPage(1);
                   }}
                   className="mt-4 px-4 py-2 bg-amber-400 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-300 transition"
                 >
@@ -233,59 +265,83 @@ export function BlogClientPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-7">
-                {filteredPosts.map((post) => (
-                  <article
-                    key={post.slug}
-                    onClick={() => setReadingPost(post)}
-                    className="bg-white rounded-xl border border-slate-200/90 shadow-xs hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col justify-between group cursor-pointer"
-                  >
-                    <div>
-                      {/* Image header */}
+              <>
+                {/* 2x2 Clean Cards Grid (Matching exact screenshot) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-7">
+                  {currentPosts.map((post) => (
+                    <article
+                      key={post.slug}
+                      onClick={() => setReadingPost(post)}
+                      className="bg-white rounded-xl border border-slate-200/90 shadow-xs hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col group cursor-pointer"
+                    >
+                      {/* Image header matching screenshot */}
                       <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
                         <img
                           src={post.image}
                           alt={post.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-xs text-amber-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md border border-white/10">
-                          {post.category}
-                        </div>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-4 sm:p-5">
-                        <h2 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors leading-snug line-clamp-2">
+                      {/* Title section matching screenshot (bold title only, no date/excerpt) */}
+                      <div className="p-4 sm:p-5 flex-1 flex items-start">
+                        <h2 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors leading-snug">
                           {post.title}
                         </h2>
-
-                        <p className="text-xs text-slate-500 mt-2.5 line-clamp-3 leading-relaxed">
-                          {post.excerpt}
-                        </p>
                       </div>
-                    </div>
+                    </article>
+                  ))}
+                </div>
 
-                    {/* Footer */}
-                    <div className="p-4 sm:p-5 pt-0">
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>{post.date}</span>
-                        </span>
-                        <span className="text-amber-600 font-bold group-hover:underline flex items-center gap-1">
-                          <span>Read More</span>
-                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </span>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                {/* Pagination (Page 1 & 2 matching screenshot ?page=2) */}
+                {totalPages > 1 && (
+                  <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      disabled={safeCurrentPage === 1}
+                      onClick={() => goToPage(safeCurrentPage - 1)}
+                      className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Previous</span>
+                    </button>
+
+                    {Array.from({ length: totalPages }).map((_, idx) => {
+                      const p = idx + 1;
+                      const isActive = p === safeCurrentPage;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => goToPage(p)}
+                          className={`w-8 h-8 rounded-lg text-xs font-black transition ${
+                            isActive
+                              ? "bg-[#f5b300] text-slate-950 shadow-xs scale-105"
+                              : "border border-slate-200 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      disabled={safeCurrentPage === totalPages}
+                      onClick={() => goToPage(safeCurrentPage + 1)}
+                      className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* RIGHT COLUMN: Sidebar (matching the exact widgets in user screenshot) */}
-          <aside className="lg:col-span-4 space-y-7">
+          <aside className="lg:col-span-4 space-y-6">
             
             {/* Widget 1: Search for Travel Content */}
             <div className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-xs">
@@ -302,7 +358,7 @@ export function BlogClientPage() {
                 />
                 <button
                   type="submit"
-                  className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-md shadow-xs transition-colors shrink-0"
+                  className="bg-[#f5b300] hover:bg-amber-400 text-slate-950 font-black text-xs px-4 py-2 rounded-md shadow-xs transition-colors shrink-0"
                 >
                   Search
                 </button>
@@ -317,7 +373,10 @@ export function BlogClientPage() {
               <form onSubmit={handleCategorySearch} className="flex gap-2">
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white"
                 >
                   {BLOG_CATEGORIES.map((cat) => (
@@ -328,7 +387,7 @@ export function BlogClientPage() {
                 </select>
                 <button
                   type="submit"
-                  className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-md shadow-xs transition-colors shrink-0"
+                  className="bg-[#f5b300] hover:bg-amber-400 text-slate-950 font-black text-xs px-4 py-2 rounded-md shadow-xs transition-colors shrink-0"
                 >
                   Search
                 </button>
@@ -341,7 +400,7 @@ export function BlogClientPage() {
                 More Travel Topics
               </h3>
               <ul className="divide-y divide-slate-100">
-                {data.posts.slice(0, 6).map((post) => (
+                {data.posts.slice(0, 10).map((post) => (
                   <li key={post.slug} className="py-2.5 first:pt-0 last:pb-0">
                     <button
                       type="button"
@@ -355,13 +414,13 @@ export function BlogClientPage() {
               </ul>
             </div>
 
-            {/* Widget 4: The road to where we are */}
+            {/* Widget 4: The road to where we are today (Matching screenshot text) */}
             <div className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-xs">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide mb-2.5">
-                The road to where we are
+                The road to where we are today
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                We are <strong className="text-slate-900">BroomBoom Cabs</strong>, India&apos;s leading intercity Car Rental services provider, empowering customers with reliable and premium chauffeurs, zero return fee on one-way drops, and clean sanitized cabs across 100+ cities.
+                We are <strong className="text-slate-900">BroomBoom Cabs</strong>, India&apos;s largest and most trusted intercity Car Rental services provider. We specialize in connecting customers with reliable and premium outstation taxi and chauffeur driven cab services.
               </p>
               <div className="mt-3.5 pt-3 border-t border-slate-100">
                 <Link
@@ -381,35 +440,28 @@ export function BlogClientPage() {
       {/* Floating Ride Quote Widget (bottom-right matching screenshot) */}
       {isQuoteOpen && (
         <div className="fixed bottom-5 right-5 z-40 w-80 sm:w-84 bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-3.5 px-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xs">
-                BB
-              </div>
-              <span className="text-xs font-bold">Quick Cab Fare Quote</span>
-            </div>
+          <div className="bg-white p-3.5 px-4 flex items-center justify-between border-b border-slate-100">
+            <span className="text-xs font-black text-slate-900 leading-tight">
+              Looking for a ride? Not sure about the fare charges?
+            </span>
             <button
               type="button"
               onClick={() => setIsQuoteOpen(false)}
-              className="text-slate-400 hover:text-white p-1 rounded transition"
+              className="text-slate-400 hover:text-slate-800 p-1 rounded transition shrink-0 ml-2"
               aria-label="Close widget"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <form onSubmit={handleGetQuote} className="p-4 space-y-2.5">
-            <p className="text-xs font-black text-slate-900 leading-snug">
-              Looking for a ride? Not sure about the fare charges?
-            </p>
-
+          <form onSubmit={handleGetQuote} className="p-4 space-y-2.5 bg-white">
             <div>
               <input
                 type="text"
                 placeholder="Enter pickup location"
                 value={pickupCity}
                 onChange={(e) => setPickupCity(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white"
+                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
               />
             </div>
 
@@ -419,7 +471,7 @@ export function BlogClientPage() {
                 placeholder="Enter destination"
                 value={dropCity}
                 onChange={(e) => setDropCity(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white"
+                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
               />
             </div>
 
@@ -427,7 +479,7 @@ export function BlogClientPage() {
               <select
                 value={serviceType}
                 onChange={(e) => setServiceType(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="outstation-oneway">Outstation One-Way</option>
                 <option value="outstation-round">Outstation Round-Trip</option>
@@ -446,7 +498,7 @@ export function BlogClientPage() {
         </div>
       )}
 
-      {/* Center Promo Modal (matching user's uploaded image) */}
+      {/* Center Promo Modal (matching user's screenshot) */}
       {showPromoModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-2xs p-4 animate-in fade-in duration-200"
