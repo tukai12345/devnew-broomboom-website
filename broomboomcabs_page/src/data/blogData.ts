@@ -508,7 +508,7 @@ Belur Math offers Diksha (sacred spiritual initiation) to sincere seekers. This 
 
 Belur Math is well-connected by local trains, river ferries, and highway roadways. While trains and ferries are economical, private rental cabs offer the highest level of comfort, convenience, and flexibility—especially for families traveling with senior citizens or visitors arriving from Kolkata Airport or outstation destinations.
 
-For a smooth and reliable pilgrimage, book your cab through BroomBoom Cabs. Choose your vehicle according to group size, travel preferences, and schedule with transparent upfront pricing and zero hidden fees. Enjoy free itinerary modifications, professional commercial chauffeurs, and door-to-door pickup. You can reserve your ride via the BroomBoom Cabs App, website, or by calling the reservation desk at +91 8240828414.
+For a smooth and reliable pilgrimage, book your cab through BroomBoom Cabs. Choose your vehicle according to group size, travel preferences, and schedule with transparent upfront pricing and zero hidden fees. Enjoy free itinerary modifications, professional commercial chauffeurs, and door-to-door pickup. You can reserve your ride via the BroomBoom Cabs App, website, or by calling the reservation desk at +91 8240765499.
 
 ## Things to Do at Belur Math, Howrah
 
@@ -538,7 +538,7 @@ Belur Math is open to visitors throughout the year, but the best time to visit i
 
 Belur Math is an oasis of peace, culture, and divine devotion where the living teachings of Sri Ramakrishna and Swami Vivekananda continue to guide millions. Whether you are a pilgrim seeking solace or a traveler exploring the spiritual heritage of Bengal, Belur Math offers an experience you will cherish for a lifetime. 
 
-Plan your pilgrimage in advance with BroomBoom Cabs to ensure a peaceful, reliable, and comfortable journey. Book your ride today through the BroomBoom Cabs App, website, or call the reservation desk at +91 8240828414!`,
+Plan your pilgrimage in advance with BroomBoom Cabs to ensure a peaceful, reliable, and comfortable journey. Book your ride today through the BroomBoom Cabs App, website, or call the reservation desk at +91 8240765499!`,
       category: "Spiritual Journeys",
       readTime: "7 min read",
       date: "Jan 28, 2025",
@@ -995,7 +995,7 @@ Make the most of the Republic Day long weekend by touring Delhi's architectural 
 - Verified Highway Chauffeurs: Experienced local drivers familiar with Delhi police traffic diversions and designated shuttle points.
 - Sanitized AC Fleets: Well-maintained hatchbacks, sedans, and roomy SUVs (Ertiga, Innova Crysta).
 - Transparent Upfront Billing: Zero hidden surcharges or holiday surge pricing.
-- 24x7 Customer Helpline: Reserve via the BroomBoom Cabs App, website, or call our reservation desk at +91 8240828414.
+- 24x7 Customer Helpline: Reserve via the BroomBoom Cabs App, website, or call our reservation desk at +91 8240765499.
 
 Celebrate the pride, heritage, and unity of Gantantra Diwas 2025 with BroomBoom Cabs!`,
       category: "Republic Day",

@@ -39,16 +39,69 @@ export function parseTaxiServiceSlug(
   }
 
   // 2. Special slugs
-  if (cleanSlug === "kolkata-durga-puja-taxi-for-pandal-sightseeing") {
+  if (
+    cleanSlug === "kolkata-durga-puja-taxi-for-pandal-sightseeing" ||
+    cleanSlug === "kolkata-durga-puja-pandal-2024" ||
+    basePath === "durga-puja"
+  ) {
     return {
       type: "tour",
       slug: cleanSlug,
       from: "Kolkata",
-      to: "Durga Puja Pandal Sightseeing Tour",
+      to: "Durga Puja Pandal Hopping",
       cityName: "Kolkata",
       isAirport: false,
-      pageTitle: `Kolkata Durga Puja Taxi & Cab Rental for Pandal Sightseeing | BroomBoom Cabs`,
-      pageDescription: `Book AC cabs for Kolkata Durga Puja Pandal Hopping 2025. 8hr/80km & full day rental packages, verified drivers, priority pickup at best rates.`,
+      pageTitle: `Kolkata Durga Puja Pandal Hopping Cabs 2024-2025 | BroomBoom Cabs`,
+      pageDescription: `Book AC cabs for Kolkata Durga Puja Pandal Hopping 2024-2025. 8hr/80km & full day rental packages, verified drivers, priority pickup at best rates.`,
+      canonicalUrl,
+    };
+  }
+
+  if (cleanSlug === "ujjain-taxi-fare" || basePath.includes("ujjain-taxi-fare")) {
+    return {
+      type: "route",
+      slug: cleanSlug,
+      from: "Indore / Ujjain",
+      to: "Ujjain Mahakaleshwar",
+      cityName: "Ujjain",
+      isAirport: false,
+      pageTitle: `One-Way Cab & Ujjain Taxi Fare | Lowest Rates — BroomBoom Cabs`,
+      pageDescription: `Book one-way cab & taxi service to Ujjain Mahakaleshwar Temple. Verified chauffeurs, clean AC Sedans & SUVs at transparent per-km fares.`,
+      canonicalUrl,
+    };
+  }
+
+  if (
+    cleanSlug === "town-kolkata" ||
+    cleanSlug === "new-town-kolkata" ||
+    basePath.toLowerCase().includes("taxi-service-new")
+  ) {
+    return {
+      type: "area",
+      slug: cleanSlug,
+      from: "New Town Kolkata",
+      to: "",
+      cityName: "New Town Kolkata",
+      isAirport: false,
+      pageTitle: `Taxi Service in New Town Kolkata | 24x7 Cab Booking — BroomBoom Cabs`,
+      pageDescription: `Book 24x7 doorstep cab pickup in New Town Kolkata (Action Area 1, 2, 3, Eco Park, IT SEZ). Airport transfer, local & outstation cabs.`,
+      canonicalUrl,
+    };
+  }
+
+  if (
+    cleanSlug === "kalimpong" ||
+    basePath.toLowerCase().includes("kalimpong")
+  ) {
+    return {
+      type: "area",
+      slug: cleanSlug,
+      from: "Kalimpong",
+      to: "",
+      cityName: "Kalimpong",
+      isAirport: false,
+      pageTitle: `Taxi Near Me in Kalimpong | Fast Cab Booking — BroomBoom Cabs`,
+      pageDescription: `Instant doorstep taxi service and cabs near you in Kalimpong, West Bengal. Local sightseeing, Siliguri & Bagdogra Airport drops.`,
       canonicalUrl,
     };
   }
@@ -127,9 +180,24 @@ export function parseTaxiServiceSlug(
       .join(" ");
   };
 
+  // Route embedded in basePath (e.g. /kolkata-to-darjeeling/cabs or /taxi-service-asansol-to-kolkata/cabs)
+  const isGenericCabSlug =
+    cleanSlug === "cabs" ||
+    cleanSlug === "cab" ||
+    cleanSlug === "taxi" ||
+    cleanSlug === "car";
+  const effectiveRouteString =
+    isGenericCabSlug && basePath.includes("-to-")
+      ? basePath.replace(/^taxi-service-/, "")
+      : cleanSlug.includes("-to-")
+      ? cleanSlug
+      : basePath.includes("-to-")
+      ? basePath.replace(/^taxi-service-/, "")
+      : null;
+
   // 3. Route with -to-
-  if (cleanSlug.includes("-to-")) {
-    const parts = cleanSlug.split("-to-");
+  if (effectiveRouteString) {
+    const parts = effectiveRouteString.split("-to-");
     const fromRaw = parts[0];
     let toRaw = parts[1];
 
@@ -166,7 +234,7 @@ export function parseTaxiServiceSlug(
     const isAirport =
       fromRaw.includes("airport") || toRaw.includes("airport") || fromRaw === "bbi" || fromRaw === "bbsr";
 
-    const title = `${fromFormatted} to ${toFormatted} Taxi Fare & Cab Booking | BroomBoom Cabs`;
+    const title = `${fromFormatted} to ${toFormatted} Cabs & Taxi Fare | BroomBoom Cabs`;
     const description = `Book verified ${fromFormatted} to ${toFormatted} cabs with BroomBoom. One-way cab fare, AC Hatchback, Sedan & SUV available 24x7. No hidden fees & transparent billing.`;
 
     return {

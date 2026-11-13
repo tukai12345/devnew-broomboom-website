@@ -332,7 +332,7 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
     {
       icon: <PhoneCall className="w-5 h-5 text-slate-700" />,
       title: "Call Reservation Desk",
-      desc: "Call 8240828414 right after booking so our team can verify your pet details and assign a trained pilot.",
+      desc: "Call 8240765499 right after booking so our team can verify your pet details and assign a trained pilot.",
     },
   ];
 
@@ -352,7 +352,7 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
     },
     {
       title: `Pet Friendly Outstation Cabs Services in ${cityName}`,
-      body: `BroomBoom Cabs' pet-friendly outstation cabs service in ${cityName} bridges the gap between the need for mobility and the desire to keep pets by your side. We allow a wide range of pets — dogs, cats, birds and small mammals — so you can travel happily, free from the stress and discomfort associated with traditional transport. Choose outstation one-way pet-friendly drops or outstation roundtrip pet-friendly cabs and forge unforgettable memories with your animal companions. Pet-friendly taxis are available throughout India via the BroomBoom Cabs app, website, or by calling 8240828414.`,
+      body: `BroomBoom Cabs' pet-friendly outstation cabs service in ${cityName} bridges the gap between the need for mobility and the desire to keep pets by your side. We allow a wide range of pets — dogs, cats, birds and small mammals — so you can travel happily, free from the stress and discomfort associated with traditional transport. Choose outstation one-way pet-friendly drops or outstation roundtrip pet-friendly cabs and forge unforgettable memories with your animal companions. Pet-friendly taxis are available throughout India via the BroomBoom Cabs app, website, or by calling 8240765499.`,
       image: "/images/pet-friendly-cab-fleet.jpg",
       imageAlt: `BroomBoom pet-friendly commercial cab fleet in ${cityName}`,
     },
@@ -409,7 +409,7 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
       category: "Outstation Trips",
       question: `Can I take my pet from ${cityName} on long outstation road trips?`,
       answer:
-        "Absolutely! Our outstation cabs are ideal for pet road trips. Chauffeurs gladly accommodate water and relief breaks at highway dhabas along the way. Pet-friendly outstation one-way and roundtrip options are available through the app, website, or reservation desk at 8240828414.",
+        "Absolutely! Our outstation cabs are ideal for pet road trips. Chauffeurs gladly accommodate water and relief breaks at highway dhabas along the way. Pet-friendly outstation one-way and roundtrip options are available through the app, website, or reservation desk at 8240765499.",
     },
   ];
 
@@ -425,11 +425,11 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
             Pet Friendly Cab Service in {cityName}
           </span>
           <a
-            href="tel:+918240828414"
+            href="tel:+918240765499"
             className="inline-flex items-center gap-1.5 hover:underline"
           >
             <PhoneCall className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Book Now @ 8240828414
+            Book Now @ 8240765499
           </a>
         </div>
       </div>
@@ -658,11 +658,11 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
               </p>
 
               <a
-                href="tel:+918240828414"
+                href="tel:+918240765499"
                 className="mt-5 inline-flex items-center gap-2 text-xs font-black text-slate-950 bg-amber-400 hover:bg-amber-500 px-4 py-2.5 rounded-xl shadow-xs transition-colors"
               >
                 <PhoneCall className="w-4 h-4" />
-                Book @ 8240828414
+                Book @ 8240765499
               </a>
             </div>
 
@@ -734,7 +734,7 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
                   <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-[11px] sm:text-xs text-amber-900 font-semibold leading-relaxed">
                     Pet add-on (deep-cleaning & sanitization) starts from <span className="font-black">Rs. 3000/-</span> in
-                    addition to the per-km fare above. Book anytime to anywhere — call <span className="font-black">8240828414</span>.
+                    addition to the per-km fare above. Book anytime to anywhere — call <span className="font-black">8240765499</span>.
                   </p>
                 </div>
               </div>
@@ -756,11 +756,11 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
               </h2>
             </div>
             <a
-              href="tel:+918240828414"
+              href="tel:+918240765499"
               className="inline-flex items-center gap-2 text-xs font-black text-slate-900 bg-amber-400 hover:bg-amber-500 px-4 py-2.5 rounded-xl shadow-xs transition-colors shrink-0"
             >
               <PhoneCall className="w-4 h-4" />
-              <span>Reservation Desk: +91 8240828414</span>
+              <span>Reservation Desk: +91 8240765499</span>
             </a>
           </div>
 
@@ -794,7 +794,7 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
               <Smartphone className="w-3.5 h-3.5 text-emerald-500" /> Android / iOS App
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200">
-              <PhoneCall className="w-3.5 h-3.5 text-rose-500" /> 8240828414 Reservation Desk
+              <PhoneCall className="w-3.5 h-3.5 text-rose-500" /> 8240765499 Reservation Desk
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200">
               <BadgeIndianRupee className="w-3.5 h-3.5 text-amber-600" /> Small Advance Payment
@@ -816,11 +816,11 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
               </h2>
             </div>
             <a
-              href="tel:+918240828414"
+              href="tel:+918240765499"
               className="inline-flex items-center gap-2 text-xs font-black text-slate-900 bg-amber-400 hover:bg-amber-500 px-4 py-2.5 rounded-xl shadow-xs transition-colors shrink-0"
             >
               <PhoneCall className="w-4 h-4" />
-              <span>Call Helpline: +91 8240828414</span>
+              <span>Call Helpline: +91 8240765499</span>
             </a>
           </div>
 
@@ -901,12 +901,12 @@ export const PetFriendlyCityClient: React.FC<PetFriendlyCityClientProps> = ({
               <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <p className="text-xs sm:text-sm text-amber-900 font-semibold leading-relaxed">
                 Pet-friendly cabs are subject to availability in {cityName}. Please call our customer service
-                immediately after your booking at <span className="font-black">8240828414</span> so we can assign
+                immediately after your booking at <span className="font-black">8240765499</span> so we can assign
                 a trained pet-friendly pilot for your ride.
               </p>
             </div>
             <a
-              href="tel:+918240828414"
+              href="tel:+918240765499"
               className="inline-flex items-center justify-center gap-2 text-xs font-black text-slate-950 bg-amber-400 hover:bg-amber-500 px-4 py-2.5 rounded-xl shadow-xs transition-colors shrink-0"
             >
               <PhoneCall className="w-4 h-4" />

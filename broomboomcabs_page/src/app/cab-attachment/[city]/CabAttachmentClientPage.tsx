@@ -229,7 +229,7 @@ export function CabAttachmentClientPage({
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 lg:pt-28 lg:pb-20 bg-gradient-to-br from-slate-950 via-slate-900 to-[#0e1d35] text-white overflow-hidden">
+      <section className="relative pt-4 sm:pt-6 lg:pt-8 pb-14 sm:pb-16 bg-gradient-to-br from-slate-950 via-slate-900 to-[#0e1d35] text-white overflow-hidden">
         {/* Subtle Background Glows */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-10 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -301,10 +301,10 @@ export function CabAttachmentClientPage({
                     Direct {cityName} Pilot Onboarding Desk:
                   </div>
                   <a
-                    href="tel:+918240828414"
+                    href="tel:+918240765499"
                     className="text-white hover:text-amber-300 font-black text-sm tracking-wide"
                   >
-                    +91 8240828414
+                    +91 8240765499
                   </a>
                 </div>
               </div>
@@ -510,7 +510,7 @@ export function CabAttachmentClientPage({
                     </div>
 
                     <a
-                      href={`https://wa.me/918240828414?text=Hello%20BroomBoom,%20I%20have%20submitted%20my%20cab%20attachment%20form%20for%20${cityName}.%20My%20name%20is%20${driverName}`}
+                      href={`https://wa.me/918240765499?text=Hello%20BroomBoom,%20I%20have%20submitted%20my%20cab%20attachment%20form%20for%20${cityName}.%20My%20name%20is%20${driverName}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs uppercase tracking-wider transition"
@@ -715,14 +715,14 @@ export function CabAttachmentClientPage({
 
             <div className="mt-8 pt-6 border-t border-amber-600/50 flex flex-wrap items-center justify-between gap-3">
               <a
-                href="tel:+918240828414"
+                href="tel:+918240765499"
                 className="px-5 py-3 rounded-xl bg-slate-950 hover:bg-slate-900 text-white font-black text-xs uppercase tracking-wider transition shadow-md flex items-center gap-2"
               >
                 <PhoneCall className="w-4 h-4 text-amber-400" />
                 <span>Call Onboarding Desk</span>
               </a>
               <a
-                href={`https://wa.me/918240828414?text=Hi%20BroomBoom,%20I%20want%20to%20attach%20my%20cab%20in%20${cityName}`}
+                href={`https://wa.me/918240765499?text=Hi%20BroomBoom,%20I%20want%20to%20attach%20my%20cab%20in%20${cityName}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs uppercase tracking-wider transition flex items-center gap-2"
@@ -862,14 +862,14 @@ export function CabAttachmentClientPage({
 
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
             <a
-              href="tel:+918240828414"
+              href="tel:+918240765499"
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-amber-400/25 flex items-center justify-center gap-2"
             >
               <PhoneCall className="w-4 h-4" />
-              <span>Call: +91 8240828414</span>
+              <span>Call: +91 8240765499</span>
             </a>
             <a
-              href={`https://wa.me/918240828414?text=Hi%20BroomBoom,%20I%20want%20to%20attach%20my%20cab%20in%20${cityName}`}
+              href={`https://wa.me/918240765499?text=Hi%20BroomBoom,%20I%20want%20to%20attach%20my%20cab%20in%20${cityName}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2"

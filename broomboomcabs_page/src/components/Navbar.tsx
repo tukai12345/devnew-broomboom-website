@@ -151,12 +151,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                 />
               </div>
               <div className="inline-flex items-center gap-2 group select-none">
-  <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-white truncate">
-    Broom
-    <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">
-      BoomCabs
-    </span>
-  </span>
+ <span className="text-xl sm:text-2xl font-black tracking-tighter text-white truncate">
+  BroomBoom <span className="text-yellow-400">Cabs</span>
+</span>
 </div>
             </Link>
           </div>
@@ -182,9 +179,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               </button>
 
               {servicesDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-[620px] bg-white rounded-2xl shadow-2xl border border-slate-200 text-slate-900 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute left-0 top-full mt-2 w-[640px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-slate-200/90 text-slate-900 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex gap-4">
-                    <div className="w-[240px] border-r border-slate-100 pr-3 space-y-2">
+                    <div className="w-[230px] border-r border-slate-100 pr-3 space-y-1.5 shrink-0">
                       <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-2 pb-1">
                         1. Choose Service:
                       </div>
@@ -195,30 +192,55 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                             key={srv.id}
                             onMouseEnter={() => setActiveMenuService(srv.id)}
                             onClick={() => setActiveMenuService(srv.id)}
-                            className={`p-3 rounded-xl cursor-pointer transition flex items-center justify-between ${
-                              isSelected ? "bg-amber-400 text-slate-950 shadow-sm" : "hover:bg-slate-50 text-slate-700"
+                            className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-between ${
+                              isSelected
+                                ? "bg-amber-400 text-slate-950 shadow-sm font-bold"
+                                : "hover:bg-slate-50 text-slate-700"
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? "bg-slate-950 text-amber-400" : "bg-slate-100 text-slate-700"}`}>
+                              <div
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                  isSelected
+                                    ? "bg-slate-950 text-amber-400"
+                                    : "bg-slate-100 text-slate-700"
+                                }`}
+                              >
                                 {renderServiceIcon(srv.id)}
                               </div>
                               <div className="leading-tight">
                                 <div className="font-extrabold text-xs">{srv.name}</div>
-                                <div className={`text-[10px] ${isSelected ? "text-slate-800" : "text-slate-400"}`}>{srv.badge}</div>
+                                <div
+                                  className={`text-[10px] ${
+                                    isSelected ? "text-slate-900/80 font-medium" : "text-slate-400"
+                                  }`}
+                                >
+                                  {srv.badge}
+                                </div>
                               </div>
                             </div>
-                            <ChevronRight className={`w-4 h-4 ${isSelected ? "text-slate-950" : "text-slate-300"}`} />
+                            <ChevronRight
+                              className={`w-4 h-4 shrink-0 ${
+                                isSelected ? "text-slate-950" : "text-slate-300"
+                              }`}
+                            />
                           </div>
                         );
                       })}
                     </div>
 
-                    <div className="flex-1 pl-1">
+                    <div className="flex-1 min-w-0 pl-1">
                       <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
-                        <div className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                        <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 truncate">
                           2. Select City for {activeServiceInfo.name}:
                         </div>
+                        <Link
+                          href={getServiceUrl(activeMenuService)}
+                          onClick={() => setServicesDropdownOpen(false)}
+                          className="text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline shrink-0"
+                        >
+                          View All &rarr;
+                        </Link>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {TOP_10_CITIES_SERVICES.map((city) => (
@@ -226,7 +248,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                             key={city.cityId}
                             href={getServiceUrl(activeMenuService, city.cityId)}
                             onClick={() => setServicesDropdownOpen(false)}
-                            className="p-2.5 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200/80 hover:border-amber-300 text-slate-800 hover:text-slate-950 transition flex items-center justify-between group"
+                            className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200/80 hover:border-amber-300 text-slate-800 hover:text-slate-950 transition flex items-center justify-between group"
                           >
                             <div className="flex items-center gap-2 truncate">
                               <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -235,7 +257,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
                                 <div className="text-[10px] text-slate-400 truncate">{city.state}</div>
                               </div>
                             </div>
-                            <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition" />
+                            <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition shrink-0" />
                           </Link>
                         ))}
                       </div>

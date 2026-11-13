@@ -79,10 +79,30 @@ export function AreaTaxiClient({ route }: AreaTaxiClientProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <main className="min-h-screen flex flex-col bg-slate-50 selection:bg-amber-400 selection:text-slate-950">
+      {/* 1. Top Navbar */}
       <Navbar onMyBookingsClick={() => setIsBookingsOpen(true)} />
 
-      <main className="flex-grow pt-4 pb-16">
+      {/* 2. Top Hero Search Banner (Identical layout to Main & Outstation Pages) */}
+      <HeroSearch
+        activeTripType={activeTripType}
+        onTripTypeChange={(type) => setActiveTripType(type)}
+        onSearch={handleHeroSearch}
+        initialFrom={areaName}
+        navigateOnTabClick={true}
+        heading={{
+          title: (
+            <>
+              Taxi Service in <span className="text-amber-400">{areaName}</span>
+            </>
+          ),
+          subtitle: `24x7 Doorstep Pickup • Zero Surge Guarantee • Verified Chauffeurs in ${areaName}`,
+          badge: `${areaName} • 24x7 Cab Service`,
+        }}
+      />
+
+      {/* 3. Page Content Below Hero */}
+      <div className="flex-grow pt-4 pb-16">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex items-center text-xs sm:text-sm text-slate-500 space-x-2">
@@ -98,72 +118,39 @@ export function AreaTaxiClient({ route }: AreaTaxiClientProps) {
           </nav>
         </div>
 
-        {/* Hero Header */}
-        <section className="bg-gradient-to-b from-amber-500/10 via-amber-500/5 to-transparent pb-8 pt-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-4xl mx-auto mb-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-100 text-amber-900 text-xs sm:text-sm font-semibold mb-4 border border-amber-300">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                24x7 Doorstep Pickup in {areaName} • Zero Surge Guarantee
+        {/* Trust Highlights Strip */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-5xl mx-auto">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
+              <MapPin className="w-6 h-6 text-amber-600 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-900 text-xs sm:text-sm">Doorstep Pickup</div>
+                <div className="text-[11px] text-slate-500">Fast arrival in {areaName}</div>
               </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                Taxi Service in <span className="text-amber-600">{areaName}</span>
-              </h1>
-              <p className="mt-3 text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto">
-                Reliable, instant, and affordable 24x7 cab booking in <strong>{areaName}</strong>.
-                Local city drop, airport transfers, hourly rentals, and outstation taxi service with
-                verified chauffeurs.
-              </p>
             </div>
-
-            {/* Embedded HeroSearch */}
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-2 sm:p-4 md:p-6 mb-8">
-              <HeroSearch
-                activeTripType={activeTripType}
-                onTripTypeChange={(type) => setActiveTripType(type)}
-                onSearch={handleHeroSearch}
-                initialFrom={areaName}
-                heading={{
-                  title: `Book Taxi Service in ${areaName}`,
-                  subtitle: "Local, airport, and outstation cabs with verified drivers",
-                  badge: `${areaName} • 24x7 Cab Service`,
-                }}
-              />
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
+              <Fuel className="w-6 h-6 text-emerald-600 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-900 text-xs sm:text-sm">Zero Surge Pricing</div>
+                <div className="text-[11px] text-slate-500">Fair fixed per-km rates</div>
+              </div>
             </div>
-
-            {/* Trust Highlights Strip */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-5xl mx-auto">
-              <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
-                <MapPin className="w-6 h-6 text-amber-600 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Doorstep Pickup</div>
-                  <div className="text-[11px] text-slate-500">Fast arrival in {areaName}</div>
-                </div>
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
+              <CheckCircle2 className="w-6 h-6 text-blue-600 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-900 text-xs sm:text-sm">Clean & Sanitized</div>
+                <div className="text-[11px] text-slate-500">AC cabs maintained daily</div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
-                <Fuel className="w-6 h-6 text-emerald-600 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Zero Surge Pricing</div>
-                  <div className="text-[11px] text-slate-500">Fair fixed per-km rates</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
-                <CheckCircle2 className="w-6 h-6 text-blue-600 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Clean & Sanitized</div>
-                  <div className="text-[11px] text-slate-500">AC cabs maintained daily</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
-                <Clock className="w-6 h-6 text-purple-600 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900 text-xs sm:text-sm">24x7 Helpline</div>
-                  <div className="text-[11px] text-slate-500">+91 8240765499</div>
-                </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
+              <Clock className="w-6 h-6 text-purple-600 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-900 text-xs sm:text-sm">24x7 Helpline</div>
+                <div className="text-[11px] text-slate-500">+91 8240765499</div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
         {/* Why Choose BroomBoom */}
         <WhyChooseUs />
@@ -172,11 +159,11 @@ export function AreaTaxiClient({ route }: AreaTaxiClientProps) {
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <FaqSection items={faqs} />
         </section>
-      </main>
+      </div>
 
       <Footer />
 
       <MyBookingsDrawer isOpen={isBookingsOpen} onClose={() => setIsBookingsOpen(false)} />
-    </div>
+    </main>
   );
 }

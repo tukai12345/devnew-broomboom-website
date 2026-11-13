@@ -52,7 +52,7 @@ export default async function CityRouteSlugPage({ params }: PageProps) {
     return <PetFriendlyCityClient cityName={parsed.cityName} citySlug={slug} />;
   }
 
-  if (parsed.type === "route") {
+  if (parsed.type === "route" || parsed.type === "tour") {
     return (
       <RouteTaxiClient
         route={parsed}

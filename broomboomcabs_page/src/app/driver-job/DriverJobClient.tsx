@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ChevronDown,
   CheckCircle2,
@@ -20,6 +21,8 @@ import {
   Star,
   Users,
   Loader2,
+  ThumbsUp,
+  UserCheck,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -33,105 +36,6 @@ const VEHICLE_OPTIONS = [
   { value: "tempo", label: "Tempo Traveller (12/17/26 Seater)" },
   { value: "auto", label: "Auto Rickshaw" },
   { value: "bike", label: "Bike / Two-Wheeler" },
-];
-
-const PILOT_BENEFITS = [
-  {
-    icon: Wallet,
-    title: "Daily Instant Payouts",
-    desc: "Receive your trip earnings directly into your bank account or UPI without waiting for weekly settlement cycles.",
-  },
-  {
-    icon: Shield,
-    title: "Zero Hidden Commission",
-    desc: "Transparent, honest platform fees. Keep up to 90% of trip fares with guaranteed peak & outstation return bonuses.",
-  },
-  {
-    icon: Clock,
-    title: "Flexible Working Hours",
-    desc: "Be your own boss. Log in whenever you want, take breaks on your schedule, and choose your preferred routes.",
-  },
-  {
-    icon: Car,
-    title: "Zero Dead Mileage",
-    desc: "Intelligent round-trip & intercity corridor matching ensures you never return empty on highway trips.",
-  },
-  {
-    icon: Headphones,
-    title: "24x7 Dedicated Pilot Support",
-    desc: "Exclusive priority support line, emergency roadside assistance, and instant on-trip SOS protection.",
-  },
-  {
-    icon: Award,
-    title: "Accidental Insurance Coverage",
-    desc: "Comprehensive health & accident insurance policy coverage for you and your family on every single ride.",
-  },
-];
-
-const REQUIRED_DOCUMENTS = [
-  {
-    title: "Commercial Driving License (DL)",
-    desc: "Valid commercial yellow badge or active driving license with transport endorsement.",
-  },
-  {
-    title: "Vehicle Registration Certificate (RC)",
-    desc: "Valid registration certificate of the commercial taxi, cab, or vehicle.",
-  },
-  {
-    title: "Vehicle Insurance & Fitness Certificate",
-    desc: "Active comprehensive or commercial third-party insurance and fitness certificate.",
-  },
-  {
-    title: "Aadhaar Card & PAN Card",
-    desc: "Government identity verification for fast KYC and direct bank account linking.",
-  },
-  {
-    title: "Bank Account / Passbook / Cancelled Cheque",
-    desc: "Bank account details or UPI ID for automated daily earnings settlement.",
-  },
-  {
-    title: "Vehicle Commercial Permit",
-    desc: "State or All India Tourist Permit (AITP) depending on local or outstation category.",
-  },
-];
-
-const STEPS = [
-  {
-    step: "01",
-    title: "Fill Quick Online Form",
-    desc: "Submit your city, phone number, and vehicle type in 30 seconds.",
-  },
-  {
-    step: "02",
-    title: "Upload Documents",
-    desc: "Submit your Driving License, RC, and Aadhaar on the BroomBoom Pilot App.",
-  },
-  {
-    step: "03",
-    title: "Get Activated & Start Earning",
-    desc: "Complete 10-minute digital KYC verification, go online, and start receiving ride requests!",
-  },
-];
-
-const EARNINGS_TIERS = [
-  {
-    category: "Hatchback (Local + Airport)",
-    daily: "₹1,800 - ₹2,500",
-    monthly: "₹45,000 - ₹60,000",
-    popular: false,
-  },
-  {
-    category: "Sedan (Outstation + Airport)",
-    daily: "₹2,500 - ₹3,800",
-    monthly: "₹65,000 - ₹85,000",
-    popular: true,
-  },
-  {
-    category: "SUV / Innova Crysta (Intercity)",
-    daily: "₹3,500 - ₹5,500",
-    monthly: "₹85,000 - ₹1,20,000+",
-    popular: false,
-  },
 ];
 
 const FAQS = [
@@ -163,8 +67,16 @@ const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 type Step = "form" | "otp" | "success";
 
-export function DriverJobClient() {
-  const [city, setCity] = useState("");
+interface DriverJobClientProps {
+  initialCity?: string;
+}
+
+export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
+  const formattedCity = initialCity
+    ? initialCity.charAt(0).toUpperCase() + initialCity.slice(1)
+    : "";
+
+  const [city, setCity] = useState(formattedCity);
   const [phone, setPhone] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [step, setStep] = useState<Step>("form");
@@ -345,7 +257,7 @@ export function DriverJobClient() {
       {/* HERO SECTION — EXACT 1:1 MATCH WITH SCREENSHOT */}
       {/* ========================================================================= */}
       <section
-        className="relative pt-12 sm:pt-20 pb-16 sm:pb-24 bg-cover bg-center bg-no-repeat overflow-hidden border-b border-slate-900"
+        className="relative pt-4 sm:pt-6 lg:pt-8 pb-12 sm:pb-16 bg-cover bg-center bg-no-repeat overflow-hidden border-b border-slate-900"
         style={{
           backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.72), rgba(10, 16, 26, 0.88)), url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1920&q=80')`,
         }}
@@ -634,167 +546,272 @@ export function DriverJobClient() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 2. PILOT EARNINGS TABLE / CALCULATOR */}
+      {/* 2. TAXI DRIVER JOB - BROOMBOOM CABS EDITORIAL & GUIDE (EXACT LIVE LAYOUT) */}
       {/* ========================================================================= */}
-      <section className="py-12 sm:py-16 bg-white border-b border-slate-200">
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="text-xs font-black uppercase tracking-wider text-amber-600 mb-2">
-              High Earning Potential
+      <section className="py-12 sm:py-20 bg-white">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-24">
+
+          {/* ROW 1: Left Image, Right Content (TAXI DRIVER JOB) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+            <div className="lg:col-span-6 order-1">
+              <div className="overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm bg-slate-100">
+                <Image
+                  src="/images/driver-job/refer-drivers.jpg"
+                  alt="Taxi Driver Job BroomBoomCabs"
+                  width={600}
+                  height={380}
+                  className="w-full h-[280px] sm:h-[350px] lg:h-[380px] object-cover"
+                />
+              </div>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Earn Transparently With No Upper Limit
-            </h2>
-            <p className="text-sm text-slate-500 mt-2">
-              Realistic estimated earnings reported by verified active BroomBoom captains across major Indian cities.
-            </p>
+            <div className="lg:col-span-6 order-2">
+              <h2 className="text-2xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight mb-5">
+                <span className="text-amber-500">TAXI DRIVER JOB-</span>
+                <span className="text-slate-900">BroomBoomCabs</span>
+              </h2>
+              <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
+                <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
+                  Be a full-time driver or a part time driver at your flexible time and hour of the day to earn huge earnings. BroomBoomCabs bring huge opportunities for the driver who needs driving jobs in India. Be it male driver or female driver, all get equal chance to drive in India at their own convenience at any hour of the day or night. More than thousands of riders request rides from BroomBoomCabs everyday, grab the chance and use your vehicle to earn as a driver in your city by dropping the riders wherever they want to go. There are so many ways to earn here. You can also earn by referring your other driver friends or driver partners to drive in India in BroomBoomCabs.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {EARNINGS_TIERS.map((tier, idx) => (
-              <div
-                key={idx}
-                className={`rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all ${
-                  tier.popular
-                    ? "bg-gradient-to-br from-amber-400 via-amber-400 to-yellow-500 text-slate-950 shadow-xl ring-4 ring-amber-400/30 scale-102"
-                    : "bg-slate-50 hover:bg-white border border-slate-200/90 shadow-sm hover:shadow-md text-slate-900"
-                }`}
-              >
-                <div>
-                  {tier.popular && (
-                    <div className="inline-block bg-slate-950 text-amber-400 text-[10px] font-black uppercase px-2.5 py-1 rounded-full mb-3">
-                      Most In Demand
-                    </div>
-                  )}
-                  <h3 className="text-lg font-black">{tier.category}</h3>
-                  <div className="mt-4 pt-4 border-t border-slate-200/60">
-                    <div className="text-xs font-bold opacity-75 uppercase tracking-wider">Estimated Monthly Earnings</div>
-                    <div className="text-2xl sm:text-3xl font-black mt-1">{tier.monthly}</div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="text-xs font-bold opacity-75 uppercase tracking-wider">Daily Take-Home</div>
-                    <div className="text-lg font-extrabold mt-0.5">{tier.daily}</div>
-                  </div>
-                </div>
+          {/* ROW 2: Left Content, Right Image (REFER DRIVERS) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+            <div className="lg:col-span-6 order-2 lg:order-1">
+              <h2 className="text-2xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight mb-5">
+                <span className="text-amber-500">REFER </span>
+                <span className="text-slate-900">DRIVERS</span>
+              </h2>
+              <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
+                <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
+                  Invite friends and families by referring them to join the BroomBoomCabs Community in India. Share your refer code when they register in the BroomBoom Pilot App and earn when they complete a certain number of trips with BroomBoomCabs. Refer drivers (be it cab driver, taxi driver or bike-taxi driver) or your driver partners in the BroomBoom Pilot App and earn a huge reward!
+                </p>
+              </div>
+            </div>
+            <div className="lg:col-span-6 order-1 lg:order-2">
+              <div className="overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm bg-slate-100">
+                <Image
+                  src="/images/driver-job/driver-procedures.jpg"
+                  alt="Refer Drivers to BroomBoom"
+                  width={600}
+                  height={380}
+                  className="w-full h-[280px] sm:h-[350px] lg:h-[380px] object-cover"
+                />
+              </div>
+            </div>
+          </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-200/60 text-xs font-semibold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>Instant Daily Bank / UPI Payouts</span>
+          {/* ROW 3: Left Content, Right Image (Procedures to be a Taxi Driver) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+            <div className="lg:col-span-6 order-2 lg:order-1">
+              <h2 className="text-2xl sm:text-4xl lg:text-[38px] font-extrabold tracking-tight leading-tight mb-5">
+                <span className="text-amber-500">Procedures to be a</span>
+                <br />
+                <span className="text-amber-500">Taxi Driver for </span>
+                <span className="text-slate-900">BroomBoomCabs</span>
+              </h2>
+              <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
+                <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
+                  BroomBoomCabs offer driver job alternatives in all major rural and urban areas of India, including Kolkata, Delhi, Chandigarh, Bangalore and many more of all sizes across the Country.If you are looking for driver jobs in India, &ldquo;install BroomBoom Pilot App&rdquo; from the play store and get paid to drive whenever you want from anywhere on this platform. This platform helps in connecting huge number of active riders 24/7 with full assistance and support. There are many traditional driving jobs in India but driving with BroomBoomCabs in India offers a flexible earning opportunity for all who are looking for full-time driver jobs, part-time driver jobs, or seasonal employment, or a rideshare driver who want to increase their monthly income by becoming a driver(pilot) using the BroomBoomCabs platform.
+                </p>
+              </div>
+            </div>
+            <div className="lg:col-span-6 order-1 lg:order-2">
+              <div className="overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm bg-slate-100">
+                <Image
+                  src="/images/driver-job/driver-procedures.jpg"
+                  alt="Taxi Driver Opportunities BroomBoom"
+                  width={600}
+                  height={380}
+                  className="w-full h-[280px] sm:h-[350px] lg:h-[380px] object-cover"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 4: Left Image, Right Content (6 Procedures Steps) */}
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+              <div className="lg:col-span-6 order-1">
+                <div className="overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm bg-slate-100">
+                  <Image
+                    src="/images/driver-job/driver-why-choose.jpg"
+                    alt="BroomBoom Pilot Procedures"
+                    width={600}
+                    height={380}
+                    className="w-full h-[280px] sm:h-[350px] lg:h-[380px] object-cover"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 3. WHY BECOME A BROOMBOOM PILOT */}
-      {/* ========================================================================= */}
-      <section className="py-12 sm:py-20 bg-slate-50">
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <div className="text-xs font-black uppercase tracking-wider text-amber-600 mb-2">
-              Captain Benefits
-            </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Why 25,000+ Drivers Choose BroomBoom
-            </h2>
-            <p className="text-sm text-slate-500 mt-2">
-              Built by drivers, for drivers. We prioritize partner dignity, honest fares, and transparent earnings.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {PILOT_BENEFITS.map((benefit, i) => {
-              const Icon = benefit.icon;
-              return (
-                <div
-                  key={i}
-                  className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 hover:border-amber-400 shadow-xs hover:shadow-lg transition-all group"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-amber-400/20 text-amber-700 group-hover:bg-amber-400 group-hover:text-slate-950 flex items-center justify-center transition-colors mb-4">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-black text-slate-900 group-hover:text-amber-700 transition-colors">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
-                    {benefit.desc}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 4. 3 SIMPLE STEPS TO JOIN */}
-      {/* ========================================================================= */}
-      <section className="py-12 sm:py-20 bg-white border-y border-slate-200">
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <div className="text-xs font-black uppercase tracking-wider text-amber-600 mb-2">
-              Quick Onboarding
-            </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Start Driving in 3 Easy Steps
-            </h2>
-            <p className="text-sm text-slate-500 mt-2">
-              Fast, paperless onboarding with instant digital verification.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
-            {STEPS.map((s, idx) => (
-              <div
-                key={idx}
-                className="bg-slate-50 rounded-3xl p-7 border border-slate-200 text-center relative flex flex-col items-center"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 font-black text-lg flex items-center justify-center shadow-md mb-4">
-                  {s.step}
-                </div>
-                <h3 className="text-lg font-black text-slate-900 mb-2">{s.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{s.desc}</p>
+              <div className="lg:col-span-6 order-2">
+                <h2 className="text-2xl sm:text-4xl lg:text-[36px] font-extrabold tracking-tight leading-tight mb-5">
+                  <span className="text-amber-500">There is very simple</span>
+                  <br />
+                  <span className="text-amber-500">procedure to be a</span>
+                  <br />
+                  <span className="text-amber-500">taxi driver in </span>
+                  <span className="text-slate-900">BroomBoomCabs:</span>
+                </h2>
+                <ul className="space-y-3 text-slate-700 text-xs sm:text-sm font-normal">
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Install &quot;BroomBoom Pilot&quot; application from the google play store.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Sign up with your mobile number to complete the registration as a driver.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Choose the City where you will drive with BroomBoomCabs.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Choose your Vehicle to register as a Pilot in BroomBoomCabs.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Submit your profile details and proper valid documents for registration as a driver with BroomBoomCabs.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>After your document verification completes, you can go “on-duty” to ride and earn huge incentives and bonus.</span>
+                  </li>
+                </ul>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 5. DOCUMENTS REQUIRED CHECKLIST */}
-      {/* ========================================================================= */}
-      <section className="py-12 sm:py-20 bg-slate-50">
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <div className="text-xs font-black uppercase tracking-wider text-amber-600 mb-2">
-              Checklist
             </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Documents Required to Join
-            </h2>
-            <p className="text-sm text-slate-500 mt-2">
-              Keep these documents handy for immediate verification and account approval.
+
+            <p className="text-center text-slate-600 text-xs sm:text-sm max-w-3xl mx-auto pt-4 font-normal leading-relaxed">
+              Follow the above said steps to register and drive with BroomBoomCabs and help your other driver friends by referring them with your referral code to register and earn huge incentives and bonus on this driving platform.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            {REQUIRED_DOCUMENTS.map((doc, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-start gap-3.5"
-              >
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 leading-snug">{doc.title}</h4>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{doc.desc}</p>
+          {/* ROW 5: Left Content, Right Image (How to apply for BroomBoom Driver Jobs) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+            <div className="lg:col-span-6 order-2 lg:order-1">
+              <h2 className="text-2xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-tight mb-5">
+                <span className="text-amber-500">How to apply for</span>
+                <br />
+                <span className="text-amber-500">BroomBoom Driver </span>
+                <span className="text-slate-900">Jobs</span>
+              </h2>
+              <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
+                <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
+                  Drivers using BroomBoomCabs are independent contractors coming from all backgrounds and industries, to work independently by setting their own schedule with flexible driving hours and huge driver salary to make their life easy. You must meet certain requirements to drive with BroomBoom. We welcome drivers from any driving industry like commercial drivers, rideshare drivers and other drivers also who have been active on other driving apps and services.
+                </p>
+              </div>
+            </div>
+            <div className="lg:col-span-6 order-1 lg:order-2">
+              <div className="overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm bg-slate-100">
+                <Image
+                  src="/images/driver-job/driver-procedures.jpg"
+                  alt="How to apply for BroomBoom Driver Jobs"
+                  width={600}
+                  height={380}
+                  className="w-full h-[280px] sm:h-[350px] lg:h-[380px] object-cover"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 6: Left Image, Right Content (Documents required) */}
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+              <div className="lg:col-span-6 order-1">
+                <div className="overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm bg-slate-100">
+                  <Image
+                    src="/images/driver-job/refer-drivers.jpg"
+                    alt="Documents required to apply for BroomBoom Driver Jobs"
+                    width={600}
+                    height={380}
+                    className="w-full h-[280px] sm:h-[350px] lg:h-[380px] object-cover"
+                  />
                 </div>
               </div>
-            ))}
+              <div className="lg:col-span-6 order-2">
+                <h2 className="text-2xl sm:text-4xl lg:text-[36px] font-extrabold tracking-tight leading-tight mb-5">
+                  <span className="text-amber-500">Documents</span>
+                  <br />
+                  <span className="text-amber-500">required to apply</span>
+                  <br />
+                  <span className="text-amber-500">for BroomBoom </span>
+                  <span className="text-slate-900">Driver Jobs:</span>
+                </h2>
+                <ul className="space-y-3 text-slate-700 text-xs sm:text-sm font-normal">
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Driver profile photo must be forward facing, clear image.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Current address proof (Aadhar card, Voters ID, etc.)</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>PAN Card and bank passbook/cancelled cheque for direct deposit</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Driving License must be unexpired commercial driving license and the driver&apos;s age must be at least 19 years old.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="text-slate-900 font-bold shrink-0">•</span>
+                    <span>Vehicle Documents like Certificate of Registration, Vehicle Permit/ TR7 form, Vehicle Insurance. If Registration is in another&apos;s name, then NOC/Affidavit is required, Fitness Certificate.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <p className="text-center text-slate-700 text-xs sm:text-sm max-w-3xl mx-auto pt-4 font-semibold leading-relaxed">
+              Driving with BroomBoomCabs is the best way to earn additional money for the drivers. Register and Join now to be a part of BroomBoom Drivers Community!
+            </p>
           </div>
+
+          {/* SECTION 7: WHY DRIVERS CHOOSE US */}
+          <div className="pt-8 sm:pt-12">
+            <h2 className="text-3xl sm:text-5xl font-black text-center mb-10 sm:mb-14">
+              <span className="text-amber-500">Why drivers </span>
+              <span className="text-slate-900">choose us?</span>
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {/* Card 1: Profitable rides */}
+              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col items-center text-center hover:shadow-md transition">
+                <div className="w-14 h-14 rounded-full border border-amber-400 flex items-center justify-center text-amber-500 mb-5 bg-white">
+                  <ThumbsUp className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">Profitable rides</h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                  Avail economical rides at the biggest deals.
+                </p>
+              </div>
+
+              {/* Card 2: Where and when you want */}
+              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col items-center text-center hover:shadow-md transition">
+                <div className="w-14 h-14 rounded-full border border-amber-400 flex items-center justify-center text-amber-500 mb-5 bg-white">
+                  <Shield className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">Where and when you want</h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                  Full safe rides with Audio-Video Surveillance and instant emergency support.
+                </p>
+              </div>
+
+              {/* Card 3: We are always here for you */}
+              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col items-center text-center hover:shadow-md transition">
+                <div className="w-14 h-14 rounded-full border border-amber-400 flex items-center justify-center text-amber-500 mb-5 bg-white">
+                  <UserCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">We are always here for you</h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                  Pre-schedule your ride in advance for your trip with us.
+                </p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
