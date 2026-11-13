@@ -194,10 +194,74 @@ export default async function SitemapPage() {
     { label: "Blog Archive", href: "/blog" },
   ];
 
+  const specializedCorridors = [
+    {
+      label: "Cab Attachment in Pune (Attach Taxi & Car)",
+      href: "/cab-attachment/pune",
+      tag: "Pilot Hub",
+    },
+    {
+      label: "Driver Job & Partner Registration in Mumbai",
+      href: "/driver-job/mumbai",
+      tag: "Driver Job",
+    },
+    {
+      label: "Kolkata Durga Puja Pandal Hopping Cabs",
+      href: "/durga-puja/kolkata-durga-puja-pandal-2024",
+      tag: "Festival",
+    },
+    {
+      label: "Kolkata to Darjeeling Cabs",
+      href: "/kolkata-to-darjeeling/cabs",
+      tag: "Hills",
+    },
+    {
+      label: "Kolkata to Jalpaiguri Cabs",
+      href: "/kolkata-to-jalpaiguri/cabs",
+      tag: "Intercity",
+    },
+    {
+      label: "Kolkata to Kharagpur Cabs",
+      href: "/kolkata-to-kharagpur/cabs",
+      tag: "Intercity",
+    },
+    {
+      label: "One-Way Cab & Ujjain Taxi Fare",
+      href: "/oneway-cab/ujjain-taxi-fare",
+      tag: "Pilgrimage",
+    },
+    {
+      label: "Shared Taxi Haldwani to Almora",
+      href: "/shared-taxi/haldwani-to-almora",
+      tag: "Shared Cab",
+    },
+    {
+      label: "Asansol to Kolkata Cabs",
+      href: "/taxi-service-asansol-to-kolkata/cabs",
+      tag: "Intercity",
+    },
+    {
+      label: "Digha to Kolkata Cab Service",
+      href: "/taxi-service-digha-to-kolkata/cab",
+      tag: "Coastal",
+    },
+    {
+      label: "Taxi Service in New Town Kolkata",
+      href: "/taxi-service-New/Town-Kolkata",
+      tag: "Local Hub",
+    },
+    {
+      label: "Taxi Near Me in Kalimpong",
+      href: "/taxi-service-taxi-near/kalimpong",
+      tag: "Taxi Near",
+    },
+  ];
+
   const totalPages =
     corePages.length +
     featuredHubs.length +
     companyPages.length +
+    specializedCorridors.length +
     INITIAL_BLOG_DATA.posts.length +
     TOP_10_CITIES_SERVICES.length * 4 +
     TAXI_SERVICE_ROUTES.length +
@@ -341,6 +405,56 @@ export default async function SitemapPage() {
               </div>
             </section>
           </div>
+
+          {/* ─── Specialized Regional Corridors & Driver Attachments ──────────────────────── */}
+          <section className="mt-8 relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
+            <div className="p-5 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-slate-900">
+                      Specialized Regional Corridors &amp; Driver Attachments
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Popular outstation routes, shared taxis, festival cabs, and driver onboarding hubs
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 self-start sm:self-auto">
+                  {specializedCorridors.length} Corridors
+                </span>
+              </div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {specializedCorridors.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group p-3 rounded-xl border border-slate-200/80 hover:border-amber-400 bg-slate-50/50 hover:bg-amber-50/40 transition flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-bold text-amber-700">
+                        <span>{item.tag}</span>
+                        <span className="text-slate-400 group-hover:text-amber-600 font-semibold transition-colors">
+                          View &rarr;
+                        </span>
+                      </div>
+                      <h3 className="text-xs font-bold text-slate-900 group-hover:text-amber-800 transition mt-1 line-clamp-2">
+                        {item.label}
+                      </h3>
+                    </div>
+                    <div className="mt-2 text-[10px] text-slate-400 pt-1 border-t border-slate-100 truncate">
+                      {item.href}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
 
           {/* ─── Kolkata Direct Outstation Corridors ──────────────────────── */}
           <section className="mt-8 relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm">

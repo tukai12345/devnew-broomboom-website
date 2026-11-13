@@ -330,6 +330,82 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  // 3n. Specialized Custom Regional Corridors & Driver Jobs
+  const specializedCustomPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/cab-attachment/pune`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.88,
+    },
+    {
+      url: `${siteUrl}/driver-job/mumbai`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.88,
+    },
+    {
+      url: `${siteUrl}/durga-puja/kolkata-durga-puja-pandal-2024`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/kolkata-to-darjeeling/cabs`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/kolkata-to-jalpaiguri/cabs`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/kolkata-to-kharagpur/cabs`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/oneway-cab/ujjain-taxi-fare`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/shared-taxi/haldwani-to-almora`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/taxi-service-asansol-to-kolkata/cabs`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/taxi-service-digha-to-kolkata/cab`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/taxi-service-New/Town-Kolkata`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/taxi-service-taxi-near/kalimpong`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+  ];
+
   // 4. Blog Posts
   const blogPages: MetadataRoute.Sitemap = INITIAL_BLOG_DATA.posts.map((post) => ({
     url: `${siteUrl}/blog/${post.slug}`,
@@ -354,6 +430,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...shoppingMallPages,
     ...kolkataRoutesPages,
     ...taxiRoutesPages,
+    ...specializedCustomPages,
     ...blogPages,
   ];
 
