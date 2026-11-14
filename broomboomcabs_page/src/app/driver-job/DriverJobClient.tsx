@@ -29,13 +29,13 @@ import { Footer } from "@/components/Footer";
 import { api } from "@/services/api";
 
 const VEHICLE_OPTIONS = [
-  { value: "sedan", label: "Sedan (Dzire, Etios, Aura, Tigor)" },
-  { value: "hatchback", label: "Hatchback (WagonR, Swift, Tiago, Celerio)" },
-  { value: "suv", label: "SUV (Ertiga, Carens, Triber, Marazzo)" },
-  { value: "suv-plus", label: "Luxury / SUV+ (Innova Crysta, Fortuner)" },
-  { value: "tempo", label: "Tempo Traveller (12/17/26 Seater)" },
-  { value: "auto", label: "Auto Rickshaw" },
-  { value: "bike", label: "Bike / Two-Wheeler" },
+  { value: "sedan", label: " 4 Seater" },
+  { value: "suv", label: "6 Seater" },
+  { value: "suv-plus", label: "7 Seater" },
+    { value: "suv-plus", label: "10 Seater" },
+  { value: "tempo", label: "13 Seater" },
+  { value: "tempo", label: "15 Seater" },
+  { value: "tempo", label: "24 Seater" },
 ];
 
 const FAQS = [
@@ -62,10 +62,9 @@ const FAQS = [
 ];
 
 const OTP_LENGTH = 4;
-const RESEND_COOLDOWN_SECONDS = 30;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
-type Step = "form" | "otp" | "success";
+type Step = "form" | "thankyou";
 
 interface DriverJobClientProps {
   initialCity?: string;
@@ -80,57 +79,27 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
   const [phone, setPhone] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [step, setStep] = useState<Step>("form");
-  const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [infoMessage, setInfoMessage] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [resendTimer, setResendTimer] = useState(0);
-
-  const otpInputRef = useRef<HTMLInputElement>(null);
-
-  /* ------------------------------------------------------------------ */
-  /* Resend cooldown timer                                              */
-  /* ------------------------------------------------------------------ */
-  useEffect(() => {
-    if (resendTimer <= 0) return;
-    const id = setTimeout(() => setResendTimer((s) => s - 1), 1000);
-    return () => clearTimeout(id);
-  }, [resendTimer]);
-
-  /* ------------------------------------------------------------------ */
-  /* Auto-focus the OTP input when we reach the OTP step                */
-  /* ------------------------------------------------------------------ */
-  useEffect(() => {
-    if (step !== "otp") return;
-    const id = setTimeout(() => otpInputRef.current?.focus(), 80);
-    return () => clearTimeout(id);
-  }, [step]);
 
   /* ------------------------------------------------------------------ */
   /* Helpers                                                            */
   /* ------------------------------------------------------------------ */
   const clearMessages = () => {
     setErrorMessage("");
-    setInfoMessage("");
   };
 
   const resetForm = () => {
     setStep("form");
-    setCity("");
+    setCity(formattedCity);
     setPhone("");
     setVehicleType("");
-    setOtp("");
-    setResendTimer(0);
-    setIsVerifying(false);
     clearMessages();
   };
 
-  const startCooldown = () => setResendTimer(RESEND_COOLDOWN_SECONDS);
-
   /* ------------------------------------------------------------------ */
-  /* Step 1 — Validate details + create the pilot lead                  */
+  /* Step 1 — Validate details + submit application                     */
   /* ------------------------------------------------------------------ */
   const handleGetCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,90 +130,10 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
         source: `Driver Job Application - ${trimmedCity}`,
       });
     } catch (err) {
-      // Never block onboarding because of a backend hiccup — log & continue.
       console.error("Pilot lead creation failed:", err);
     } finally {
       setIsSubmitting(false);
-    }
-
-    setOtp("");
-    setInfoMessage(`A ${OTP_LENGTH}-digit verification code has been sent to +91 ${phone}.`);
-    setStep("otp");
-    startCooldown();
-  };
-
-  /* ------------------------------------------------------------------ */
-  /* Step 2 — Verify the OTP                                            */
-  /* ------------------------------------------------------------------ */
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isVerifying) return;
-    clearMessages();
-
-    if (otp.length !== OTP_LENGTH) {
-      setErrorMessage(`Please enter the ${OTP_LENGTH}-digit code sent to your phone.`);
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      // NOTE: plug in the real OTP verification API call here, e.g.
-      // await api.verifyOtp({ phone, otp });
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setStep("success");
-    } catch (err) {
-      console.error("OTP verification failed:", err);
-      setErrorMessage("That code didn't work. Please check and try again.");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  /* ------------------------------------------------------------------ */
-  /* Resend                                                             */
-  /* ------------------------------------------------------------------ */
-  const handleResendOtp = async () => {
-    if (resendTimer > 0) return;
-    clearMessages();
-    setOtp("");
-    otpInputRef.current?.focus();
-
-    try {
-      // NOTE: plug in the real resend API call here, e.g.
-      // await api.resendOtp({ phone });
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setInfoMessage(`A new code has been sent to +91 ${phone}.`);
-    } catch (err) {
-      console.error("Resend OTP failed:", err);
-      setErrorMessage("Couldn't resend the code. Please try again in a moment.");
-      return;
-    }
-
-    startCooldown();
-  };
-
-  /* ------------------------------------------------------------------ */
-  /* Change number                                                      */
-  /* ------------------------------------------------------------------ */
-  const handleChangeNumber = () => {
-    setStep("form");
-    setOtp("");
-    setResendTimer(0);
-    clearMessages();
-  };
-
-  /* ------------------------------------------------------------------ */
-  /* Auto-submit once all OTP digits are entered                        */
-  /* ------------------------------------------------------------------ */
-  const handleOtpChange = (raw: string) => {
-    const digits = raw.replace(/\D/g, "").slice(0, OTP_LENGTH);
-    setOtp(digits);
-    if (errorMessage) setErrorMessage("");
-    if (digits.length === OTP_LENGTH) {
-      // Let React commit the value before firing the submit handler.
-      setTimeout(() => {
-        otpInputRef.current?.form?.requestSubmit();
-      }, 0);
+      setStep("thankyou");
     }
   };
 
@@ -304,9 +193,10 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
               <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl max-w-md w-full border border-slate-100 transition-all">
                 {step === "form" && (
                   <>
-                    <h2 className="text-xl sm:text-[24px] font-black leading-tight text-center mb-5 tracking-tight">
-                      <span className="text-amber-500 block">Confirm your phone number</span>
-                      <span className="text-slate-900 block font-black">and fill out the application</span>
+                    <h2 className="text-2xl sm:text-[26px] font-black leading-tight text-center mb-6 tracking-tight">
+                      <span className="text-[#FFC700] block">Confirm your phone number</span>
+                      <span className="text-[#FFC700]">and fill out </span>
+                      <span className="text-slate-950 font-black">the application</span>
                     </h2>
 
                     {errorMessage && (
@@ -319,11 +209,11 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                       </div>
                     )}
 
-                    <form onSubmit={handleGetCode} noValidate className="space-y-3.5">
+                    <form onSubmit={handleGetCode} noValidate className="space-y-4">
                       {/* City or Town Input */}
                       <div>
                         <label htmlFor="pilot-city" className="sr-only">
-                          City or town
+                          Your city or town
                         </label>
                         <input
                           id="pilot-city"
@@ -336,35 +226,30 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                             if (errorMessage) setErrorMessage("");
                           }}
                           placeholder="Your city or town"
-                          className="w-full px-4 py-3.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-2xl text-slate-900 placeholder:text-slate-400 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition shadow-2xs"
+                          className="w-full px-5 py-4 bg-[#f3f4f6] text-slate-800 placeholder:text-slate-400 font-medium text-sm sm:text-base rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-[#FFC700] transition"
                         />
                       </div>
 
                       {/* Phone Number Input */}
                       <div>
                         <label htmlFor="pilot-phone" className="sr-only">
-                          Phone number
+                          Your phone number
                         </label>
-                        <div className="relative flex items-center">
-                          <span className="absolute left-4 text-xs font-black text-slate-500 select-none">
-                            +91
-                          </span>
-                          <input
-                            id="pilot-phone"
-                            name="phone"
-                            type="tel"
-                            inputMode="numeric"
-                            autoComplete="tel-national"
-                            maxLength={10}
-                            value={phone}
-                            onChange={(e) => {
-                              setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
-                              if (errorMessage) setErrorMessage("");
-                            }}
-                            placeholder="Your phone number"
-                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-2xl text-slate-900 placeholder:text-slate-400 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition shadow-2xs"
-                          />
-                        </div>
+                        <input
+                          id="pilot-phone"
+                          name="phone"
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          maxLength={10}
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                            if (errorMessage) setErrorMessage("");
+                          }}
+                          placeholder="Your phone number"
+                          className="w-full px-5 py-4 bg-[#f3f4f6] text-slate-800 placeholder:text-slate-400 font-medium text-sm sm:text-base rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-[#FFC700] transition"
+                        />
                       </div>
 
                       {/* Vehicle Type Dropdown */}
@@ -380,162 +265,62 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                             setVehicleType(e.target.value);
                             if (errorMessage) setErrorMessage("");
                           }}
-                          className="w-full px-4 py-3.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-2xl text-slate-900 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 appearance-none transition cursor-pointer shadow-2xs"
+                          className={`w-full px-5 py-4 bg-[#f3f4f6] font-medium text-sm sm:text-base rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-[#FFC700] appearance-none transition cursor-pointer pr-10 ${
+                            vehicleType ? "text-slate-800" : "text-slate-400"
+                          }`}
                         >
                           <option value="" disabled>
                             Vehicle type
                           </option>
                           {VEHICLE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
+                            <option key={opt.value} value={opt.value} className="text-slate-800">
                               {opt.label}
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-slate-500 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
 
                       {/* Get Code Button */}
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 active:scale-[0.99] text-slate-950 font-black text-sm sm:text-base rounded-2xl shadow-md transition-all cursor-pointer mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Sending Code...</span>
-                          </>
-                        ) : (
-                          "Get code"
-                        )}
-                      </button>
-
-                      <p className="text-[11px] text-center text-slate-400 font-medium leading-relaxed pt-1">
-                        By continuing, you agree to BroomBoom&apos;s Terms &amp; Conditions and Driver Partner Privacy Policy.
-                      </p>
+                      <div className="pt-2 text-center">
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="px-10 py-3.5 bg-[#FFC700] hover:bg-[#eab308] active:scale-95 text-slate-950 font-bold text-base rounded-2xl shadow-sm transition cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Submitting...</span>
+                            </>
+                          ) : (
+                            "Get code"
+                          )}
+                        </button>
+                      </div>
                     </form>
                   </>
                 )}
 
-                {step === "otp" && (
-                  <form onSubmit={handleVerifyOtp} noValidate className="space-y-4">
-                    <div className="text-center">
-                      <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-2">
-                        <Smartphone className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-xl font-black text-slate-900">Enter Verification Code</h3>
-                      <p className="text-xs text-slate-500 font-medium mt-1">
-                        We sent a {OTP_LENGTH}-digit verification code to{" "}
-                        <span className="font-bold text-slate-900">+91 {phone}</span>
+                {step === "thankyou" && (
+                  <div className="text-center py-6 px-2 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+                      <CheckCircle2 className="w-9 h-9" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                        Thank You!
+                      </h3>
+                      <p className="text-sm text-slate-600 mt-2 leading-relaxed font-medium">
+                        Your application has been received successfully. Our driver onboarding specialist will connect with you shortly.
                       </p>
                     </div>
-
-                    {infoMessage && (
-                      <div
-                        aria-live="polite"
-                        className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold text-center"
-                      >
-                        {infoMessage}
-                      </div>
-                    )}
-
-                    {errorMessage && (
-                      <div
-                        role="alert"
-                        aria-live="polite"
-                        className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold text-center"
-                      >
-                        {errorMessage}
-                      </div>
-                    )}
-
-                    <div>
-                      <label htmlFor="pilot-otp" className="sr-only">
-                        Verification code
-                      </label>
-                      <input
-                        id="pilot-otp"
-                        ref={otpInputRef}
-                        name="otp"
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        pattern="[0-9]*"
-                        maxLength={OTP_LENGTH}
-                        value={otp}
-                        onChange={(e) => handleOtpChange(e.target.value)}
-                        placeholder={`Enter ${OTP_LENGTH}-digit code`}
-                        aria-describedby={errorMessage ? "pilot-otp-error" : undefined}
-                        className="w-full text-center tracking-[0.5em] text-lg font-black px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 transition disabled:opacity-60"
-                        disabled={isVerifying}
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={otp.length !== OTP_LENGTH || isVerifying}
-                      className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 font-black text-slate-950 rounded-2xl shadow-md transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {isVerifying ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Verifying...</span>
-                        </>
-                      ) : (
-                        "Verify & Submit Application"
-                      )}
-                    </button>
-
-                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1 font-semibold">
-                      <button
-                        type="button"
-                        onClick={handleChangeNumber}
-                        disabled={isVerifying}
-                        className="text-amber-600 hover:underline disabled:opacity-50 disabled:no-underline"
-                      >
-                        Change number
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleResendOtp}
-                        disabled={resendTimer > 0 || isVerifying}
-                        className="text-amber-600 hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed"
-                      >
-                        {resendTimer > 0 ? `Resend code in ${resendTimer}s` : "Resend code"}
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {step === "success" && (
-                  <div className="text-center py-4 space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-                      <CheckCircle2 className="w-10 h-10" />
-                    </div>
-                    <h3 className="text-2xl font-black text-slate-900">Application Submitted!</h3>
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                      Congratulations! Your pilot application for <span className="font-bold text-slate-900">{city.trim()}</span> has been received. Our driver onboarding specialist will call you on{" "}
-                      <span className="font-bold text-slate-900">+91 {phone}</span> within 2 hours.
-                    </p>
-
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-2 mt-4">
-                      <div className="text-xs font-black text-amber-900 uppercase tracking-wider">Next Steps:</div>
-                      <div className="text-xs text-slate-700 flex items-start gap-2">
-                        <span className="font-bold text-amber-600 shrink-0">1.</span>
-                        <span>Keep your Driving License &amp; Vehicle RC ready.</span>
-                      </div>
-                      <div className="text-xs text-slate-700 flex items-start gap-2">
-                        <span className="font-bold text-amber-600 shrink-0">2.</span>
-                        <span>Download the BroomBoom Pilot Partner App from Play Store.</span>
-                      </div>
-                    </div>
-
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="w-full py-3 bg-slate-950 text-white font-bold text-xs rounded-xl hover:bg-slate-900 transition mt-2"
+                      className="text-xs text-amber-600 font-bold hover:underline pt-2 cursor-pointer inline-block"
                     >
-                      Submit Another Application
+                      Submit another application
                     </button>
                   </div>
                 )}

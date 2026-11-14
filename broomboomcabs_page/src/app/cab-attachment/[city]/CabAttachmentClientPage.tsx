@@ -25,6 +25,7 @@ import {
   Building2,
   Check,
   Send,
+  Loader2,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -38,52 +39,28 @@ interface CabAttachmentClientPageProps {
 
 const VEHICLE_TIERS = [
   {
-    type: "Prime Sedan",
-    models: "Dzire, Etios, Aura, Tigor, Amaze",
-    monthlyEarning: "₹48,000 - ₹68,000",
-    dailyTrips: "8 - 12 Trips/Day",
-    popularRoute: "Pune - Mumbai Expressway & Hinjawadi IT Hubs",
+    type: "4 Seater",
     tag: "High Demand",
   },
   {
-    type: "Family SUV (6+1)",
-    models: "Ertiga, Triber, Carens, Marazzo",
-    monthlyEarning: "₹65,000 - ₹88,000",
-    dailyTrips: "4 - 8 Outstation / Rental",
-    popularRoute: "Pune to Shirdi, Mahabaleshwar & Lonavala",
+    type: "6 Seater",
     tag: "Highest Outstation Fares",
   },
-  {
-    type: "Premium SUV+ / Luxury",
-    models: "Innova Crysta, Fortuner, XUV700",
-    monthlyEarning: "₹85,000 - ₹1,20,000",
-    dailyTrips: "Airport & Corporate Disposal",
-    popularRoute: "Pune Airport (PNQ) & Corporate Chakan Corridors",
-    tag: "Top Earnings",
-  },
-  {
-    type: "Hatchback",
-    models: "WagonR, Tiago, Celerio, Swift",
-    monthlyEarning: "₹38,000 - ₹52,000",
-    dailyTrips: "10 - 14 City Rides",
-    popularRoute: "Kothrud, Viman Nagar, PCMC, Hadapsar",
-    tag: "Consistent Daily Cashflow",
-  },
-  {
-    type: "Tempo Traveller",
-    models: "12 / 17 / 26 Seater Winger / Force",
-    monthlyEarning: "₹95,000 - ₹1,45,000",
-    dailyTrips: "Corporate & Weekend Tours",
-    popularRoute: "Pune to Goa, Konkan & Ashtavinayak Tours",
+   {
+    type: "10 Seater",
     tag: "Fleet Favorite",
   },
   {
-    type: "Auto Rickshaw",
-    models: "Bajaj, Piaggio (CNG / EV / Petrol)",
-    monthlyEarning: "₹25,000 - ₹38,000",
-    dailyTrips: "15 - 20 Local Rides",
-    popularRoute: "Swargate, Shivajinagar, Station & PCMC",
-    tag: "Zero Idle Waiting",
+    type: "13 Seater",
+    tag: "Fleet Favorite",
+  },
+  {
+   type: "15 seater",
+    tag: "Fleet Favorite",
+  },
+   {
+   type: "24 Seater",
+    tag: "Fleet Favorite",
   },
 ];
 
@@ -169,59 +146,71 @@ const FAQS = [
   },
 ];
 
+const ATTACHMENT_VEHICLE_OPTIONS = [
+    { value: "sedan", label: " 4 Seater" },
+  { value: "suv", label: "6 Seater" },
+  { value: "suv-plus", label: "7 Seater" },
+    { value: "suv-plus", label: "10 Seater" },
+  { value: "tempo", label: "13 Seater" },
+  { value: "tempo", label: "15 Seater" },
+  { value: "tempo", label: "24 Seater" },
+];
+
 export function CabAttachmentClientPage({
   cityId,
   cityName,
   stateName,
 }: CabAttachmentClientPageProps) {
   // Form State
-  const [driverName, setDriverName] = useState("");
+  const [city, setCity] = useState(cityName || "");
   const [phone, setPhone] = useState("");
-  const [vehicleType, setVehicleType] = useState("sedan");
-  const [locality, setLocality] = useState("");
+  const [vehicleType, setVehicleType] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState<"form" | "otp" | "success">("form");
-  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState<"form" | "thankyou">("form");
   const [errorMsg, setErrorMsg] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  const resetForm = () => {
+    setStep("form");
+    setCity(cityName || "");
+    setPhone("");
+    setVehicleType("");
+    setErrorMsg("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setErrorMsg("");
 
-    if (!driverName.trim()) {
-      setErrorMsg("Please enter your full name.");
+    const trimmedCity = city.trim();
+    if (trimmedCity.length < 2) {
+      setErrorMsg("Please enter your city or town.");
       return;
     }
     if (!/^[6-9]\d{9}$/.test(phone.trim())) {
-      setErrorMsg("Please enter a valid 10-digit mobile number.");
+      setErrorMsg("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    if (!vehicleType) {
+      setErrorMsg("Please select your vehicle type.");
       return;
     }
 
     setIsSubmitting(true);
     try {
       await api.createUser({
-        name: `${driverName.trim()} (Cab Attachment - ${cityName})`,
+        name: `Cab Attachment Applicant (${trimmedCity})`,
         phone: phone.trim(),
         leadType: `cab-attachment-${vehicleType}`,
-        source: `Cab Attachment Page - ${cityName} (${locality || "City"})`,
+        source: `Cab Attachment Application - ${trimmedCity}`,
       });
     } catch (err) {
       console.error("Lead creation error:", err);
     } finally {
       setIsSubmitting(false);
-      setStep("otp");
+      setStep("thankyou");
     }
-  };
-
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 4) {
-      setErrorMsg("Please enter the 4-digit code sent to your phone.");
-      return;
-    }
-    setErrorMsg("");
-    setStep("success");
   };
 
   return (
@@ -311,213 +300,139 @@ export function CabAttachmentClientPage({
             </div>
 
             {/* Right Column: Instant Registration Card */}
-            <div className="lg:col-span-5">
-              <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 text-slate-900 relative">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-                  <div>
-                    <span className="text-[11px] font-black uppercase tracking-wider text-amber-600">
-                      Fast 2-Minute Onboarding
-                    </span>
-                    <h3 className="text-xl font-black text-slate-900">
-                      Attach Your Cab in {cityName}
-                    </h3>
-                  </div>
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                    <Car className="w-5 h-5" />
-                  </div>
-                </div>
-
-                {errorMsg && (
-                  <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{errorMsg}</span>
-                  </div>
-                )}
-
+            <div className="lg:col-span-5 flex justify-center lg:justify-end">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl max-w-md w-full border border-slate-100 transition-all">
                 {step === "form" && (
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Your Full Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={driverName}
-                        onChange={(e) => setDriverName(e.target.value)}
-                        placeholder="e.g. Sachin Deshmukh"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-sm outline-none transition"
-                      />
-                    </div>
+                  <>
+                    <h2 className="text-2xl sm:text-[26px] font-black leading-tight text-center mb-6 tracking-tight">
+                      <span className="text-[#FFC700] block">Confirm your phone number</span>
+                      <span className="text-[#FFC700]">and fill out </span>
+                      <span className="text-slate-950 font-black">the application</span>
+                    </h2>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Mobile Number (WhatsApp)
-                      </label>
-                      <div className="flex">
-                        <span className="inline-flex items-center px-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 text-slate-600 font-bold text-sm">
-                          +91
-                        </span>
+                    {errorMsg && (
+                      <div
+                        role="alert"
+                        aria-live="polite"
+                        className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold text-center"
+                      >
+                        {errorMsg}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                      {/* City or Town Input */}
+                      <div>
+                        <label htmlFor="attachment-city" className="sr-only">
+                          Your city or town
+                        </label>
                         <input
-                          type="tel"
-                          required
-                          maxLength={10}
-                          value={phone}
-                          onChange={(e) =>
-                            setPhone(e.target.value.replace(/\D/g, ""))
-                          }
-                          placeholder="9876543210"
-                          className="w-full px-4 py-3 rounded-r-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-sm outline-none transition"
+                          id="attachment-city"
+                          name="city"
+                          type="text"
+                          autoComplete="address-level2"
+                          value={city}
+                          onChange={(e) => {
+                            setCity(e.target.value);
+                            if (errorMsg) setErrorMsg("");
+                          }}
+                          placeholder="Your city or town"
+                          className="w-full px-5 py-4 bg-[#f3f4f6] text-slate-800 placeholder:text-slate-400 font-medium text-sm sm:text-base rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-[#FFC700] transition"
                         />
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Vehicle Category
-                      </label>
-                      <select
-                        value={vehicleType}
-                        onChange={(e) => setVehicleType(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-sm outline-none transition bg-white"
-                      >
-                        <option value="sedan">
-                          Prime Sedan (Dzire, Etios, Aura, Tigor)
-                        </option>
-                        <option value="suv">
-                          Family SUV (Ertiga, Triber, Carens)
-                        </option>
-                        <option value="luxury-suv">
-                          Prime SUV+ (Innova Crysta, Fortuner)
-                        </option>
-                        <option value="hatchback">
-                          Hatchback (WagonR, Tiago, Celerio)
-                        </option>
-                        <option value="tempo">
-                          Tempo Traveller (12/17/26 Seater)
-                        </option>
-                        <option value="auto">Auto Rickshaw (CNG / Petrol)</option>
-                      </select>
-                    </div>
+                      {/* Phone Number Input */}
+                      <div>
+                        <label htmlFor="attachment-phone" className="sr-only">
+                          Your phone number
+                        </label>
+                        <input
+                          id="attachment-phone"
+                          name="phone"
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          maxLength={10}
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                            if (errorMsg) setErrorMsg("");
+                          }}
+                          placeholder="Your phone number"
+                          className="w-full px-5 py-4 bg-[#f3f4f6] text-slate-800 placeholder:text-slate-400 font-medium text-sm sm:text-base rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-[#FFC700] transition"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Preferred Locality / Base in {cityName}
-                      </label>
-                      <input
-                        type="text"
-                        value={locality}
-                        onChange={(e) => setLocality(e.target.value)}
-                        placeholder="e.g. Hinjawadi, Wakad, Hadapsar, PCMC"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-sm outline-none transition"
-                      />
-                    </div>
+                      {/* Vehicle Type Dropdown */}
+                      <div className="relative">
+                        <label htmlFor="attachment-vehicle" className="sr-only">
+                          Vehicle type
+                        </label>
+                        <select
+                          id="attachment-vehicle"
+                          name="vehicleType"
+                          value={vehicleType}
+                          onChange={(e) => {
+                            setVehicleType(e.target.value);
+                            if (errorMsg) setErrorMsg("");
+                          }}
+                          className={`w-full px-5 py-4 bg-[#f3f4f6] font-medium text-sm sm:text-base rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-[#FFC700] appearance-none transition cursor-pointer pr-10 ${
+                            vehicleType ? "text-slate-800" : "text-slate-400"
+                          }`}
+                        >
+                          <option value="" disabled>
+                            Vehicle type
+                          </option>
+                          {ATTACHMENT_VEHICLE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value} className="text-slate-800">
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-slate-500 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
 
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full mt-2 py-3.5 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-98 text-slate-950 font-black text-sm uppercase tracking-wider shadow-lg shadow-amber-400/25 transition flex items-center justify-center gap-2"
-                    >
-                      <span>Proceed to Quick Verification</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-
-                    <p className="text-[11px] text-slate-500 text-center leading-tight">
-                      By continuing, you agree to receive SMS / WhatsApp trip
-                      updates. 100% data privacy guaranteed.
-                    </p>
-                  </form>
+                      {/* Get Code Button */}
+                      <div className="pt-2 text-center">
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="px-10 py-3.5 bg-[#FFC700] hover:bg-[#eab308] active:scale-95 text-slate-950 font-bold text-base rounded-2xl shadow-sm transition cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Submitting...</span>
+                            </>
+                          ) : (
+                            "Get code"
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </>
                 )}
 
-                {step === "otp" && (
-                  <form onSubmit={handleVerifyOtp} className="space-y-4">
-                    <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-center">
-                      <Smartphone className="w-7 h-7 text-amber-600 mx-auto mb-2" />
-                      <p className="text-xs text-slate-700">
-                        Enter the verification code sent to{" "}
-                        <strong className="text-slate-900">+91 {phone}</strong>
+                {step === "thankyou" && (
+                  <div className="text-center py-6 px-2 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+                      <CheckCircle2 className="w-9 h-9" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                        Thank You!
+                      </h3>
+                      <p className="text-sm text-slate-600 mt-2 leading-relaxed font-medium">
+                        Your application has been received successfully. Our driver onboarding specialist will connect with you shortly.
                       </p>
                     </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 text-center">
-                        Enter 4-Digit Code
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={4}
-                        autoFocus
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                        placeholder="1234"
-                        className="w-full text-center tracking-[0.5em] text-2xl font-black px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 outline-none"
-                      />
-                    </div>
-
                     <button
-                      type="submit"
-                      className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-sm uppercase tracking-wider transition shadow-lg shadow-emerald-500/20"
+                      type="button"
+                      onClick={resetForm}
+                      className="text-xs text-amber-600 font-bold hover:underline pt-2 cursor-pointer inline-block"
                     >
-                      Confirm &amp; Activate Pilot Account
+                      Submit another application
                     </button>
-
-                    <div className="flex justify-between items-center text-xs pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setStep("form")}
-                        className="text-slate-500 hover:text-slate-800"
-                      >
-                        &larr; Change Details
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => alert("Verification code re-sent!")}
-                        className="text-amber-600 hover:underline font-semibold"
-                      >
-                        Resend Code
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {step === "success" && (
-                  <div className="text-center py-4 space-y-4 animate-in fade-in duration-300">
-                    <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-                      <Check className="w-8 h-8 stroke-[3]" />
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-black text-slate-900">
-                        Registration Initiated!
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-1 max-w-xs mx-auto">
-                        Welcome to the BroomBoom {cityName} Pilot Fleet,{" "}
-                        <strong>{driverName}</strong>! Our local Pune onboarding
-                        officer will call you within 15 minutes to complete
-                        document verification.
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-left text-xs space-y-1.5">
-                      <div className="font-bold text-slate-800">
-                        Next Steps for Immediate Activation:
-                      </div>
-                      <div className="text-slate-600">
-                        1. Keep Commercial DL, RC &amp; Insurance handy.
-                      </div>
-                      <div className="text-slate-600">
-                        2. Send photos to our WhatsApp verification desk.
-                      </div>
-                    </div>
-
-                    <a
-                      href={`https://wa.me/918240765499?text=Hello%20BroomBoom,%20I%20have%20submitted%20my%20cab%20attachment%20form%20for%20${cityName}.%20My%20name%20is%20${driverName}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs uppercase tracking-wider transition"
-                    >
-                      <Send className="w-4 h-4" />
-                      <span>Send Documents on WhatsApp</span>
-                    </a>
                   </div>
                 )}
               </div>
@@ -561,24 +476,23 @@ export function CabAttachmentClientPage({
                 <h3 className="text-xl font-black text-slate-900 mb-1">
                   {tier.type}
                 </h3>
-                <p className="text-xs text-slate-500 mb-4">{tier.models}</p>
+                <p className="text-xs text-slate-500 mb-4"></p>
 
                 <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50/90 to-yellow-50/60 border border-amber-200/80 mb-4">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
                     Est. Monthly Income
                   </div>
                   <div className="text-2xl font-black text-slate-900 mt-0.5">
-                    {tier.monthlyEarning}
                   </div>
                   <div className="text-[11px] text-slate-600 mt-1">
-                    Based on {tier.dailyTrips}
+                    Based on 
                   </div>
                 </div>
 
                 <div className="text-xs text-slate-600 flex items-start gap-2 mb-4">
                   <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                   <span>
-                    <strong>Top Corridor:</strong> {tier.popularRoute}
+                    <strong>Top Corridor:</strong> 
                   </span>
                 </div>
               </div>
