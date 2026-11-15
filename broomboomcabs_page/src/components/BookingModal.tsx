@@ -101,7 +101,8 @@ export function BookingModal({
               My Bookings
             </Link>
             <div className="bg-amber-400 text-slate-900 px-3 py-1.5 rounded-md font-black flex items-center gap-2 text-sm">
-              <span className="text-lg">🚕</span> BROOMBOOM
+              <img src="/logo.png" alt="BroomBoom Logo" className="w-5 h-5 rounded object-contain" />
+              <span>BROOMBOOM</span>
             </div>
           </div>
         </header>
