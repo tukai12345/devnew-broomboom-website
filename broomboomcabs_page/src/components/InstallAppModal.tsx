@@ -65,7 +65,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
     } else {
       // Direct to Android Play Store / Web App fallback
       window.open(
-        "https://play.google.com/store/apps/details?id=com.broomboom.customer",
+        "https://play.google.com/store/apps/details?id=com.broomboom.user",
         "_blank"
       );
     }
@@ -226,7 +226,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
             <div className="grid grid-cols-2 gap-3 pt-1">
               {/* Google Play */}
               <a
-                href="https://play.google.com/store/apps/details?id=com.broomboom.customer"
+                href="https://play.google.com/store/apps/details?id=com.broomboom.user"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-white flex items-center justify-center gap-2 transition active:scale-95"
@@ -242,7 +242,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
 
               {/* Apple App Store */}
               <a
-                href="https://apps.apple.com/app/broomboom-cabs"
+                href="https://play.google.com/store/apps/details?id=com.broomboom.user"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-white flex items-center justify-center gap-2 transition active:scale-95"

@@ -23,19 +23,20 @@ import {
   Loader2,
   ThumbsUp,
   UserCheck,
+  Check,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { api } from "@/services/api";
 
 const VEHICLE_OPTIONS = [
-  { value: "sedan", label: " 4 Seater" },
-  { value: "suv", label: "6 Seater" },
-  { value: "suv-plus", label: "7 Seater" },
-    { value: "suv-plus", label: "10 Seater" },
-  { value: "tempo", label: "13 Seater" },
-  { value: "tempo", label: "15 Seater" },
-  { value: "tempo", label: "24 Seater" },
+  { value: "sedan-4", label: "4 Seater" },
+  { value: "suv-6", label: "6 Seater" },
+  { value: "suv-plus-7", label: "7 Seater" },
+  { value: "cab-10", label: "10 Seater" },
+  { value: "tempo-13", label: "13 Seater" },
+  { value: "tempo-15", label: "15 Seater" },
+  { value: "tempo-24", label: "24 Seater" },
 ];
 
 const FAQS = [
@@ -61,7 +62,6 @@ const FAQS = [
   },
 ];
 
-const OTP_LENGTH = 4;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 type Step = "form" | "thankyou";
@@ -78,10 +78,40 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
   const [city, setCity] = useState(formattedCity);
   const [phone, setPhone] = useState("");
   const [vehicleType, setVehicleType] = useState("");
+  const [isVehicleDropdownOpen, setIsVehicleDropdownOpen] = useState(false);
   const [step, setStep] = useState<Step>("form");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedVehicleLabel =
+    VEHICLE_OPTIONS.find((opt) => opt.value === vehicleType)?.label || "";
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsVehicleDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsVehicleDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   /* ------------------------------------------------------------------ */
   /* Helpers                                                            */
@@ -95,6 +125,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
     setCity(formattedCity);
     setPhone("");
     setVehicleType("");
+    setIsVehicleDropdownOpen(false);
     clearMessages();
   };
 
@@ -126,8 +157,11 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
       await api.createUser({
         name: `Pilot Applicant (${trimmedCity})`,
         phone,
+        city: trimmedCity,
+        vehicleType: vehicleType,
         leadType: `driver-${vehicleType}`,
         source: `Driver Job Application - ${trimmedCity}`,
+        lastLoginAt: new Date().toISOString(),
       });
     } catch (err) {
       console.error("Pilot lead creation failed:", err);
@@ -143,10 +177,10 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
       <Navbar activeService="driver" />
 
       {/* ========================================================================= */}
-      {/* HERO SECTION — EXACT 1:1 MATCH WITH SCREENSHOT */}
+      {/* HERO SECTION */}
       {/* ========================================================================= */}
       <section
-        className="relative pt-4 sm:pt-6 lg:pt-8 pb-12 sm:pb-16 bg-cover bg-center bg-no-repeat overflow-hidden border-b border-slate-900"
+        className="relative pt-4 sm:pt-6 lg:pt-8 pb-12 sm:pb-16 bg-cover bg-center bg-no-repeat overflow-visible border-b border-slate-900"
         style={{
           backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.72), rgba(10, 16, 26, 0.88)), url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1920&q=80')`,
         }}
@@ -252,36 +286,65 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                         />
                       </div>
 
-                      {/* Vehicle Type Dropdown */}
-                      <div className="relative">
-                        <label htmlFor="pilot-vehicle" className="sr-only">
+                      {/* Vehicle Type Dropdown (Opens Strictly Top-to-Bottom) */}
+                      <div className="relative" ref={dropdownRef}>
+                        <label id="pilot-vehicle-label" className="sr-only">
                           Vehicle type
                         </label>
-                        <select
-                          id="pilot-vehicle"
-                          name="vehicleType"
-                          value={vehicleType}
-                          onChange={(e) => {
-                            setVehicleType(e.target.value);
-                            if (errorMessage) setErrorMessage("");
-                          }}
-                          className={`w-full px-5 py-4 bg-[#f3f4f6] font-medium text-sm sm:text-base rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-[#FFC700] appearance-none transition cursor-pointer pr-10 ${
-                            vehicleType ? "text-slate-800" : "text-slate-400"
-                          }`}
+                        <button
+                          type="button"
+                          aria-haspopup="listbox"
+                          aria-expanded={isVehicleDropdownOpen}
+                          aria-labelledby="pilot-vehicle-label"
+                          onClick={() => setIsVehicleDropdownOpen((prev) => !prev)}
+                          className={`w-full px-5 py-4 bg-[#f3f4f6] font-medium text-sm sm:text-base rounded-2xl border-0 flex items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-[#FFC700] transition cursor-pointer ${
+                            isVehicleDropdownOpen ? "ring-2 ring-[#FFC700]" : ""
+                          } ${selectedVehicleLabel ? "text-slate-800" : "text-slate-400"}`}
                         >
-                          <option value="" disabled>
-                            Vehicle type
-                          </option>
-                          {VEHICLE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value} className="text-slate-800">
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-slate-500 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <span>{selectedVehicleLabel || "Vehicle type"}</span>
+                          <ChevronDown
+                            className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${
+                              isVehicleDropdownOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {isVehicleDropdownOpen && (
+                          <ul
+                            role="listbox"
+                            aria-labelledby="pilot-vehicle-label"
+                            className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 max-h-64 overflow-y-auto origin-top"
+                          >
+                            {VEHICLE_OPTIONS.map((opt) => {
+                              const isSelected = vehicleType === opt.value;
+                              return (
+                                <li key={opt.value} role="option" aria-selected={isSelected}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setVehicleType(opt.value);
+                                      setIsVehicleDropdownOpen(false);
+                                      if (errorMessage) setErrorMessage("");
+                                    }}
+                                    className={`w-full px-5 py-2.5 text-left text-sm sm:text-base flex items-center justify-between transition cursor-pointer ${
+                                      isSelected
+                                        ? "bg-amber-50 text-slate-950 font-bold"
+                                        : "text-slate-700 font-medium hover:bg-slate-100"
+                                    }`}
+                                  >
+                                    <span>{opt.label}</span>
+                                    {isSelected && (
+                                      <Check className="w-4 h-4 text-amber-500 shrink-0" />
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
                       </div>
 
-                      {/* Get Code Button */}
+                      {/* Submit Button */}
                       <div className="pt-2 text-center">
                         <button
                           type="submit"
@@ -294,7 +357,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                               <span>Submitting...</span>
                             </>
                           ) : (
-                            "Get code"
+                            "Submit"
                           )}
                         </button>
                       </div>
@@ -315,6 +378,26 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                         Your application has been received successfully. Our driver onboarding specialist will connect with you shortly.
                       </p>
                     </div>
+                    
+                    {/* Install Text and Google Play Store Button */}
+                    <div className="pt-5 pb-2 flex flex-col items-center justify-center gap-3">
+                      <p className="text-sm font-bold text-slate-800">
+                        Install App
+                      </p>
+                      <a 
+                        href="https://play.google.com/store/apps/details?id=com.broomboom.pilot" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-block hover:scale-105 transition-transform duration-200"
+                      >
+                        <img 
+                          src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" 
+                          alt="Get it on Google Play" 
+                          className="h-14 mx-auto object-contain"
+                        />
+                      </a>
+                    </div>
+
                     <button
                       type="button"
                       onClick={resetForm}

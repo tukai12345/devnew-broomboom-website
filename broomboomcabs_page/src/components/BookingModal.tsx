@@ -1,597 +1,470 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import {
-  X,
-  Car,
-  MapPin,
-  Calendar,
-  Clock,
-  User,
-  Phone,
-  Mail,
-  ShieldCheck,
-  CheckCircle2,
-  Tag,
-  ArrowRight,
-  Share2,
-  Check
+import React, { useState } from "react";
+import Link from "next/link";
+import { 
+  ArrowLeft, 
+  MapPin, 
+  User, 
+  Phone, 
+  Mail, 
+  ChevronDown, 
+  LogIn,
+  X 
 } from "lucide-react";
 import { CabVehicle } from "@/data/cabsData";
-import { SearchParams } from "./HeroSearch";
-import { api } from "@/services/api";
-import { triggerCashfreePayment } from "@/utils/cashfree";
-import { getStoredUser } from "@/utils/auth";
+import { SearchParams } from "@/components/HeroSearch";
 
-interface BookingModalProps {
-  cab: CabVehicle | null;
-  searchParams: SearchParams;
-  isOpen: boolean;
-  onClose: () => void;
+export interface BookingModalProps {
+  cab?: CabVehicle | null;
+  searchParams?: SearchParams;
+  isOpen?: boolean;
+  onClose?: () => void;
   appliedPromo?: string;
 }
 
-export const BookingModal: React.FC<BookingModalProps> = ({
+export function BookingModal({
   cab,
   searchParams,
-  isOpen,
+  isOpen = true,
   onClose,
-  appliedPromo = "BROOMFIRST",
-}) => {
-  const [mounted, setMounted] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [pickupAddress, setPickupAddress] = useState("");
-  const [pickupPincode, setPickupPincode] = useState("");
-  const [paymentChoice, setPaymentChoice] = useState<"advance" | "full" | "driver">("advance");
-  const [bookingStatus, setBookingStatus] = useState<"filling" | "processing" | "confirmed">("filling");
-  const [bookingId, setBookingId] = useState("");
+  appliedPromo,
+}: BookingModalProps) {
+  // Form State
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [fullName, setFullName] = useState("Partha Sarkar");
+  const [gender, setGender] = useState("Male");
+  const [mobile, setMobile] = useState("8583992978");
+  const [email, setEmail] = useState("sakarpartha222@gmail.com");
+  const [usePickupAsBilling, setUsePickupAsBilling] = useState(true);
+  
+  // Payment State
+  const [paymentChoice, setPaymentChoice] = useState<"advance" | "full">("advance");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Add-ons State
+  const [addonLanguage, setAddonLanguage] = useState(false);
+  const [addonNewVehicle, setAddonNewVehicle] = useState(false);
+  const [addonSightseeing, setAddonSightseeing] = useState(false);
 
-  // Auto-populate from logged-in user if available
-  useEffect(() => {
-    if (isOpen) {
-      const user = getStoredUser();
-      if (user) {
-        if (user.name && !name) setName(user.name);
-        if (user.phone && !phone) setPhone(user.phone);
-        if (user.email && !email) setEmail(user.email);
-      }
-    }
-  }, [isOpen]);
+  // Terms Agreement State
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
-  if (!isOpen || !cab || !mounted) return null;
+  // Dynamic Fare & Advance Calculations
+  const baseFare = cab?.discountedPrice ?? 750;
+  const addonsTotal =
+    (addonLanguage ? 209 : 0) +
+    (addonNewVehicle ? 262 : 0) +
+    (addonSightseeing ? 787 : 0);
 
-  const basePrice = Math.round(cab.discountedPrice);
-  // Total Fare shown on web: Base Fare
-  const finalPayable = basePrice; 
-  const advanceToken = Math.round(finalPayable * 0.2);
+  // If add-on service is added, add to BOTH advance and total fare
+  const totalFare = baseFare + addonsTotal;
+  const baseAdvance = Math.round(baseFare * 0.2);
+  const advanceToken = baseAdvance + addonsTotal;
 
-  // Hidden GST (5%) & Gateway (2%) added when redirecting to Cashfree
-  const gstCharge = Math.round(finalPayable * 0.05);
-  const gatewayCharge = Math.round(finalPayable * 0.02);
-  const totalExtraCharges = gstCharge + gatewayCharge; // 7% extra
+  // Exact car illustration image
+  const carImage =
+    cab?.image ||
+    (cab?.category?.toLowerCase() === "suv" || cab?.name?.toLowerCase().includes("ertiga")
+      ? "/cars/suv-ertiga.png"
+      : cab?.category?.toLowerCase()?.includes("prime") || cab?.name?.toLowerCase().includes("crysta")
+      ? "/cars/suv-plus-innova-crysta.png"
+      : cab?.category?.toLowerCase()?.includes("tempo")
+      ? "/cars/tempo-traveller.png"
+      : "/cars/sedan-dzire.png");
 
-  const cashfreePayable = paymentChoice === "advance"
-    ? Math.round(advanceToken + totalExtraCharges * (advanceToken / Math.max(1, finalPayable)))
-    : finalPayable + totalExtraCharges;
+  if (isOpen === false) return null;
 
-  const handleConfirmBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !phone.trim() || !pickupAddress.trim()) {
-      alert("Please fill your Name, Phone Number, and Complete Pickup Address.");
-      return;
-    }
-
-    setBookingStatus("processing");
-    let officialBookingId = `BB-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const pinMatch = pickupAddress.match(/\b[1-9][0-9]{5}\b/);
-    const finalPin = pickupPincode.trim() || (pinMatch ? pinMatch[0] : "");
-
-    try {
-      // Connect to BroomBoom User Backend
-      const backendBooking = await api.createBooking({
-        customerName: name.trim(),
-        customerMobile: phone.trim(),
-        customerEmail: email.trim(),
-        serviceType:
-          searchParams.tripType === "outstation-oneway"
-            ? "Outstation oneway"
-            : searchParams.tripType === "outstation-round"
-            ? "Outstation roundtrip"
-            : searchParams.tripType === "hourly"
-            ? "Hourly"
-            : "Airport",
-        state: "West Bengal",
-        pincode: finalPin,
-        pickupAddress: pickupAddress.trim(),
-        dropAddress: `${searchParams.toCity}, India`,
-        pickupLat: searchParams.fromCoords ? String(searchParams.fromCoords.lat) : undefined,
-        pickupLng: searchParams.fromCoords ? String(searchParams.fromCoords.lng) : undefined,
-        dropLat: searchParams.toCoords ? String(searchParams.toCoords.lat) : undefined,
-        dropLng: searchParams.toCoords ? String(searchParams.toCoords.lng) : undefined,
-        pickupDate: searchParams.pickupDate || new Date().toISOString().split("T")[0],
-        pickupTime: searchParams.pickupTime || "10:00 AM",
-        returnDate: searchParams.returnDate || "",
-        returnTime: searchParams.returnTime || "",
-        vehicleCategory: cab?.name || "Sedan",
-        seater: cab?.seats || 4,
-        fare: finalPayable,
-        advance: cashfreePayable,
-        dueFare: Math.max(0, finalPayable - (paymentChoice === "advance" ? advanceToken : finalPayable)),
-        status: "Pending",
-        paymentStatus: "PENDING",
-      });
-
-      if (backendBooking?.bookingId) {
-        officialBookingId = backendBooking.bookingId;
-      }
-    } catch (err) {
-      console.warn("Backend booking sync notice:", err);
-    }
-
-    setBookingId(officialBookingId);
-
-    // Save to localStorage for instant local access
-    try {
-      const newBooking = {
-        bookingId: officialBookingId,
-        date: new Date().toISOString(),
-        tripType: searchParams.tripType,
-        fromCity: searchParams.fromCity,
-        toCity: searchParams.toCity,
-        pickupDate: searchParams.pickupDate,
-        pickupTime: searchParams.pickupTime,
-        dropDate: searchParams.returnDate,
-        dropTime: searchParams.returnTime,
-        cabName: cab?.name,
-        cabCategory: cab?.category,
-        status: paymentChoice === "driver" ? "CONFIRMED" : "PENDING_PAYMENT",
-        totalAmount: finalPayable,
-        amountPaid: paymentChoice === "full" ? finalPayable : paymentChoice === "advance" ? advanceToken : 0,
-        remainingAmount: paymentChoice === "full" ? 0 : paymentChoice === "advance" ? finalPayable - advanceToken : finalPayable,
-        paymentMode: paymentChoice === "driver" ? "Cash to Driver" : "Online via Cashfree",
-        traveller: {
-          name: name.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          pickupAddress: pickupAddress.trim(),
-        },
-      };
-      const existingRaw = localStorage.getItem("broomboom_user_bookings");
-      const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      const filtered = existing.filter((b: any) => b.bookingId !== officialBookingId);
-      filtered.unshift(newBooking);
-      localStorage.setItem("broomboom_user_bookings", JSON.stringify(filtered));
-    } catch {}
-
-    // If driver cash option, show confirmed modal right away
-    if (paymentChoice === "driver") {
-      setBookingStatus("confirmed");
-      return;
-    }
-
-    // Otherwise redirect to Cashfree payment gateway
-    try {
-      const returnUrl = `${window.location.origin}/payment/status?bookingId=${officialBookingId}&order_id={order_id}`;
-      const cashfreeOrder = await api.createCashfreeOrder({
-        bookingId: officialBookingId,
-        returnUrl,
-      });
-
-      if (cashfreeOrder?.paymentSessionId) {
-        await triggerCashfreePayment({
-          paymentSessionId: cashfreeOrder.paymentSessionId,
-          environment: cashfreeOrder.environment || "sandbox",
-          redirectTarget: "_self",
-        });
-        return;
-      } else {
-        throw new Error(cashfreeOrder?.message || "Cashfree payment session could not be created");
-      }
-    } catch (payErr: any) {
-      console.error("Cashfree checkout error:", payErr);
-      alert(
-        `Failed to redirect to Cashfree: ${
-          payErr?.message || "Please check backend connection on port 5004"
-        }`
-      );
-      setBookingStatus("filling");
-    }
-  };
-
-  return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div
-        className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-100 flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-slate-100 p-4 sm:p-5 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-400 p-0.5 shadow-sm shrink-0">
-              <img
-                src="/logo.png"
-                alt="BroomBoom Logo"
-                className="w-full h-full object-contain rounded-full"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-950 bg-amber-400 px-2 py-0.5 rounded">
-                  Fast Checkout
-                </span>
-                <span className="text-xs text-slate-400 font-medium">
-                  • 100% Free Cancellation
-                </span>
-              </div>
-              <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-0.5">
-                {bookingStatus === "confirmed" ? "Booking Confirmed 🎉" : "Review & Confirm Booking"}
-              </h3>
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-start justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-200">
+      <div className="min-h-screen sm:min-h-0 w-full max-w-6xl bg-slate-50 font-sans pb-16 rounded-3xl shadow-2xl overflow-hidden border border-slate-200/80 my-auto">
+        {/* Top Navbar / Modal Header */}
+        <header className="bg-[#0B1527] text-white py-4 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-4">
+            {onClose ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition cursor-pointer text-slate-300 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            ) : (
+              <Link href="/" className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+            )}
+            <h1 className="text-xl font-bold tracking-wide">Review booking</h1>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <Link href="/my-bookings" className="text-amber-400 font-semibold text-sm hover:underline">
+              My Bookings
+            </Link>
+            <div className="bg-amber-400 text-slate-900 px-3 py-1.5 rounded-md font-black flex items-center gap-2 text-sm">
+              <span className="text-lg">🚕</span> BROOMBOOM
             </div>
           </div>
+        </header>
 
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition"
-            aria-label="Close Modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Main Content Layout */}
+        <main className="max-w-6xl mx-auto mt-6 px-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* LEFT COLUMN (Add-ons & Traveller Details) */}
+          <div className="lg:col-span-8 space-y-6">
 
-        {/* Modal Body */}
-        {bookingStatus === "confirmed" ? (
-          /* SUCCESS SCREEN */
-          <div className="p-6 sm:p-8 text-center space-y-6">
-            <div className="relative mx-auto w-16 h-16">
-              <img
-                src="/logo.png"
-                alt="BroomBoom Cabs"
-                className="w-16 h-16 rounded-full object-contain shadow-md"
-              />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                <CheckCircle2 className="w-4 h-4 stroke-[3]" />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="text-2xl font-black text-slate-900">
-                Your Cab is Successfully Reserved!
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-500">
-                Booking ID: <strong className="text-amber-600 font-mono text-base">{bookingId}</strong>
-              </p>
-            </div>
-
-            {/* Trip Brief Card */}
-            <div className="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-200 text-left space-y-3">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                <div className="flex items-center gap-2">
-                  <Car className="w-4 h-4 text-amber-500" />
-                  <span className="font-extrabold text-slate-900 text-sm">{cab.name}</span>
-                </div>
-                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                  Confirmed
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
+            {/* Selected Cab Summary Card */}
+            {cab && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center justify-between gap-4">
                 <div>
-                  <div className="text-slate-400 font-medium">Route:</div>
-                  <div className="font-bold text-slate-800">
-                    {searchParams.fromCity} → {searchParams.tripType === "hourly" ? searchParams.hourlyPackage : searchParams.toCity}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-slate-400 font-medium">Pickup Schedule:</div>
-                  <div className="font-bold text-slate-800">
-                    {searchParams.pickupDate} at {searchParams.pickupTime}
-                    {searchParams.tripType === "outstation-round" && (
-                      <span className="text-amber-700 block text-[11px] font-bold">
-                        Return Drop: {searchParams.returnDate} at {searchParams.returnTime}
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black text-slate-900">{cab.name}</h3>
+                    {cab.badge && (
+                      <span className="px-2 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider">
+                        {cab.badge}
                       </span>
                     )}
                   </div>
+                  <p className="text-xs text-slate-500 mt-0.5">{cab.models}</p>
+                  <p className="text-xs font-semibold text-slate-700 mt-2 uppercase tracking-wide">
+                    {cab.category} • AC • {cab.seats} Seats
+                  </p>
                 </div>
-                <div>
-                  <div className="text-slate-400 font-medium">Passenger Name:</div>
-                  <div className="font-bold text-slate-800">{name || "Traveller"}</div>
+                <div className="w-24 sm:w-28 h-16 sm:h-20 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 shrink-0 overflow-hidden shadow-xs">
+                  <img
+                    src={carImage}
+                    alt={cab.name}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
+              </div>
+            )}
+            
+            {/* Add-ons Section */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4">
+                Available Trip Add-ons
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Add-on 1 */}
+                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none ${addonLanguage ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
+                  <input
+                    type="checkbox"
+                    checked={addonLanguage}
+                    onChange={(e) => setAddonLanguage(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-sm text-slate-800">Preferred Driver Language</span>
+                      <span className="text-sm font-bold text-slate-900">+₹209</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Assigns driver fluent in English, Hindi, or Bengali
+                    </p>
+                  </div>
+                </label>
+
+                {/* Add-on 2 */}
+                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none ${addonNewVehicle ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
+                  <input
+                    type="checkbox"
+                    checked={addonNewVehicle}
+                    onChange={(e) => setAddonNewVehicle(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-sm text-slate-800">New Vehicle (2023+)</span>
+                      <span className="text-sm font-bold text-slate-900">+₹262</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Promised latest 2023 or newer car model with pristine interior
+                    </p>
+                  </div>
+                </label>
+
+                {/* Add-on 3 */}
+                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none md:col-span-2 lg:col-span-1 ${addonSightseeing ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
+                  <input
+                    type="checkbox"
+                    checked={addonSightseeing}
+                    onChange={(e) => setAddonSightseeing(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-sm text-slate-800">Local sightseeing package</span>
+                      <span className="text-sm font-bold text-slate-900">+₹787</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Covers extra hours of city touring and attractions
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Traveller Details Section */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900 mb-6 uppercase tracking-wide">Traveller Details</h2>
+              
+              {/* Pickup Input */}
+              <div className="mb-6">
+                <label className="block text-xs font-semibold text-slate-500 mb-2">Pickup Details</label>
+                <div className="relative">
+                  <MapPin className="w-5 h-5 absolute left-4 top-3.5 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="ENTER PICKUP LOCATION" 
+                    value={pickupLocation}
+                    onChange={(e) => setPickupLocation(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 uppercase placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <span className="text-xs font-semibold text-slate-500">Traveller Contact Details</span>
+              </div>
+
+              {/* Form Fields Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-slate-400 font-medium">Amount to Pay:</div>
-                  <div className="font-extrabold text-slate-900 text-sm">
-                    ₹{paymentChoice === "advance" ? `${advanceToken} Advance Token` : `${finalPayable} (Full)`}
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Full Name</label>
+                  <div className="relative">
+                    <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input 
+                      type="text" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full border border-slate-300 rounded-lg py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Gender</label>
+                  <div className="relative">
+                    <select 
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="w-full border border-slate-300 rounded-lg py-2.5 px-3 text-sm font-semibold text-slate-800 appearance-none focus:outline-none focus:border-amber-500 bg-white"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mobile Number</label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 border border-r-0 border-slate-300 rounded-l-lg bg-slate-50 text-slate-700 text-sm font-bold">
+                      +91
+                    </span>
+                    <input 
+                      type="tel" 
+                      value={mobile}
+                      onChange={(e) => {
+                        let clean = e.target.value.replace(/[^0-9]/g, "");
+                        if (clean.length === 12 && clean.startsWith("91")) {
+                          clean = clean.slice(2);
+                        }
+                        setMobile(clean.slice(0, 10));
+                      }}
+                      maxLength={10}
+                      placeholder="10-digit mobile"
+                      className="w-full border border-slate-300 rounded-r-lg py-2.5 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase">Email ID</label>
+                    <span className="text-[9px] text-slate-400">(optional)</span>
+                  </div>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input 
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full border border-slate-300 rounded-lg py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-amber-500"
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-200 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Chauffeur & car details will be sent via SMS & WhatsApp 2 hours before pickup.</span>
+              {/* Login & Checkbox Row */}
+              <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <button type="button" className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+                  <span className="text-slate-500 font-normal">Or</span>
+                  <LogIn className="w-4 h-4" />
+                  LOG INTO EXISTING ACCOUNT
+                </button>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={usePickupAsBilling}
+                    onChange={(e) => setUsePickupAsBilling(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Use pickup location as billing address</span>
+                </label>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
-              <a
-                href={`https://wa.me/918240765499?text=Hi%20BroomBoom,%20I%20have%20booked%20cab%20${bookingId}%20for%20${searchParams.fromCity}%20to%20${searchParams.toCity}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>Get WhatsApp Updates</span>
-              </a>
-
-              <button
-                onClick={onClose}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition"
-              >
-                Done & Return to Homepage
-              </button>
             </div>
           </div>
-        ) : (
-          /* BOOKING FORM */
-          <form onSubmit={handleConfirmBooking} className="p-4 sm:p-6 space-y-5">
-            {/* Cab & Route Summary */}
-            <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/80 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <img
-                  src={cab.image}
-                  alt={cab.name}
-                  className="w-16 h-12 rounded-lg object-cover border border-amber-300"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80";
-                  }}
-                />
-                <div>
-                  <div className="text-sm font-extrabold text-slate-900">{cab.name}</div>
-                  <div className="text-xs text-slate-500">
-                    {searchParams.fromCity} → {searchParams.tripType === "hourly" ? searchParams.hourlyPackage : searchParams.toCity}
-                  </div>
-                  <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
-                    {searchParams.pickupDate} • {searchParams.pickupTime}
-                    {searchParams.tripType === "outstation-round" && (
-                      <span> → Return Drop: {searchParams.returnDate} • {searchParams.returnTime}</span>
-                    )}
-                  </div>
+
+          {/* RIGHT COLUMN (Fare & Payment Options) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Fare Summary Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-5 border-b border-slate-100">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-bold text-slate-800">Base Trip Fare</span>
+                  <span className="text-sm font-bold text-slate-800">₹{baseFare}</span>
                 </div>
-              </div>
+                <p className="text-[11px] text-slate-500">Cab charges, Chauffeur &amp; Fuel included</p>
 
-              <div className="text-right">
-                <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Total Fare</div>
-                <div className="text-xl font-black text-slate-900">₹{finalPayable}</div>
-              </div>
-            </div>
-
-            {/* Passenger Contact Info */}
-            <div className="space-y-3">
-              <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-amber-500" />
-                <span>Primary Passenger Details</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <User className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Rahul Sen"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 font-medium"
-                    />
+                {addonsTotal > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-800">
+                      <span>Selected Add-ons</span>
+                      <span>+₹{addonsTotal}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 space-y-0.5 mt-1">
+                      {addonLanguage && <div className="flex justify-between"><span>Driver Language</span><span>+₹209</span></div>}
+                      {addonNewVehicle && <div className="flex justify-between"><span>New Vehicle (2023+)</span><span>+₹262</span></div>}
+                      {addonSightseeing && <div className="flex justify-between"><span>Sightseeing Package</span><span>+₹787</span></div>}
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Mobile Number (for Driver SMS/Call) *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">+91</span>
-                    <input
-                      type="tel"
-                      required
-                      maxLength={10}
-                      placeholder="9876543210"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full pl-11 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 font-medium font-mono"
-                    />
-                  </div>
-                </div>
+                )}
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Email ID (for Tax Invoice)
-                </label>
-                <div className="relative">
-                  <Mail className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+              {/* Total Fare Row */}
+              <div className="p-5 bg-amber-50/70 border-t border-amber-200/80 flex justify-between items-center">
+                <span className="text-sm font-black text-slate-900 uppercase tracking-wider">Total Fare</span>
+                <span className="text-2xl font-black text-slate-900">₹{totalFare}</span>
+              </div>
+
+              {/* Terms, Conditions & Privacy Checkbox below Total Fare */}
+              <div className="p-4 bg-slate-50/90 border-t border-slate-200">
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
                   <input
-                    type="email"
-                    placeholder="yourname@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 font-medium"
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer accent-amber-500 shrink-0"
                   />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Complete Doorstep Pickup Address *
-                </label>
-                <div className="relative">
-                  <MapPin className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="House/Flat No, Landmark, Street, City"
-                    value={pickupAddress}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setPickupAddress(val);
-                      const m = val.match(/\b[1-9][0-9]{5}\b/);
-                      if (m && !pickupPincode) {
-                        setPickupPincode(m[0]);
-                      }
-                    }}
-                    className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 font-medium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Pickup Area Pincode (6 Digits)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">📍 PIN</span>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="e.g. 712124 or 700052"
-                    value={pickupPincode}
-                    onChange={(e) => setPickupPincode(e.target.value.replace(/\D/g, ""))}
-                    className="w-full pl-16 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 font-medium font-mono"
-                  />
-                </div>
-              </div>
-            </div>
-
-
-
-            {/* Payment Choice Selection */}
-            <div className="space-y-2">
-              <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                Select How You Wish to Pay
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <label
-                  onClick={() => setPaymentChoice("advance")}
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition text-left flex flex-col justify-between ${
-                    paymentChoice === "advance"
-                      ? "border-amber-400 bg-amber-50/60 shadow-xs"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-slate-900">Pay 20% Advance</span>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentChoice === "advance"}
-                      onChange={() => setPaymentChoice("advance")}
-                      className="accent-amber-500"
-                    />
-                  </div>
-                  <div className="text-xs font-black text-amber-700">₹{advanceToken} Today</div>
-                  <div className="text-[10px] text-slate-400">Balance to driver at trip end</div>
-                </label>
-
-                <label
-                  onClick={() => setPaymentChoice("full")}
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition text-left flex flex-col justify-between ${
-                    paymentChoice === "full"
-                      ? "border-amber-400 bg-amber-50/60 shadow-xs"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-slate-900">Pay Full 100%</span>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentChoice === "full"}
-                      onChange={() => setPaymentChoice("full")}
-                      className="accent-amber-500"
-                    />
-                  </div>
-                  <div className="text-xs font-black text-slate-900">₹{finalPayable} Now</div>
-                  <div className="text-[10px] text-emerald-600 font-bold">Extra ₹50 UPI Cashback</div>
-                </label>
-
-                <label
-                  onClick={() => setPaymentChoice("driver")}
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition text-left flex flex-col justify-between ${
-                    paymentChoice === "driver"
-                      ? "border-amber-400 bg-amber-50/60 shadow-xs"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-slate-900">Pay Cash to Driver</span>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentChoice === "driver"}
-                      onChange={() => setPaymentChoice("driver")}
-                      className="accent-amber-500"
-                    />
-                  </div>
-                  <div className="text-xs font-black text-slate-900">₹0 Advance</div>
-                  <div className="text-[10px] text-slate-400">Pay entire sum during ride</div>
-                </label>
-              </div>
-            </div>
-
-            {/* Price Breakdown */}
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-1.5 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span>Base Trip Fare:</span>
-                <span>₹{basePrice}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Chauffeur &amp; Fuel Allowance:</span>
-                <span className="text-emerald-600 font-bold">FREE (Included)</span>
-              </div>
-              <div className="pt-2 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
-                <span>Total Trip Fare:</span>
-                <span className="text-amber-600">₹{finalPayable}</span>
-              </div>
-            </div>
-
-            {/* Action Submit Button in YELLOW */}
-            <button
-              type="submit"
-              disabled={bookingStatus === "processing"}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 text-base font-black shadow-lg shadow-amber-400/25 hover:shadow-xl hover:shadow-amber-400/40 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 border border-amber-300"
-            >
-              {bookingStatus === "processing" ? (
-                <span>Confirming Your Ride...</span>
-              ) : (
-                <>
-                  <span>
-                    {paymentChoice === "advance"
-                      ? `CONFIRM & PAY ₹${advanceToken} TOKEN`
-                      : paymentChoice === "full"
-                      ? `PAY ₹${finalPayable} & CONFIRM`
-                      : "CONFIRM CAB BOOKING"}
+                  <span className="text-[11px] text-slate-600 leading-relaxed">
+                    I have read and agree to BroomBoom&apos;s{" "}
+                    <Link href="/terms-of-service" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                      Terms &amp; Conditions
+                    </Link>
+                    ,{" "}
+                    <Link href="/privacy-policy" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                      Privacy Policy
+                    </Link>
+                    ,{" "}
+                    <Link href="/user-agreement" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                      User Agreement
+                    </Link>{" "}
+                    &amp;{" "}
+                    <Link href="/cancellation-rules" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                      Cancellation Rules
+                    </Link>
+                    .
                   </span>
-                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                </>
-              )}
-            </button>
-          </form>
-        )}
+                </label>
+                {!agreedToTerms && (
+                  <div className="text-[10px] text-amber-600 font-semibold mt-1.5 ml-6">
+                    * Please check the box to agree and continue
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Payment Options Card */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wider">Payment Options</h3>
+              
+              <div className="space-y-3 mb-6">
+                {/* Advance Option */}
+                <label 
+                  onClick={() => setPaymentChoice("advance")}
+                  className={`block border-2 rounded-xl p-4 cursor-pointer transition select-none ${
+                    paymentChoice === "advance" ? "border-amber-400 bg-amber-50/30 ring-1 ring-amber-300" : "border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${paymentChoice === "advance" ? "border-amber-500" : "border-slate-300"}`}>
+                        {paymentChoice === "advance" && <div className="w-2 h-2 rounded-full bg-amber-500" />}
+                      </div>
+                      <span className="font-bold text-slate-900 text-sm">
+                        Pay 20% Advance Token{addonsTotal > 0 ? " + Add-ons" : ""}
+                      </span>
+                    </div>
+                    <span className="font-black text-slate-900">₹{advanceToken}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 ml-6">Pay balance ₹{Math.max(0, totalFare - advanceToken)} to driver</p>
+                </label>
+
+                {/* Full Pay Option */}
+                <label 
+                  onClick={() => setPaymentChoice("full")}
+                  className={`block border-2 rounded-xl p-4 cursor-pointer transition select-none ${
+                    paymentChoice === "full" ? "border-amber-400 bg-amber-50/30 ring-1 ring-amber-300" : "border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${paymentChoice === "full" ? "border-amber-500" : "border-slate-300"}`}>
+                        {paymentChoice === "full" && <div className="w-2 h-2 rounded-full bg-amber-500" />}
+                      </div>
+                      <span className="font-bold text-slate-900 text-sm">Pay Full 100%</span>
+                    </div>
+                    <span className="font-black text-slate-900">₹{totalFare}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 ml-6">Complete amount with zero cash hassle</p>
+                </label>
+              </div>
+
+              {/* Pay Now Button */}
+              <button
+                type="button"
+                disabled={!agreedToTerms}
+                onClick={() => {
+                  if (!agreedToTerms) {
+                    alert("Please check and agree to the Terms & Conditions and Privacy Policy.");
+                    return;
+                  }
+                  const rawDigits = mobile.replace(/[^0-9]/g, "");
+                  const tenDigit = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
+                  const phoneWith91 = `91${tenDigit}`;
+                  alert(`Proceeding to payment for mobile: +91 ${tenDigit} (91 prefixed: ${phoneWith91}) — ₹${paymentChoice === "advance" ? advanceToken : totalFare}`);
+                }}
+                className="w-full bg-[#FBBF24] hover:bg-[#F59E0B] disabled:opacity-50 text-slate-950 font-black text-sm uppercase tracking-wide py-4 rounded-xl shadow-sm transition cursor-pointer"
+              >
+                PAY NOW (₹{paymentChoice === "advance" ? advanceToken : totalFare})
+              </button>
+
+              {/* Advance and Total summary */}
+              <div className="text-center text-xs text-slate-600 font-semibold mt-3">
+                Advance: ₹{advanceToken} &nbsp;|&nbsp; Total Fare: ₹{totalFare}
+              </div>
+            </div>
+          </div>
+
+        </main>
       </div>
-    </div>,
-    document.body
+    </div>
   );
-};
+}
+
+export default BookingModal;

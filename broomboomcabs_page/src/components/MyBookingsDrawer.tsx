@@ -13,6 +13,7 @@ interface MyBookingsDrawerProps {
 interface DisplayBooking {
   id: string;
   car: string;
+  carImage?: string;
   route: string;
   date: string;
   time: string;
@@ -76,6 +77,7 @@ export const MyBookingsDrawer: React.FC<MyBookingsDrawerProps> = ({ isOpen, onCl
             combined.push({
               id: lb.bookingId || "BB-LOCAL",
               car: `${lb.cabName || lb.cabCategory || "Sedan"}`,
+              carImage: lb.carImage || (lb.cabCategory?.toLowerCase().includes("suv") ? "/cars/suv-ertiga.png" : "/cars/sedan-dzire.png"),
               route: `${lb.fromCity || lb.traveller?.pickupAddress || "Pickup"} → ${lb.toCity || "Destination"}`,
               date: lb.pickupDate || "Scheduled Date",
               time: lb.pickupTime || "10:00 AM",
@@ -257,7 +259,11 @@ export const MyBookingsDrawer: React.FC<MyBookingsDrawerProps> = ({ isOpen, onCl
                       <span>{booking.route}</span>
                     </div>
                     <div className="text-xs text-slate-500 flex items-center gap-2">
-                      <Car className="w-3.5 h-3.5 text-slate-400" />
+                      {booking.carImage ? (
+                        <img src={booking.carImage} alt={booking.car} className="w-8 h-5 object-contain" />
+                      ) : (
+                        <Car className="w-3.5 h-3.5 text-slate-400" />
+                      )}
                       <span>{booking.car}</span>
                     </div>
                     <div className="text-xs text-slate-500 flex items-center gap-3">

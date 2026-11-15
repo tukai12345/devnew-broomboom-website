@@ -117,7 +117,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       ],
     },
     {
-      title: "Why Travel with BroomBoom",
+      title: "Why Travel with BroomBoom Cabs",
       features: [
         {
           icon: <ShieldCheck className="w-5 h-5 text-emerald-400" />,
@@ -192,7 +192,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     (email.trim().includes("@") && email.trim().includes("."));
 
   const isFormValid =
-    fullName.trim().length >= 2 &&
+    fullName.trim().length >= 1 &&
     phoneNumber.trim().length >= 7 &&
     isEmailValid;
 
@@ -200,8 +200,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     e.preventDefault();
     if (!isFormValid || isSubmitting) return;
     setIsSubmitting(true);
-    const fullPhone = `${selectedCountry.code} ${phoneNumber.trim()}`;
-    const cleanPhone = `${selectedCountry.code}${phoneNumber.trim()}`.replace(/\s+/g, "");
+    const rawDigits = phoneNumber.replace(/[^0-9]/g, "");
+    const tenDigit = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
+    const cleanPhone = selectedCountry.code === "+91" ? `91${tenDigit}` : `${selectedCountry.code.replace(/[^0-9]/g, "")}${tenDigit}`;
+    const fullPhone = `+91 ${tenDigit}`;
 
     let backendId = "";
     let finalName = fullName.trim() || `User ${phoneNumber.slice(-4)}`;
@@ -270,8 +272,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     if (onSuccess) {
       onSuccess(loggedUser);
-    } else {
-      router.push("/fleet");
     }
     setIsSubmitting(false);
     onClose();
@@ -335,9 +335,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   className="w-full h-full object-contain drop-shadow-sm"
                 />
               </div>
-              <span className="font-black text-lg text-white">
-                broom<span className="text-amber-400">boom</span>
-              </span>
+               <span className="text-xl sm:text-2xl font-black tracking-tighter text-white truncate">
+  BroomBoom <span className="text-yellow-400">Cabs</span>
+</span>
             </div>
 
             {/* Slide Title */}
@@ -577,7 +577,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <div className="grid grid-cols-2 gap-3 pt-6">
               {/* Google Play */}
               <a
-                href="https://play.google.com/store/apps/details?id=com.broomboom.customer"
+                href="https://play.google.com/store/apps/details?id=com.broomboom.user"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white flex items-center justify-center gap-2 transition active:scale-95 shadow-2xs group"
@@ -610,7 +610,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
               {/* Apple App Store */}
               <a
-                href="https://apps.apple.com/app/broomboom-cabs"
+                href="https://play.google.com/store/apps/details?id=com.broomboom.user"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white flex items-center justify-center gap-2 transition active:scale-95 shadow-2xs group"
@@ -629,22 +629,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </div>
               </a>
             </div>
-          </div>
-
-          {/* Bottom Legal Agreement */}
-          <div className="pt-5 sm:pt-6 border-t border-slate-100 text-[11px] text-slate-500 text-center leading-relaxed">
-            By proceeding, you agree to BroomBoom&apos;s{" "}
-            <a href="#" className="text-amber-600 hover:underline">
-              Privacy Policy
-            </a>
-            ,{" "}
-            <a href="#" className="text-amber-600 hover:underline">
-              User Agreement
-            </a>{" "}
-            and{" "}
-            <a href="#" className="text-amber-600 hover:underline">
-              T&Cs
-            </a>
           </div>
         </div>
       </div>

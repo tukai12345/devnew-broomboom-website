@@ -61,10 +61,9 @@ export const Footer: React.FC = () => {
                 />
               </div>
               <div className="text-xl font-black leading-none text-white">
-                Broom<span className="text-amber-400">Boom</span>{" "}
-                <span className="rounded bg-amber-400/20 px-1 py-0.5 text-xs text-amber-400">
-                  CABS
-                </span>
+                <span className="text-xl sm:text-2xl font-black tracking-tighter text-white truncate">
+  BroomBoom <span className="text-yellow-400">Cabs</span>
+</span>
               </div>
             </Link>
 
@@ -152,6 +151,55 @@ export const Footer: React.FC = () => {
                   Headquarters: Sector V, Salt Lake, Kolkata, India
                 </span>
               </div>
+
+              {/* --- BROOMBOOM APPS (CUSTOMER & PILOT) --- */}
+              <div className="pt-4 border-t border-white/10">
+                <div className="text-[11px] font-black uppercase tracking-wider text-white mb-2.5">
+                  Download Mobile Apps
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* BroomBoom Customer / Rider App */}
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.broomboom.user"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex flex-col items-center transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
+                    aria-label="Download BroomBoom Cabs Rider App on Google Play"
+                  >
+                    <div className="w-[104px] sm:w-[108px] p-2 rounded-xl bg-black/60 border border-white/10 group-hover:border-amber-400/50 transition shadow-md">
+                      <img
+                        src="/images/broomboom-customer-app.png"
+                        alt="BroomBoom Cabs Rider App on Google Play"
+                        className="w-full h-auto object-contain transition-transform group-hover:scale-105"
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-300 group-hover:text-amber-400 mt-1.5 transition">
+                      Customer App
+                    </span>
+                  </a>
+
+                  {/* BroomBoom Pilot / Driver App */}
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.broomboom.pilot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex flex-col items-center transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
+                    aria-label="Download BroomBoom Pilot Partner App on Google Play"
+                  >
+                    <div className="w-[104px] sm:w-[108px] p-2 rounded-xl bg-black/60 border border-white/10 group-hover:border-amber-400/50 transition shadow-md">
+                      <img
+                        src="/images/broomboom-pilot-app.png"
+                        alt="BroomBoom Pilot Partner App on Google Play"
+                        className="w-full h-auto object-contain transition-transform group-hover:scale-105"
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-300 group-hover:text-amber-400 mt-1.5 transition">
+                      Pilot App
+                    </span>
+                  </a>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

@@ -306,6 +306,10 @@ const FleetPageContent: React.FC = () => {
   const isHourly = tripType.toLowerCase().includes("hourly") || tripType.toLowerCase().includes("rental");
   const isAirport = tripType.toLowerCase().includes("airport");
 
+  const hasPickup = Boolean(fromCity && fromCity.trim().length > 0);
+  const hasDrop = isHourly || Boolean(toCity && toCity.trim().length > 0);
+  const hasPickupAndDrop = hasPickup && hasDrop;
+
   // Update sourceState based on fromCity (name or slug)
   useEffect(() => {
     const lower = fromCity.trim().toLowerCase();
@@ -1072,6 +1076,17 @@ const FleetPageContent: React.FC = () => {
   };
 
   const handleSearch = () => {
+    if (!fromCity.trim()) {
+      alert("Please select a pickup location.");
+      setOpenDropdown("from");
+      return;
+    }
+    if (!isHourly && !toCity.trim()) {
+      alert("Please select a drop location.");
+      setOpenDropdown("to");
+      return;
+    }
+
     setOpenDropdown(null);
     setShowAddStopModal(false);
 
@@ -1112,13 +1127,29 @@ const FleetPageContent: React.FC = () => {
   };
 
   const handleSelectCabClick = (vehicle: VehicleItem) => {
+    if (!hasPickupAndDrop) {
+      alert("Please select both pickup and drop locations to view exact prices and book your cab.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setOpenDropdown(fromCity ? "to" : "from");
+      return;
+    }
     setSelectedVehicle(vehicle);
+    const carImageSrc =
+      vehicle.imageType === "sedan"
+        ? "/cars/sedan-dzire.png"
+        : vehicle.imageType === "suv"
+        ? "/cars/suv-ertiga.png"
+        : vehicle.imageType === "suv-plus"
+        ? "/cars/suv-plus-innova-crysta.png"
+        : "/cars/tempo-traveller.png";
+
     const params = new URLSearchParams({
       cabId: vehicle.id,
       cabName: vehicle.name,
       cabCategory: vehicle.category,
       cabFuel: vehicle.fuelLabel,
       cabSeats: vehicle.seats.toString(),
+      carImage: carImageSrc,
       tripType,
       from: fromCity,
       to: isHourly ? "" : toCity,
@@ -1244,6 +1275,14 @@ const FleetPageContent: React.FC = () => {
     airportMode: "to-airport",
     flightNumber: "",
   };
+
+  const BookingModalWithProps = BookingModal as unknown as React.ComponentType<{
+    cab: typeof mappedCabForModal;
+    searchParams: SearchParams;
+    isOpen: boolean;
+    onClose: () => void;
+    appliedPromo: string;
+  }>;
 
   /* ======================================================================== */
   /*                                  RENDER                                  */
@@ -1673,33 +1712,42 @@ const FleetPageContent: React.FC = () => {
           {/* Route summary + active filter chips */}
           <div className="flex flex-wrap items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xs text-slate-800 font-bold flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>
-                  {isHourly
-                    ? `${fromCity} • ${hourlyPackage}`
-                    : `${fromCity} → ${toCity}`}
-                </span>
-              </p>
-              <span className="text-slate-300">•</span>
-              <p className="text-xs text-slate-600 font-medium">
-                {routeMeta.hasDistance ? (
-                  <>
-                    <strong className="text-slate-900 font-extrabold">{routeMeta.kms.toLocaleString("en-IN")} km</strong>{" "}
-                    {isHourly ? "package distance" : "road distance"}
-                    {isRoundTrip ? " (Round-Trip)" : !isHourly ? " (One-Way)" : ""}
-                    {" • "}
-                    <span className="font-bold text-slate-800">{routeMeta.hours} hr(s) approx time</span>
-                  </>
-                ) : (
-                  <span>Rates as per included kilometers</span>
-                )}
-              </p>
-              {isCalculatingPrices && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                  Calculating live route &amp; fares...
-                </span>
+              {hasPickupAndDrop ? (
+                <>
+                  <p className="text-xs text-slate-800 font-bold flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>
+                      {isHourly
+                        ? `${fromCity} • ${hourlyPackage}`
+                        : `${fromCity} → ${toCity}`}
+                    </span>
+                  </p>
+                  <span className="text-slate-300">•</span>
+                  <p className="text-xs text-slate-600 font-medium">
+                    {routeMeta.hasDistance ? (
+                      <>
+                        <strong className="text-slate-900 font-extrabold">{routeMeta.kms.toLocaleString("en-IN")} km</strong>{" "}
+                        {isHourly ? "package distance" : "road distance"}
+                        {isRoundTrip ? " (Round-Trip)" : !isHourly ? " (One-Way)" : ""}
+                        {" • "}
+                        <span className="font-bold text-slate-800">{routeMeta.hours} hr(s) approx time</span>
+                      </>
+                    ) : (
+                      <span>Rates as per included kilometers</span>
+                    )}
+                  </p>
+                  {isCalculatingPrices && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                      Calculating live route &amp; fares...
+                    </span>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-amber-900 font-bold flex items-center gap-2 bg-amber-100/80 border border-amber-300 px-3.5 py-1.5 rounded-full shadow-2xs">
+                  <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Please enter pickup &amp; drop locations above to view live fares and book</span>
+                </p>
               )}
             </div>
 
@@ -1790,37 +1838,65 @@ const FleetPageContent: React.FC = () => {
                             {cab.ac ? "AC" : "Non-AC"} • {cab.seats} Seats
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-600 font-medium mt-0.5">
-                          Total km {cab.includedKms.toLocaleString("en-IN")}
-                        </div>
-                        {cab.extraKmRate && (
-                          <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                            Exact fare: ₹{cab.extraKmRate}/km
+                        {hasPickupAndDrop ? (
+                          <>
+                            <div className="text-[11px] text-slate-600 font-medium mt-0.5">
+                              Total km {cab.includedKms.toLocaleString("en-IN")}
+                            </div>
+                            {cab.extraKmRate && (
+                              <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                                Exact fare: ₹{cab.extraKmRate}/km
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-[11px] text-slate-400 font-medium mt-0.5">
+                            Route kilometers calculated on location selection
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div className="flex flex-col items-start sm:items-end justify-center shrink-0 lg:pl-4 text-left sm:text-right mt-1 sm:mt-0">
-                      <div className="text-[10px] sm:text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
-                        Base Fare
-                      </div>
+                      {hasPickupAndDrop ? (
+                        <>
+                          <div className="text-[10px] sm:text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
+                            Base Fare
+                          </div>
 
-                      <div className="text-3xl sm:text-[34px] font-black text-slate-950 leading-none tracking-tight">
-                        {inr(cab.discountedPrice)}
-                      </div>
+                          <div className="text-3xl sm:text-[34px] font-black text-slate-950 leading-none tracking-tight">
+                            {inr(cab.discountedPrice)}
+                          </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleSelectCabClick(cab)}
-                        className="w-full sm:w-44 mt-2.5 py-2.5 px-6 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-md shadow-amber-400/20 border border-amber-300 text-center cursor-pointer whitespace-nowrap"
-                      >
-                        SELECT CAB
-                      </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCabClick(cab)}
+                            className="w-full sm:w-44 mt-2.5 py-2.5 px-6 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-md shadow-amber-400/20 border border-amber-300 text-center cursor-pointer whitespace-nowrap"
+                          >
+                            SELECT CAB
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-48">
+                          <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 text-left sm:text-right">
+                            Add pickup &amp; drop to view price
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                              setOpenDropdown(fromCity ? "to" : "from");
+                            }}
+                            className="w-full sm:w-44 py-2.5 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-400 font-black text-xs uppercase tracking-wider transition shadow-sm text-center cursor-pointer whitespace-nowrap"
+                          >
+                            SELECT ROUTE
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {cab.roofCarrierFee && (
+                  {hasPickupAndDrop && cab.roofCarrierFee && (
                     <div className="bg-[#fffdf5] border-t border-amber-100/80 px-3 sm:px-4 py-1.5 text-[11px] text-slate-700 flex items-center gap-1.5 font-medium">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                       <span>
@@ -1856,7 +1932,7 @@ const FleetPageContent: React.FC = () => {
       {/* ================================================================== */}
       {/* 5. MODALS                                                          */}
       {/* ================================================================== */}
-      <BookingModal
+      <BookingModalWithProps
         cab={mappedCabForModal}
         searchParams={currentModalSearchParams}
         isOpen={isBookingModalOpen}

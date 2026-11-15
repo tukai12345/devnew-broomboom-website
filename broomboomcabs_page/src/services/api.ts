@@ -293,6 +293,12 @@ export const api = {
     leadType?: string;
     source?: string;
     lastLoginAt?: string;
+    city?: string;
+    vehicleType?: string;
+    state?: string;
+    carNo?: string;
+    licenseNo?: string;
+    notes?: string;
   }): Promise<BackendUserLead> {
     const baseUrl = getApiBaseUrl();
     const payload: any = {
@@ -302,6 +308,12 @@ export const api = {
       status: userData.status || "Active",
       source: userData.source || "BroomBoom Web Page",
       lastLoginAt: userData.lastLoginAt || new Date().toISOString(),
+      city: userData.city,
+      vehicleType: userData.vehicleType,
+      state: userData.state,
+      carNo: userData.carNo,
+      licenseNo: userData.licenseNo,
+      notes: userData.notes,
     };
 
     if (userData.leadType) {

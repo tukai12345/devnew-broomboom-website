@@ -82,6 +82,14 @@ export default function Home() {
   };
 
   const handleSearch = (params: SearchParams) => {
+    const hasPickup = Boolean(params.fromCity && params.fromCity.trim().length > 0);
+    const hasDrop = params.tripType === "hourly" || Boolean(params.toCity && params.toCity.trim().length > 0);
+
+    if (!hasPickup || !hasDrop) {
+      alert("Please enter both pickup and drop locations to view available cabs.");
+      return;
+    }
+
     const isLoggedIn = isUserLoggedIn();
 
     if (!isLoggedIn) {
@@ -95,10 +103,13 @@ export default function Home() {
 
   const handleLoginSuccess = () => {
     if (pendingSearchParams) {
-      proceedWithSearch(pendingSearchParams);
+      const hasPickup = Boolean(pendingSearchParams.fromCity && pendingSearchParams.fromCity.trim().length > 0);
+      const hasDrop = pendingSearchParams.tripType === "hourly" || Boolean(pendingSearchParams.toCity && pendingSearchParams.toCity.trim().length > 0);
+
+      if (hasPickup && hasDrop) {
+        proceedWithSearch(pendingSearchParams);
+      }
       setPendingSearchParams(null);
-    } else {
-      router.push("/fleet");
     }
   };
 

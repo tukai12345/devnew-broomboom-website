@@ -103,7 +103,25 @@ export const ReviewClientPage: React.FC = () => {
   const oneWayDistanceParam = parseFloat(searchParams.get("oneWayDistance") || "0");
   const includedKmsParam = parseInt(searchParams.get("includedKms") || "0", 10);
   const imageType = searchParams.get("imageType") || "sedan";
+  const carImageParam = searchParams.get("carImage");
   const extraKmRate = searchParams.get("extraKmRate") || "15";
+
+  // Exact car image selection based on passed carImage, imageType, or vehicle details
+  const selectedCarImage =
+    carImageParam ||
+    (imageType === "suv-plus"
+      ? "/cars/suv-plus-innova-crysta.png"
+      : imageType === "suv"
+      ? "/cars/suv-ertiga.png"
+      : imageType === "minibus" || imageType === "tempo"
+      ? "/cars/tempo-traveller.png"
+      : cabName.toLowerCase().includes("crysta") || cabName.toLowerCase().includes("innova")
+      ? "/cars/suv-plus-innova-crysta.png"
+      : cabName.toLowerCase().includes("ertiga") || cabCategory.toLowerCase().includes("suv")
+      ? "/cars/suv-ertiga.png"
+      : cabCategory.toLowerCase().includes("tempo") || cabCategory.toLowerCase().includes("traveller") || cabCategory.toLowerCase().includes("minibus")
+      ? "/cars/tempo-traveller.png"
+      : "/cars/sedan-dzire.png");
   const hourlyPackage = searchParams.get("package") || "";
   const flightNumber = searchParams.get("flightNumber") || "";
   const pickupLatParam = searchParams.get("pickupLat") || "";
@@ -431,7 +449,11 @@ export const ReviewClientPage: React.FC = () => {
     const user = getStoredUser();
     if (user) {
       if (user.name) setFullName(user.name);
-      if (user.phone) setMobileNumber(user.phone.replace(/[^0-9]/g, ""));
+      if (user.phone) {
+        const clean = user.phone.replace(/[^0-9]/g, "");
+        const tenDigit = clean.length >= 10 ? clean.slice(-10) : clean;
+        setMobileNumber(tenDigit);
+      }
       if (user.email) setEmailId(user.email);
     }
   }, []);
@@ -455,6 +477,9 @@ export const ReviewClientPage: React.FC = () => {
   // Payment Option: "part" | "full"
   const [paymentOption, setPaymentOption] = useState<"part" | "full">("part");
 
+  // Terms & Conditions / Privacy Policy Agreement
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
+
   // Fare Breakup Accordion
   const [showFareBreakup, setShowFareBreakup] = useState(true);
 
@@ -471,13 +496,14 @@ export const ReviewClientPage: React.FC = () => {
     (addonNewVehicle ? NEW_VEHICLE_FEE : 0) +
     (addonSightseeing ? SIGHTSEEING_FEE : 0);
 
-  // Total Fare shown on web: Base Fare + Add-ons (no GST or Gateway charges visible)
+  // Total Fare: Base Fare + Add-ons
   const finalTotal = baseFare + addonsTotal;
 
-  // Part Pay shown on web: exactly 20% advance token (or backend token)
-  const partPayAmount = liveAdvance > 0
-    ? Math.round(liveAdvance + addonsTotal * (liveAdvance / Math.max(1, baseFare)))
-    : Math.round(finalTotal * 0.2);
+  // Base Advance is 20% of Base Fare (or live backend advance)
+  const baseAdvance = liveAdvance > 0 ? liveAdvance : Math.round(baseFare * 0.2);
+
+  // If add-on service is added, add to BOTH advance and total fare
+  const partPayAmount = baseAdvance + addonsTotal;
 
   // Hidden GST (5%) & Payment Gateway Charges (2%) added at Cashfree checkout
   const gstCharge = Math.round(finalTotal * 0.05);
@@ -500,10 +526,19 @@ export const ReviewClientPage: React.FC = () => {
       alert("Please enter your exact pickup location (e.g. hotel, home, or airport terminal).");
       return;
     }
-    if (!fullName.trim() || !mobileNumber.trim()) {
-      alert("Please enter traveller name and mobile number.");
+    const rawMobileDigits = mobileNumber.replace(/[^0-9]/g, "");
+    if (!fullName.trim() || rawMobileDigits.length < 10) {
+      alert("Please enter traveller name and a valid 10-digit mobile number.");
       return;
     }
+    if (!agreedToTerms) {
+      alert("Please check and agree to the Terms & Conditions and Privacy Policy to proceed.");
+      return;
+    }
+
+    const tenDigitPhone = rawMobileDigits.slice(-10);
+    const phoneWith91 = `91${tenDigitPhone}`;
+    const displayPhone = `+91 ${tenDigitPhone}`;
 
     setIsSubmitting(true);
     setPaymentStepText("Creating Booking in Backend...");
@@ -514,10 +549,10 @@ export const ReviewClientPage: React.FC = () => {
       const pinMatch = pickupAddress.match(/\b[1-9][0-9]{5}\b/);
       const finalPin = pickupPincode.trim() || (pinMatch ? pinMatch[0] : "");
 
-      // Connect to BroomBoom User Backend
+      // Connect to BroomBoom User Backend with '91' prefixed to mobile number
       const backendBooking = await api.createBooking({
         customerName: fullName.trim(),
-        customerMobile: mobileNumber.trim(),
+        customerMobile: phoneWith91,
         customerEmail: emailId.trim(),
         serviceType:
           tripType.toLowerCase().includes("oneway") || tripType.toLowerCase().includes("one-way")
@@ -609,6 +644,7 @@ export const ReviewClientPage: React.FC = () => {
         dropTime,
         cabName,
         cabCategory,
+        carImage: selectedCarImage,
         status: "PENDING_PAYMENT",
         totalAmount: finalTotal,
         amountPaid: payableNow,
@@ -624,7 +660,8 @@ export const ReviewClientPage: React.FC = () => {
         },
         traveller: {
           name: fullName,
-          phone: mobileNumber,
+          phone: phoneWith91,
+          displayPhone,
           email: emailId,
           pickupAddress,
         },
@@ -775,8 +812,13 @@ export const ReviewClientPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="w-16 h-12 rounded-xl bg-[#ebf4fe] border border-blue-100/80 flex items-center justify-center p-2 shrink-0">
-                  <Car className="w-9 h-9 text-[#1c75bc]" />
+                <div className="w-24 sm:w-28 h-16 sm:h-20 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center p-1.5 shrink-0 overflow-hidden shadow-xs">
+                  <img
+                    src={selectedCarImage}
+                    alt={cabName}
+                    className="w-full h-full object-contain drop-shadow-xs"
+                    loading="lazy"
+                  />
                 </div>
               </div>
 
@@ -1242,7 +1284,13 @@ export const ReviewClientPage: React.FC = () => {
                         type="tel"
                         required
                         value={mobileNumber}
-                        onChange={(e) => setMobileNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                        onChange={(e) => {
+                          let clean = e.target.value.replace(/[^0-9]/g, "");
+                          if (clean.length === 12 && clean.startsWith("91")) {
+                            clean = clean.slice(2);
+                          }
+                          setMobileNumber(clean.slice(0, 10));
+                        }}
                         maxLength={10}
                         placeholder="10-digit mobile"
                         className="w-full px-3 py-2.5 text-xs sm:text-sm font-bold text-slate-900 outline-none bg-transparent"
@@ -1281,37 +1329,12 @@ export const ReviewClientPage: React.FC = () => {
                   </div>
 
                   <label className="flex items-center gap-2 cursor-pointer select-none text-slate-700 font-medium">
-                    <input
-                      type="checkbox"
-                      checked={useAsBillingAddress}
-                      onChange={(e) => setUseAsBillingAddress(e.target.checked)}
-                      className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
-                    />
-                    <span>Use pickup location as billing address</span>
                   </label>
                 </div>
               </div>
 
               {/* Legal Terms Disclaimer */}
-              <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-500 leading-relaxed">
-                By proceeding to book, I agree to BroomBoom&apos;s{" "}
-                <span className="text-slate-700 hover:underline cursor-pointer font-semibold">
-                  Privacy Policy
-                </span>
-                ,{" "}
-                <span className="text-slate-700 hover:underline cursor-pointer font-semibold">
-                  User Agreement
-                </span>
-                ,{" "}
-                <span className="text-slate-700 hover:underline cursor-pointer font-semibold">
-                  Terms of Service
-                </span>
-                , &amp;{" "}
-                <span className="text-slate-700 hover:underline cursor-pointer font-semibold">
-                  Cancellation Rules
-                </span>
-                .
-              </div>
+             
             </div>
           </div>
 
@@ -1366,7 +1389,7 @@ export const ReviewClientPage: React.FC = () => {
                 )}
 
                 {/* Total Fare Final Row */}
-                <div className="pt-3.5 border-t-2 border-slate-200 mt-3 bg-amber-50/80 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 p-4 sm:p-5 border-t border-amber-200/90 flex items-center justify-between">
+                <div className="pt-3.5 border-t-2 border-slate-200 mt-3 bg-amber-50/80 -mx-4 sm:-mx-5 p-4 sm:p-5 border-t border-amber-200/90 flex items-center justify-between">
                   <div>
                     <div className="text-xs font-black uppercase tracking-wider text-slate-700">
                       TOTAL FARE
@@ -1375,6 +1398,42 @@ export const ReviewClientPage: React.FC = () => {
                   <div className="text-2xl sm:text-[26px] font-black text-slate-950">
                     {inr(finalTotal)}
                   </div>
+                </div>
+
+                {/* Terms, Conditions & Privacy Checkbox below Total Fare */}
+                <div className="pt-3.5 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 p-4 sm:p-5 bg-slate-50/90 border-t border-slate-200">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer accent-amber-500 shrink-0"
+                    />
+                    <span className="text-[11px] sm:text-xs text-slate-600 leading-relaxed">
+                      I have read and agree to BroomBoom&apos;s{" "}
+                      <Link href="/terms-of-service" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                        Terms &amp; Conditions
+                      </Link>
+                      ,{" "}
+                      <Link href="/privacy-policy" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                        Privacy Policy
+                      </Link>
+                      ,{" "}
+                      <Link href="/user-agreement" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                        User Agreement
+                      </Link>{" "}
+                      &amp;{" "}
+                      <Link href="/cancellation-rules" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                        Cancellation Rules
+                      </Link>
+                      .
+                    </span>
+                  </label>
+                  {!agreedToTerms && (
+                    <div className="text-[10px] text-amber-600 font-semibold mt-1.5 ml-6">
+                      * Please check this box to agree before proceeding to payment
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1402,7 +1461,9 @@ export const ReviewClientPage: React.FC = () => {
                     className="mt-0.5 w-4 h-4 accent-amber-500 cursor-pointer"
                   />
                   <div>
-                    <div className="text-xs font-black text-slate-900">Pay 20% Advance Token</div>
+                    <div className="text-xs font-black text-slate-900">
+                      Pay 20% Advance Token{addonsTotal > 0 ? " + Add-ons" : ""}
+                    </div>
                     <div className="text-[11px] text-slate-500 mt-0.5">Pay balance {inr(finalTotal - partPayAmount)} to driver</div>
                   </div>
                 </div>
@@ -1440,8 +1501,9 @@ export const ReviewClientPage: React.FC = () => {
               {/* CTA PAY NOW Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-60 text-slate-950 font-black text-sm uppercase tracking-wider transition active:scale-95 shadow-md shadow-amber-400/20 border border-amber-300 text-center cursor-pointer mt-2 flex items-center justify-center gap-2"
+                disabled={isSubmitting || !agreedToTerms}
+                title={!agreedToTerms ? "Please accept Terms & Conditions and Privacy Policy" : undefined}
+                className="w-full py-3.5 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-950 font-black text-sm uppercase tracking-wider transition active:scale-95 shadow-md shadow-amber-400/20 border border-amber-300 text-center cursor-pointer mt-2 flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -1485,9 +1547,16 @@ export const ReviewClientPage: React.FC = () => {
                 <span>Route:</span>
                 <span className="font-bold text-slate-900">{fromCity} → {toCity}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between items-center text-slate-600">
                 <span>Cab:</span>
-                <span className="font-bold text-slate-900">{cabName} ({cabCategory})</span>
+                <div className="flex items-center gap-2">
+                  <img src={selectedCarImage} alt={cabName} className="w-9 h-6 object-contain" />
+                  <span className="font-bold text-slate-900">{cabName} ({cabCategory})</span>
+                </div>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Mobile Number:</span>
+                <span className="font-bold text-slate-900">+91 {mobileNumber.slice(-10)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Departure:</span>
@@ -1510,7 +1579,7 @@ export const ReviewClientPage: React.FC = () => {
             </div>
 
             <div className="text-xs text-slate-500 bg-amber-50 p-3 rounded-xl border border-amber-200/80 text-left">
-              Chauffeur details &amp; car number will be SMSed &amp; WhatsApped to <strong>+91 {mobileNumber}</strong> 2 hours prior to departure.
+              Chauffeur details &amp; car number will be SMSed &amp; WhatsApped to <strong>+91 {mobileNumber.slice(-10)}</strong> 2 hours prior to departure.
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">

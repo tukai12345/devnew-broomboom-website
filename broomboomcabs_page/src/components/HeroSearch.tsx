@@ -1618,7 +1618,12 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 {/* Swap — hidden for hourly (no drop field) */}
                 {tripType !== "hourly" && (
                   <button
-                    onClick={handleSwap}
+                    onClick={(e) => {
+                      handleSwap(e);
+                      if (tripType === "airport") {
+                        setAirportMode((m) => (m === "to-airport" ? "from-airport" : "to-airport"));
+                      }
+                    }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-blue-100 rounded-full flex items-center justify-center shadow-sm hover:bg-blue-50 transition active:scale-95 text-blue-500"
                     title="Swap Locations"
                   >
@@ -1724,7 +1729,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               )}
 
               {/* Date & Time cards — min-w-0 + truncate prevents overflow on ≤280px screens */}
-              <div className={`mt-3 mb-3 ${tripType === "outstation-round" ? "grid grid-cols-2 gap-2" : ""}`}>
+              <div className={`mt-3 mb-3 ${tripType.includes("outstation") ? "grid grid-cols-2 gap-2" : ""}`}>
                 <div
                   onClick={() => setMobileDateTimeTarget("pickup")}
                   className="bg-white border border-amber-200 rounded-xl p-3 shadow-sm cursor-pointer hover:border-amber-300 transition-colors min-w-0"
@@ -1742,6 +1747,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   <div className="text-[12px] font-semibold text-slate-500 mt-1 truncate">{pickupTime}</div>
                 </div>
 
+                {/* Round Trip — Return card */}
                 {tripType === "outstation-round" && (
                   <div
                     onClick={() => setMobileDateTimeTarget("return")}
@@ -2253,104 +2259,171 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               </div>
             )}
 
-            {/* ============ AIRPORT ============ */}
+            {/* ============ AIRPORT (with To/From toggle + swap + resized fields) ============ */}
             {tripType === "airport" && (
-              <div
-                style={{ zIndex: openDropdown ? 60 : 10 }}
-                className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
-              >
-                <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>Pickup Location</div>
-                  <div className={value}>{fromCity}</div>
-                  <div className={sub}>{fromState}</div>
-                  {openDropdown === "from" && (
-                    <CityPopover
-                      citiesList={combinedCities}
-                      placeholder="Search pickup location..."
-                      query={searchFromQuery}
-                      onQueryChange={setSearchFromQuery}
-                      selected={fromCity}
-                      title="Select Pickup Location"
-                      onClose={() => setOpenDropdown(null)}
-                      onSelect={(n, st, coords) => {
-                        setFromCity(n);
-                        if (st) setFromState(st);
-                        if (coords) setFromCoords(coords);
-                        setOpenDropdown(null);
+              <>
+                {/* To Airport / From Airport toggle */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex border border-slate-300 rounded-lg p-0.5 bg-white h-[40px]">
+                    <button
+                      type="button"
+                      onClick={() => setAirportMode("to-airport")}
+                      className={`px-5 text-[13px] font-semibold rounded-md transition-all flex items-center justify-center gap-2 ${
+                        airportMode === "to-airport"
+                          ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Plane className="w-4 h-4 shrink-0" />
+                      <span>To Airport</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAirportMode("from-airport")}
+                      className={`px-5 text-[13px] font-semibold rounded-md transition-all flex items-center justify-center gap-2 ${
+                        airportMode === "from-airport"
+                          ? "border border-amber-400 text-slate-950 bg-amber-50 shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Plane className="w-4 h-4 shrink-0 -scale-x-100" />
+                      <span>From Airport</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  style={{ zIndex: openDropdown ? 60 : 10 }}
+                  className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
+                >
+                  {/* Pickup — 38% */}
+                  <div
+                    data-field-trigger
+                    onClick={() => toggle("from")}
+                    style={{ zIndex: openDropdown === "from" ? 80 : 1 }}
+                    className={`w-[38%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}
+                  >
+                    <div className={label}>Pickup Location</div>
+                    <div className={value}>{fromCity}</div>
+                    <div className={sub}>{fromState}</div>
+                    {openDropdown === "from" && (
+                      <CityPopover
+                        citiesList={combinedCities}
+                        placeholder="Search pickup location..."
+                        query={searchFromQuery}
+                        onQueryChange={setSearchFromQuery}
+                        selected={fromCity}
+                        title="Select Pickup Location"
+                        onClose={() => setOpenDropdown(null)}
+                        onSelect={(n, st, coords) => {
+                          setFromCity(n);
+                          if (st) setFromState(st);
+                          if (coords) setFromCoords(coords);
+                          setOpenDropdown(null);
+                        }}
+                        inputRef={searchInputRef}
+                      />
+                    )}
+                  </div>
+
+                  {/* Drop — 38% with swap button */}
+                  <div
+                    data-field-trigger
+                    onClick={() => toggle("to")}
+                    style={{ zIndex: openDropdown === "to" ? 80 : 1 }}
+                    className={`w-[38%] ${openDropdown === "to" ? "relative z-40" : ""} ${field} !pl-8`}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        handleSwap(e);
+                        setAirportMode((m) => (m === "to-airport" ? "from-airport" : "to-airport"));
                       }}
-                      inputRef={searchInputRef}
-                    />
-                  )}
-                </div>
+                      className="absolute z-20 w-7 h-7 rounded-full bg-white border-2 border-amber-400 shadow-md hover:bg-amber-50 text-amber-600 flex items-center justify-center transition active:scale-90 top-1/2 -left-3.5 -translate-y-1/2"
+                      title="Swap Pickup and Drop"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <div className={label}>Drop Location</div>
+                    <div className={value}>{toCity}</div>
+                    <div className={sub}>{toState}</div>
+                    {openDropdown === "to" && (
+                      <CityPopover
+                        citiesList={combinedCities}
+                        placeholder="Search drop location..."
+                        query={searchToQuery}
+                        onQueryChange={setSearchToQuery}
+                        selected={toCity}
+                        align="right"
+                        title="Select Drop Location"
+                        onClose={() => setOpenDropdown(null)}
+                        onSelect={(n, st, coords) => {
+                          setToCity(n);
+                          if (st) setToState(st);
+                          if (coords) setToCoords(coords);
+                          setOpenDropdown(null);
+                        }}
+                        inputRef={searchInputRef}
+                      />
+                    )}
+                  </div>
 
-                <div data-field-trigger onClick={() => toggle("to")} style={{ zIndex: openDropdown === "to" ? 80 : 1 }} className={`w-[40%] ${openDropdown === "to" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>Drop Location</div>
-                  <div className={value}>{toCity}</div>
-                  <div className={sub}>{toState}</div>
-                  {openDropdown === "to" && (
-                    <CityPopover
-                      citiesList={combinedCities}
-                      placeholder="Search drop location..."
-                      query={searchToQuery}
-                      onQueryChange={setSearchToQuery}
-                      selected={toCity}
-                      align="right"
-                      title="Select Drop Location"
-                      onClose={() => setOpenDropdown(null)}
-                      onSelect={(n, st, coords) => {
-                        setToCity(n);
-                        if (st) setToState(st);
-                        if (coords) setToCoords(coords);
-                        setOpenDropdown(null);
-                      }}
-                      inputRef={searchInputRef}
-                    />
-                  )}
-                </div>
+                  {/* Date — 12% */}
+                  <div
+                    data-field-trigger
+                    onClick={() => toggle("pickupDate")}
+                    style={{ zIndex: openDropdown === "pickupDate" ? 80 : 1 }}
+                    className={`w-[12%] ${openDropdown === "pickupDate" ? "relative z-40" : ""} ${field}`}
+                  >
+                    <div className={label}>
+                      Date <ChevronDown className="w-3 h-3 text-amber-500" />
+                    </div>
+                    <div className={dateLine}>
+                      <span className="text-3xl font-black text-slate-950">{pickupParts.dayNum}</span>
+                      <span className="text-base font-bold text-slate-900">{pickupParts.monthYear}</span>
+                    </div>
+                    <div className="text-[13px] text-slate-500 font-medium mt-1">{pickupParts.weekday}</div>
+                    {openDropdown === "pickupDate" && (
+                      <CalendarPopover
+                        month={calendarMonth}
+                        onPrev={prevMonth}
+                        onNext={nextMonth}
+                        selectedDate={pickupDate}
+                        minDate={getTodayStr()}
+                        title="Select Date"
+                        onClose={() => setOpenDropdown(null)}
+                        onSelect={(d) => selectCalendarDate(d, true)}
+                      />
+                    )}
+                  </div>
 
-                <div data-field-trigger onClick={() => toggle("pickupDate")} style={{ zIndex: openDropdown === "pickupDate" ? 80 : 1 }} className={`w-[10%] ${openDropdown === "pickupDate" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>
-                    Date <ChevronDown className="w-3 h-3 text-amber-500" />
+                  {/* Time — 12% */}
+                  <div
+                    data-field-trigger
+                    onClick={() => toggle("pickupTime")}
+                    style={{ zIndex: openDropdown === "pickupTime" ? 80 : 1 }}
+                    className={`w-[12%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-40" : ""} ${field}`}
+                  >
+                    <div className={label}>
+                      Time <ChevronDown className="w-3 h-3 text-amber-500" />
+                    </div>
+                    <div className={timeLine}>
+                      <span className="text-3xl font-black text-slate-950">{pickupTimeParts.time}</span>
+                      <span className="text-xs font-bold text-slate-900">{pickupTimeParts.meridiem}</span>
+                    </div>
+                    <div className="text-[13px] text-slate-400 font-medium mt-1">Start time</div>
+                    {openDropdown === "pickupTime" && (
+                      <TimePopover
+                        title="Select Pickup Time"
+                        date={pickupDate}
+                        value={pickupTime}
+                        onChange={setPickupTime}
+                        onClose={() => setOpenDropdown(null)}
+                      />
+                    )}
                   </div>
-                  <div className={dateLine}>
-                    <span className="text-3xl font-black text-slate-950">{pickupParts.dayNum}</span>
-                    <span className="text-base font-bold text-slate-900">{pickupParts.monthYear}</span>
-                  </div>
-                  <div className="text-[13px] text-slate-500 font-medium mt-1">{pickupParts.weekday}</div>
-                  {openDropdown === "pickupDate" && (
-                    <CalendarPopover
-                      month={calendarMonth}
-                      onPrev={prevMonth}
-                      onNext={nextMonth}
-                      selectedDate={pickupDate}
-                      minDate={getTodayStr()}
-                      title="Select Date"
-                      onClose={() => setOpenDropdown(null)}
-                      onSelect={(d) => selectCalendarDate(d, true)}
-                    />
-                  )}
                 </div>
-
-                <div data-field-trigger onClick={() => toggle("pickupTime")} style={{ zIndex: openDropdown === "pickupTime" ? 80 : 1 }} className={`w-[10%] rounded-r-xl ${openDropdown === "pickupTime" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>
-                    Time <ChevronDown className="w-3 h-3 text-amber-500" />
-                  </div>
-                  <div className={timeLine}>
-                    <span className="text-3xl font-black text-slate-950">{pickupTimeParts.time}</span>
-                    <span className="text-xs font-bold text-slate-900">{pickupTimeParts.meridiem}</span>
-                  </div>
-                  <div className="text-[13px] text-slate-400 font-medium mt-1">Start time</div>
-                  {openDropdown === "pickupTime" && (
-                    <TimePopover
-                      title="Select Pickup Time"
-                      date={pickupDate}
-                      value={pickupTime}
-                      onChange={setPickupTime}
-                      onClose={() => setOpenDropdown(null)}
-                    />
-                  )}
-                </div>
-              </div>
+              </>
             )}
 
             {/* Footer row with Add Stops */}
@@ -2472,20 +2545,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               </div>
             </div>
           </div>
-          
+
         </div>
       </div>
-
-      {mobileDateTimeTarget && (
-        <MobileDateTimePicker
-          title={mobileDateTimeTarget === "pickup" ? "Select Trip Start Date And Time" : "Select Trip End Date And Time"}
-          date={mobileDateTimeTarget === "pickup" ? pickupDate : returnDate}
-          time={mobileDateTimeTarget === "pickup" ? pickupTime : dropTime}
-          onChangeDate={(d) => (mobileDateTimeTarget === "pickup" ? setPickupDate(d) : setReturnDate(d))}
-          onChangeTime={(t) => (mobileDateTimeTarget === "pickup" ? setPickupTime(t) : setDropTime(t))}
-          onClose={() => setMobileDateTimeTarget(null)}
-        />
-      )}
     </div>
   );
 };
