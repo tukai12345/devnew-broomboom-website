@@ -185,10 +185,11 @@ const MobileDateTimePicker: React.FC<{
   title: string;
   date: string;
   time: string;
+  minDate?: string;
   onChangeDate: (date: string) => void;
   onChangeTime: (time: string) => void;
   onClose: () => void;
-}> = ({ title, date, time, onChangeDate, onChangeTime, onClose }) => {
+}> = ({ title, date, time, minDate, onChangeDate, onChangeTime, onClose }) => {
   const isPickup = title.toLowerCase().includes("pickup");
   const { hour, minute, meridiem } = parseTimeDetails(time);
 
@@ -230,16 +231,20 @@ const MobileDateTimePicker: React.FC<{
 
   const dates = React.useMemo(() => {
     const list = [];
-    const today = new Date();
+    const todayStr = getTodayStr();
+    const start = minDate ? new Date(`${minDate}T00:00:00`) : new Date();
     for (let i = 0; i < 14; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const label = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+      const label =
+        value === todayStr
+          ? "Today"
+          : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
       list.push({ value, label });
     }
     return list;
-  }, []);
+  }, [minDate]);
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex flex-col justify-end md:hidden">
@@ -1367,7 +1372,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   );
 
   const defaultSubtitle =
-    "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station.";
+    "BroomBoom Cabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station.";
 
   const activeTitle =
     heading?.title ||
@@ -1429,10 +1434,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         
         {/* =============================== HEADER (SHOWN ON ALL) ==================================== */}
         <div className="mb-2 sm:mb-3 hidden sm:flex items-center justify-center animate-in fade-in duration-200">
-          <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 text-[10px] sm:text-xs md:text-[13px] font-black uppercase tracking-wider text-center leading-tight shadow-md shadow-amber-400/25 border border-amber-300 max-w-[calc(100vw-2rem)]">
-            <img src="/logo.png" alt="BroomBoom Logo" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-md object-contain shrink-0" />
-            <span>India&apos;s #1 Most Trusted Cab Booking Service</span>
-          </div>
         </div>
 
         <div className="mb-4 sm:mb-6 text-white text-center flex flex-col items-center animate-in fade-in duration-200 px-2">
@@ -1728,8 +1729,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 </div>
               )}
 
-              {/* Date & Time cards — min-w-0 + truncate prevents overflow on ≤280px screens */}
-              <div className={`mt-3 mb-3 ${tripType.includes("outstation") ? "grid grid-cols-2 gap-2" : ""}`}>
+              {/* Date & Time cards — full-width for non-round trips, 2 cols for round-trip */}
+              <div className={`mt-3 mb-3 ${tripType === "outstation-round" ? "grid grid-cols-2 gap-2" : ""}`}>
                 <div
                   onClick={() => setMobileDateTimeTarget("pickup")}
                   className="bg-white border border-amber-200 rounded-xl p-3 shadow-sm cursor-pointer hover:border-amber-300 transition-colors min-w-0"
@@ -1786,6 +1787,33 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Mobile Date & Time Picker — driven by mobileDateTimeTarget */}
+          {mobileDateTimeTarget && (
+            <MobileDateTimePicker
+              title={
+                mobileDateTimeTarget === "pickup"
+                  ? "Select Pickup Date & Time"
+                  : "Select Return Date & Time"
+              }
+              date={mobileDateTimeTarget === "pickup" ? pickupDate : returnDate}
+              time={mobileDateTimeTarget === "pickup" ? pickupTime : dropTime}
+              minDate={mobileDateTimeTarget === "pickup" ? getTodayStr() : pickupDate}
+              onChangeDate={(d) => {
+                if (mobileDateTimeTarget === "pickup") {
+                  setPickupDate(d);
+                  // Keep return on/after pickup
+                  if (returnDate < d) setReturnDate(d);
+                } else {
+                  setReturnDate(d);
+                }
+              }}
+              onChangeTime={
+                mobileDateTimeTarget === "pickup" ? setPickupTime : setDropTime
+              }
+              onClose={() => setMobileDateTimeTarget(null)}
+            />
+          )}
 
           {/* Laurel pill for Mobile */}
           <div className="mt-1 mb-0 flex items-center justify-center gap-1.5 text-white text-[11px] font-semibold tracking-wide drop-shadow-sm select-none">
@@ -2526,11 +2554,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
           {/* Play Store */}
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="w-6 h-6 sm:w-10 sm:h-10 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 512 512" className="w-4 h-4 sm:w-7 sm:h-7" aria-hidden="true">
-                <path fill="#00c1ff" d="M48.2 24.5C40.6 32.5 36 44.5 36 60v392c0 15.5 4.6 27.5 12.2 35.5l2.4 2.5L270.2 270.4v-4.8L50.6 22z" />
-                <path fill="#00f175" d="M343.4 343.6l-73.2-73.2v-4.8l73.2-73.2 2.2 1.3 86.8 49.3c24.8 14.1 24.8 37.1 0 51.2l-86.8 49.3-2.2 1.1z" />
-                <path fill="#ff3a44" d="M345.6 342.3L270.2 268 48.2 490c8.2 8.7 21.7 9.8 36.8 1.2l260.6-148.9z" />
-                <path fill="#ffc800" d="M345.6 169.7L85 20.8C69.9 12.2 56.4 13.3 48.2 22l222 222 75.4-74.3z" />
+              <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-8 sm:h-8" aria-hidden="true">
+                <path fill="#00D2FF" d="M3.6 2.4c-.2.2-.3.6-.3 1v17.2c0 .4.1.8.3 1l9.4-9.6L3.6 2.4z" />
+                <path fill="#00E676" d="M13 12l3.1-3.2L5.4 2c-.4-.2-.9-.3-1.2 0-.2.1-.4.3-.6.4L13 12z" />
+                <path fill="#FF3D00" d="M13 12l-9.4 9.6c.2.1.4.3.6.4.3.3.8.2 1.2 0l10.7-6.8L13 12z" />
+                <path fill="#FFC107" d="M16.1 8.8L13 12l3.1 3.2 4.1-2.6c.8-.5.8-1.7 0-2.2l-4.1-2.6z" />
               </svg>
             </div>
             <div className="text-left">
@@ -2541,13 +2569,14 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 ))}
               </div>
               <div className="text-[8px] sm:text-[11px] font-bold text-slate-900 mt-0.5 whitespace-nowrap">
-                (15.5K+ <span className="hidden sm:inline">Reviews</span>)
+                (4.8K+ <span className="hidden sm:inline">Reviews</span>)
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
   );
 };
+
+export default HeroSearch;

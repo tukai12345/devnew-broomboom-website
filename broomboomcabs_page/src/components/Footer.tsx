@@ -130,7 +130,7 @@ export const Footer: React.FC = () => {
               </a>
 
               <a
-                href="mailto:support@broomboom.com"
+                href="mailto:support@broomboomcabs.com"
                 className="flex items-center gap-2 py-0.5 transition hover:text-white"
               >
                 <Mail
@@ -138,7 +138,7 @@ export const Footer: React.FC = () => {
                   aria-hidden="true"
                 />
                 <span className="min-w-0 break-words">
-                  support@broomboom.com
+                  support@broomboomcabs.com
                 </span>
               </a>
 

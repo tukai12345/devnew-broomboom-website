@@ -50,8 +50,8 @@ export default function ContactPage() {
       icon: <Mail className="w-5 h-5 text-amber-400" />,
       title: "Customer & Corporate Email",
       subtitle: "For invoices, corporate tie-ups & feedback",
-      primary: "support@broomboom.com",
-      href: "mailto:support@broomboom.com",
+      primary: "support@broomboomcabs.com",
+      href: "mailto:support@broomboomcabs.com",
       cta: "Send Email",
     },
     {
