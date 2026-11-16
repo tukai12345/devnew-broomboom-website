@@ -148,7 +148,7 @@ export const Footer: React.FC = () => {
                   aria-hidden="true"
                 />
                 <span className="min-w-0 break-words">
-                  Headquarters: Sector V, Salt Lake, Kolkata, India
+                  Set the address: Majhi Enclave, 7, T.C.Mukherjee St, Kali Tala, Bangur Park, Rishra, West Bengal, 712248
                 </span>
               </div>
 
