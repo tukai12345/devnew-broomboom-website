@@ -34,6 +34,7 @@ const legalLinks = [
   { label: "Sitemap", href: "/sitemap" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms & Conditions", href: "/user-terms" },
+  { label: "Pilot Terms & Conditions", href: "/pilot-terms" },
 ];
 
 const linkClass =
