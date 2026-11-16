@@ -1,5 +1,5 @@
 import React from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import {
@@ -20,17 +20,36 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+const SLUG_ALIASES: Record<string, string> = {
+  "offbeat-monsoon-destinations-in-west-bengal": "monsoon-destinations",
+  "cab-companies-in-kolkata-why-broomboom-stands-out": "cab-companies-kolkata",
+  "kolkata-durga-puja-2024-grand-celebration": "kolkata-durga-puja-2024",
+  "gangasagar-mela-2025-with-broomboom-cabs": "gangasagar-mela-2025",
+  "durga-puja-car-rental-in-india-travel-made-easy": "durga-puja-car-rental-in-india",
+  "holi-celebrations-journey-to-heart-of-india": "holi-celebrations-2025",
+  "belur-math-hindu-temple-howrah-india": "belur-math-hindu-temples",
+  "why-broomboom-cabs-is-better-than-other-platforms": "why-broomboom-cabs-better-intercity-travel",
+  "top-15-places-to-visit-for-durga-puja-2025": "places-to-visit-in-india-during-dussehra",
+  "siliguri-to-darjeeling-shared-cab-service": "siliguri-to-darjeeling-shared-cab-services",
+  "celebrate-republic-day-2025-car-rentals-gantantra-diwas": "republic-day-2025",
+};
+
 // Generate static params for all known blog posts
 export async function generateStaticParams() {
-  return INITIAL_BLOG_DATA.posts.map((post) => ({
+  const list = INITIAL_BLOG_DATA.posts.map((post) => ({
     slug: post.slug,
   }));
+  Object.keys(SLUG_ALIASES).forEach((oldSlug) => {
+    list.push({ slug: oldSlug });
+  });
+  return list;
 }
 
 // Dynamic SEO metadata for each blog article
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = INITIAL_BLOG_DATA.posts.find((p) => p.slug === slug);
+  const canonicalSlug = SLUG_ALIASES[slug] || slug;
+  const post = INITIAL_BLOG_DATA.posts.find((p) => p.slug === canonicalSlug || p.slug === slug);
   if (!post) {
     return {
       title: "Blog Not Found | BroomBoom Cabs",
@@ -60,7 +79,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = INITIAL_BLOG_DATA.posts.find((p) => p.slug === slug);
+  if (SLUG_ALIASES[slug]) {
+    redirect(`/blog/${SLUG_ALIASES[slug]}`);
+  }
+
+  const canonicalSlug = SLUG_ALIASES[slug] || slug;
+  const post = INITIAL_BLOG_DATA.posts.find((p) => p.slug === canonicalSlug || p.slug === slug);
 
   if (!post) {
     notFound();

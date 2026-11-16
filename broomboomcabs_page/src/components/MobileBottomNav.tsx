@@ -50,19 +50,20 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <span className="text-[9px] font-bold">Offers</span>
         </button>
 
-        {/* Central Prominent Install App Button with BroomBoom Logo */}
+        {/* Central Prominent Install App Button with BroomBoom Logo (Rectangular / Squircle) */}
         <button
           onClick={handleInstallClick}
-          className="flex flex-col items-center gap-0.5 text-slate-950 focus:outline-none -mt-3.5"
+          className="flex flex-col items-center gap-0.5 text-slate-950 focus:outline-none -mt-2.5 group cursor-pointer"
+          aria-label="Get BroomBoom App"
         >
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-amber-400 p-0.5 flex items-center justify-center shadow-lg shadow-amber-400/40 border-2 border-white animate-bounce-short">
+          <div className="w-11 h-11 rounded-xl overflow-hidden bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 p-0.5 flex items-center justify-center shadow-md shadow-amber-500/30 border-2 border-white transition-transform group-hover:scale-105 group-active:scale-95">
             <img
-              src="/logo.png"
-              alt="BroomBoom"
-              className="w-full h-full object-contain rounded-full"
+              src="/images/broomboom-brand-icon.png"
+              alt="Get BroomBoom App"
+              className="w-full h-full object-cover rounded-lg"
             />
           </div>
-          <span className="text-[9px] font-black text-amber-700">Get App</span>
+          <span className="text-[9px] font-black text-amber-800 tracking-tight">Get App</span>
         </button>
 
         <a

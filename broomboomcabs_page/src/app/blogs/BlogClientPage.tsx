@@ -24,7 +24,7 @@ import {
   BlogPost,
 } from "@/data/blogData";
 
-const STORAGE_KEY = "broomboom_blog_page_cms_data_v9";
+const STORAGE_KEY = "broomboom_blog_page_cms_data_v11";
 const POSTS_PER_PAGE = 6;
 
 export function BlogClientPage() {

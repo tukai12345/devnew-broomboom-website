@@ -29,6 +29,7 @@ const serviceLinks = [
 
 const legalLinks = [
   { label: "About Us", href: "/about-us" },
+  { label: "Careers", href: "/careers" },
   { label: "Blog & Guides", href: "/blogs" },
   { label: "Contact Us", href: "/contact-us" },
   { label: "Sitemap", href: "/sitemap" },
@@ -38,17 +39,17 @@ const legalLinks = [
 ];
 
 const linkClass =
-  "inline-block rounded py-0.5 transition-colors hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]";
+  "inline-block rounded py-1.5 leading-snug transition-colors hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16] sm:py-0.5 sm:leading-normal";
 
 export const Footer: React.FC = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="w-full border-t border-slate-800 bg-[#090d16] pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6 text-xs text-slate-400 sm:pb-8 sm:pt-10">
+    <footer className="w-full overflow-x-hidden border-t border-slate-800 bg-[#090d16] pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-4 text-xs text-slate-400 sm:overflow-x-visible sm:pb-8 sm:pt-10">
       <div className="w-full">
         {/* Top brand & contacts */}
         <div className="grid grid-cols-1 divide-y divide-white/10 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
-          <div className="min-w-0 space-y-3 p-4 sm:p-6 lg:p-8">
+          <div className="min-w-0 space-y-3 px-4 py-5 sm:p-6 lg:p-8">
             <Link
               href="/"
               aria-label="BroomBoom Cabs — Go to home page"
@@ -61,10 +62,10 @@ export const Footer: React.FC = () => {
                   className="h-full w-full object-contain drop-shadow-md"
                 />
               </div>
-              <div className="text-xl font-black leading-none text-white">
-                <span className="text-xl sm:text-2xl font-black tracking-tighter text-white truncate">
-  BroomBoom <span className="text-yellow-400">Cabs</span>
-</span>
+              <div className="min-w-0 text-xl font-black leading-none text-white">
+                <span className="truncate text-xl font-black tracking-tighter text-white sm:text-2xl">
+                  BroomBoom <span className="text-yellow-400">Cabs</span>
+                </span>
               </div>
             </Link>
 
@@ -82,12 +83,12 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+          <div className="min-w-0 px-4 py-5 sm:p-6 lg:p-8">
             <h4 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-white">
               Cabs in Top Cities
             </h4>
-            {/* 2 columns on mobile so the footer isn't 9 rows tall */}
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:gap-y-2">
+            {/* 2 columns on mobile and desktop */}
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5 sm:gap-y-2">
               {cityLinks.map((item) => (
                 <li key={item.label} className="min-w-0">
                   <Link href={item.href} className={linkClass}>
@@ -98,11 +99,12 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+          <div className="min-w-0 px-4 py-5 sm:p-6 lg:p-8">
             <h4 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-white">
               Services
             </h4>
-            <ul className="space-y-1.5 sm:space-y-2">
+            {/* 2 columns on mobile only; original 1-column stacked list on sm/lg */}
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5 sm:block sm:space-y-2">
               {serviceLinks.map((item) => (
                 <li key={item.label} className="min-w-0">
                   <Link href={item.href} className={linkClass}>
@@ -113,7 +115,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+          <div className="min-w-0 px-4 py-5 sm:p-6 lg:p-8">
             <h4 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-white">
               24x7 Customer Desk
             </h4>
@@ -121,7 +123,7 @@ export const Footer: React.FC = () => {
             <div className="space-y-2.5">
               <a
                 href="tel:+918240765499"
-                className="flex items-center gap-2 py-0.5 font-bold text-white transition hover:text-amber-400"
+                className="flex min-w-0 items-center gap-2 py-1 font-bold text-white transition hover:text-amber-400 sm:py-0.5"
               >
                 <PhoneCall
                   className="h-4 w-4 shrink-0 text-amber-400"
@@ -132,13 +134,13 @@ export const Footer: React.FC = () => {
 
               <a
                 href="mailto:support@broomboomcabs.com"
-                className="flex items-center gap-2 py-0.5 transition hover:text-white"
+                className="flex min-w-0 items-center gap-2 py-1 transition hover:text-white sm:py-0.5"
               >
                 <Mail
                   className="h-4 w-4 shrink-0 text-amber-400"
                   aria-hidden="true"
                 />
-                <span className="min-w-0 break-words">
+                <span className="min-w-0 break-all sm:break-words">
                   support@broomboomcabs.com
                 </span>
               </a>
@@ -149,32 +151,33 @@ export const Footer: React.FC = () => {
                   aria-hidden="true"
                 />
                 <span className="min-w-0 break-words">
-                  Set the address: Majhi Enclave, 7, T.C.Mukherjee St, Kali Tala, Bangur Park, Rishra, West Bengal, 712248
+                  Set the address: Majhi Enclave, 7, T.C.Mukherjee St, Kali
+                  Tala, Bangur Park, Rishra, West Bengal, 712248
                 </span>
               </div>
 
               {/* --- BROOMBOOM APPS (CUSTOMER & PILOT) --- */}
-              <div className="pt-4 border-t border-white/10">
-                <div className="text-[11px] font-black uppercase tracking-wider text-white mb-2.5">
+              <div className="border-t border-white/10 pt-4">
+                <div className="mb-2.5 text-[11px] font-black uppercase tracking-wider text-white">
                   Download Mobile Apps
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
                   {/* BroomBoom Customer / Rider App */}
                   <a
                     href="https://play.google.com/store/apps/details?id=com.broomboom.user"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex flex-col items-center transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
+                    className="group flex flex-col items-center rounded transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
                     aria-label="Download BroomBoom Cabs Rider App on Google Play"
                   >
-                    <div className="w-[104px] sm:w-[108px] p-2 rounded-xl bg-black/60 border border-white/10 group-hover:border-amber-400/50 transition shadow-md">
+                    <div className="w-full max-w-[136px] rounded-xl border border-white/10 bg-black/60 p-2 shadow-md transition group-hover:border-amber-400/50 sm:w-[108px] sm:max-w-none">
                       <img
                         src="/images/broomboom-customer-app.png"
                         alt="BroomBoom Cabs Rider App on Google Play"
-                        className="w-full h-auto object-contain transition-transform group-hover:scale-105"
+                        className="h-auto w-full object-contain transition-transform group-hover:scale-105"
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-300 group-hover:text-amber-400 mt-1.5 transition">
+                    <span className="mt-1.5 text-[10px] font-bold text-slate-300 transition group-hover:text-amber-400">
                       Customer App
                     </span>
                   </a>
@@ -184,23 +187,22 @@ export const Footer: React.FC = () => {
                     href="https://play.google.com/store/apps/details?id=com.broomboom.pilot"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex flex-col items-center transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
+                    className="group flex flex-col items-center rounded transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
                     aria-label="Download BroomBoom Pilot Partner App on Google Play"
                   >
-                    <div className="w-[104px] sm:w-[108px] p-2 rounded-xl bg-black/60 border border-white/10 group-hover:border-amber-400/50 transition shadow-md">
+                    <div className="w-full max-w-[136px] rounded-xl border border-white/10 bg-black/60 p-2 shadow-md transition group-hover:border-amber-400/50 sm:w-[108px] sm:max-w-none">
                       <img
                         src="/images/broomboom-pilot-app.png"
                         alt="BroomBoom Pilot Partner App on Google Play"
-                        className="w-full h-auto object-contain transition-transform group-hover:scale-105"
+                        className="h-auto w-full object-contain transition-transform group-hover:scale-105"
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-300 group-hover:text-amber-400 mt-1.5 transition">
+                    <span className="mt-1.5 text-[10px] font-bold text-slate-300 transition group-hover:text-amber-400">
                       Pilot App
                     </span>
                   </a>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -214,18 +216,18 @@ export const Footer: React.FC = () => {
 
           <nav
             aria-label="Legal links"
-            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 sm:justify-end sm:gap-x-4 sm:gap-y-2"
+            className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 sm:justify-end sm:gap-x-4 sm:gap-y-2"
           >
             {legalLinks.map((item, index) => (
               <React.Fragment key={item.label}>
                 {index > 0 && (
-                  <span aria-hidden="true" className="hidden sm:inline">
+                  <span aria-hidden="true" className="text-slate-700 sm:text-current">
                     •
                   </span>
                 )}
                 <Link
                   href={item.href}
-                  className="rounded py-0.5 transition hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16]"
+                  className="rounded py-1 transition hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d16] sm:py-0.5"
                 >
                   {item.label}
                 </Link>

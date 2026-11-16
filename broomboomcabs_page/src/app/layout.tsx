@@ -52,9 +52,8 @@ function FloatingContactButtons() {
 
   return (
     <div
-      className="fixed z-[9999] right-4 bottom-4 sm:right-6 sm:bottom-6 flex flex-col items-end gap-3 print:hidden"
+      className="fixed z-40 right-3.5 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:right-6 sm:bottom-6 flex flex-col items-end gap-2.5 sm:gap-3 print:hidden"
       style={{
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
         paddingRight: "env(safe-area-inset-right, 0px)",
       }}
     >
@@ -66,15 +65,16 @@ function FloatingContactButtons() {
       >
         <span className="pointer-events-none absolute inset-0 rounded-full bg-amber-400/60 animate-ping opacity-40" />
 
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="relative h-6 w-6 sm:h-7 sm:w-7"
-          aria-hidden="true"
-        >
-          <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.36 11.36 0 0 0 .57 3.57 1 1 0 0 1-.25 1.02l-2.2 2.2Z" />
-        </svg>
+       <svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  // Add -scale-x-100 here 👇
+  className="relative h-6 w-6 sm:h-7 sm:w-7 -scale-x-100"
+  aria-hidden="true"
+>
+  <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.36 11.36 0 0 0 .57 3.57 1 1 0 0 1-.25 1.02l-2.2 2.2Z" />
+</svg>
       </a>
 
       {/* WhatsApp button */}

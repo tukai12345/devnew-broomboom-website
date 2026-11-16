@@ -127,11 +127,30 @@ const getTodayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-const getCurrentTimeStr = () => {
-  const d = new Date();
-  const currentMinutes = d.getMinutes();
-  const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
-  d.setMinutes(roundedMinutes, 0, 0);
+export const getCategoryBufferMinutes = (tripType?: string): number => {
+  if (!tripType) return 15;
+  if (tripType === "airport") return 15;
+  if (tripType === "hourly") return 30;
+  // outstation-oneway, outstation-round, daily, etc. require 1 hour lead time
+  return 60;
+};
+
+export const getMinimumPickupDateObj = (tripType?: string, baseNow = new Date()): Date => {
+  const d = new Date(baseNow);
+  const fracMinutes = d.getMinutes() + d.getSeconds() / 60;
+  const roundedMinutes = Math.ceil(fracMinutes / 15) * 15;
+  const buffer = getCategoryBufferMinutes(tripType);
+  d.setMinutes(roundedMinutes + buffer, 0, 0);
+  return d;
+};
+
+export const getMinimumPickupDateStr = (tripType?: string, baseNow = new Date()): string => {
+  const d = getMinimumPickupDateObj(tripType, baseNow);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+export const getCurrentTimeStr = (tripType?: string, baseNow = new Date()): string => {
+  const d = getMinimumPickupDateObj(tripType, baseNow);
   const hours = d.getHours();
   const minutes = d.getMinutes();
   const h12 = hours % 12 === 0 ? 12 : hours % 12;
@@ -139,44 +158,47 @@ const getCurrentTimeStr = () => {
   return `${String(h12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
 };
 
-const isTimeInPastForToday = (timeStr: string, dateStr: string): boolean => {
+export const isTimeInPastForToday = (
+  timeStr: string,
+  dateStr: string,
+  tripType?: string
+): boolean => {
   if (!dateStr || !timeStr) return false;
-  const todayStr = getTodayStr();
-  if (dateStr < todayStr) return true;
-  if (dateStr > todayStr) return false;
-
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const minObj = getMinimumPickupDateObj(tripType);
+  const minDateStr = `${minObj.getFullYear()}-${String(minObj.getMonth() + 1).padStart(2, "0")}-${String(minObj.getDate()).padStart(2, "0")}`;
+  if (dateStr < minDateStr) return true;
+  if (dateStr > minDateStr) return false;
 
   const { hour, minute, meridiem } = parseTimeDetails(timeStr);
   let h = parseInt(hour, 10);
   if (meridiem.toUpperCase() === "PM" && h < 12) h += 12;
   if (meridiem.toUpperCase() === "AM" && h === 12) h = 0;
   const targetMinutes = h * 60 + parseInt(minute, 10);
+  const minMinutes = minObj.getHours() * 60 + minObj.getMinutes();
 
-  return targetMinutes < currentMinutes;
+  return targetMinutes < minMinutes;
 };
 
-const isTimeSlotBeforeNow = (
+export const isTimeSlotBeforeNow = (
   h12Str: string,
   mStr: string,
   mer: string,
-  targetDate: string
+  targetDate: string,
+  tripType?: string
 ): boolean => {
   if (!targetDate) return false;
-  const todayStr = getTodayStr();
-  if (targetDate < todayStr) return true;
-  if (targetDate > todayStr) return false;
-
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const minObj = getMinimumPickupDateObj(tripType);
+  const minDateStr = `${minObj.getFullYear()}-${String(minObj.getMonth() + 1).padStart(2, "0")}-${String(minObj.getDate()).padStart(2, "0")}`;
+  if (targetDate < minDateStr) return true;
+  if (targetDate > minDateStr) return false;
 
   let h = parseInt(h12Str, 10);
   if (mer.toUpperCase() === "PM" && h < 12) h += 12;
   if (mer.toUpperCase() === "AM" && h === 12) h = 0;
   const targetMinutes = h * 60 + parseInt(mStr, 10);
+  const minMinutes = minObj.getHours() * 60 + minObj.getMinutes();
 
-  return targetMinutes < currentMinutes;
+  return targetMinutes < minMinutes;
 };
 
 /* --------------------------- sub-components --------------------------- */
@@ -185,48 +207,49 @@ const MobileDateTimePicker: React.FC<{
   title: string;
   date: string;
   time: string;
+  tripType?: string;
   minDate?: string;
   onChangeDate: (date: string) => void;
   onChangeTime: (time: string) => void;
   onClose: () => void;
-}> = ({ title, date, time, minDate, onChangeDate, onChangeTime, onClose }) => {
+}> = ({ title, date, time, tripType, minDate, onChangeDate, onChangeTime, onClose }) => {
   const isPickup = title.toLowerCase().includes("pickup");
   const { hour, minute, meridiem } = parseTimeDetails(time);
 
   useEffect(() => {
-    if (isPickup && date === getTodayStr() && isTimeInPastForToday(time, date)) {
-      onChangeTime(getCurrentTimeStr());
+    if (isPickup && isTimeInPastForToday(time, date, tripType)) {
+      onChangeTime(getCurrentTimeStr(tripType));
     }
-  }, [date, isPickup, time, onChangeTime]);
+  }, [date, isPickup, time, onChangeTime, tripType]);
 
   const handleDateSelect = (selectedDate: string) => {
     onChangeDate(selectedDate);
-    if (isPickup && selectedDate === getTodayStr() && isTimeInPastForToday(time, selectedDate)) {
-      onChangeTime(getCurrentTimeStr());
+    if (isPickup && isTimeInPastForToday(time, selectedDate, tripType)) {
+      onChangeTime(getCurrentTimeStr(tripType));
     }
   };
 
   const setTime = (h: string, m: string, mer: string) => {
-    if (isPickup && isTimeSlotBeforeNow(h, m, mer, date)) {
-      onChangeTime(getCurrentTimeStr());
+    if (isPickup && isTimeSlotBeforeNow(h, m, mer, date, tripType)) {
+      onChangeTime(getCurrentTimeStr(tripType));
       return;
     }
     onChangeTime(`${h}:${m} ${mer}`);
   };
 
   const isMeridiemDisabled = (mer: string) => {
-    if (!isPickup || date !== getTodayStr()) return false;
-    return isTimeSlotBeforeNow("11", "45", mer, date);
+    if (!isPickup || !date) return false;
+    return isTimeSlotBeforeNow("11", "45", mer, date, tripType);
   };
 
   const isHourDisabled = (h: string) => {
-    if (!isPickup || date !== getTodayStr()) return false;
-    return isTimeSlotBeforeNow(h, "45", meridiem, date);
+    if (!isPickup || !date) return false;
+    return isTimeSlotBeforeNow(h, "45", meridiem, date, tripType);
   };
 
   const isMinuteDisabled = (m: string) => {
-    if (!isPickup || date !== getTodayStr()) return false;
-    return isTimeSlotBeforeNow(hour, m, meridiem, date);
+    if (!isPickup || !date) return false;
+    return isTimeSlotBeforeNow(hour, m, meridiem, date, tripType);
   };
 
   const dates = React.useMemo(() => {
@@ -856,6 +879,7 @@ const TimePopover: React.FC<{
   value: string;
   onChange: (v: string) => void;
   date?: string;
+  tripType?: string;
   align?: "left" | "right";
   onClose?: () => void;
 }> = ({
@@ -863,6 +887,7 @@ const TimePopover: React.FC<{
   value,
   onChange,
   date,
+  tripType,
   align = "right",
   onClose,
 }) => {
@@ -870,32 +895,32 @@ const TimePopover: React.FC<{
   const { hour, minute, meridiem } = parseTimeDetails(value);
 
   useEffect(() => {
-    if (isPickup && date && isTimeInPastForToday(value, date)) {
-      onChange(getCurrentTimeStr());
+    if (isPickup && date && isTimeInPastForToday(value, date, tripType)) {
+      onChange(getCurrentTimeStr(tripType));
     }
-  }, [date, isPickup, value, onChange]);
+  }, [date, isPickup, value, onChange, tripType]);
 
   const set = (h: string, m: string, mer: string) => {
-    if (isPickup && date && isTimeSlotBeforeNow(h, m, mer, date)) {
-      onChange(getCurrentTimeStr());
+    if (isPickup && date && isTimeSlotBeforeNow(h, m, mer, date, tripType)) {
+      onChange(getCurrentTimeStr(tripType));
       return;
     }
     onChange(`${h}:${m} ${mer}`);
   };
 
   const isMeridiemDisabled = (mer: string) => {
-    if (!isPickup || !date || date !== getTodayStr()) return false;
-    return isTimeSlotBeforeNow("11", "45", mer, date);
+    if (!isPickup || !date) return false;
+    return isTimeSlotBeforeNow("11", "45", mer, date, tripType);
   };
 
   const isHourDisabled = (h: string) => {
-    if (!isPickup || !date || date !== getTodayStr()) return false;
-    return isTimeSlotBeforeNow(h, "45", meridiem, date);
+    if (!isPickup || !date) return false;
+    return isTimeSlotBeforeNow(h, "45", meridiem, date, tripType);
   };
 
   const isMinuteDisabled = (m: string) => {
-    if (!isPickup || !date || date !== getTodayStr()) return false;
-    return isTimeSlotBeforeNow(hour, m, meridiem, date);
+    if (!isPickup || !date) return false;
+    return isTimeSlotBeforeNow(hour, m, meridiem, date, tripType);
   };
 
   const Column: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
@@ -942,9 +967,9 @@ const TimePopover: React.FC<{
                 disabled={disabled}
                 onClick={() => {
                   let nextMin = minute;
-                  if (date && isTimeSlotBeforeNow(h, nextMin, meridiem, date)) {
+                  if (date && isTimeSlotBeforeNow(h, nextMin, meridiem, date, tripType)) {
                     const futureMin = ["00", "15", "30", "45"].find(
-                      (m) => !isTimeSlotBeforeNow(h, m, meridiem, date)
+                      (m) => !isTimeSlotBeforeNow(h, m, meridiem, date, tripType)
                     );
                     nextMin = futureMin || minute;
                   }
@@ -1021,7 +1046,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   navigateOnTabClick = false,
 }) => {
   const router = useRouter();
-  const [tripType, setTripType] = useState<TripType>((activeTripType as TripType) || "outstation-round");
+  const initialType = (activeTripType as TripType) || "outstation-round";
+  const [tripType, setTripType] = useState<TripType>(initialType);
   const [fromCity, setFromCity] = useState(initialFrom);
   const [toCity, setToCity] = useState(initialTo);
   const [fromState, setFromState] = useState(
@@ -1036,8 +1062,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDurationMinutes, setRouteDurationMinutes] = useState<number | null>(null);
 
-  const [pickupDate, setPickupDate] = useState(getTodayStr());
-  const [pickupTime, setPickupTime] = useState(getCurrentTimeStr());
+  const [pickupDate, setPickupDate] = useState(() => getMinimumPickupDateStr(initialType));
+  const [pickupTime, setPickupTime] = useState(() => getCurrentTimeStr(initialType));
   const [returnDate, setReturnDate] = useState(getTodayStr());
   const [dropTime, setDropTime] = useState("09:45 PM");
   const [hourlyPackage, setHourlyPackage] = useState("8 hrs 80 kms");
@@ -1066,9 +1092,19 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     }
     if (activeTripType) {
       setHasInteracted(true);
-      setTripType(activeTripType as TripType);
+      const t = activeTripType as TripType;
+      setTripType(t);
+      const minDate = getMinimumPickupDateStr(t);
+      if (pickupDate <= minDate) {
+        if (pickupDate < minDate) {
+          setPickupDate(minDate);
+        }
+        if (isTimeInPastForToday(pickupTime, minDate, t)) {
+          setPickupTime(getCurrentTimeStr(t));
+        }
+      }
     }
-  }, [activeTripType]);
+  }, [activeTripType, pickupDate, pickupTime]);
 
   useEffect(() => {
     setFromCity(initialFrom ?? "");
@@ -1205,6 +1241,16 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     setTripType(t);
     onTripTypeChange(t);
 
+    const minDate = getMinimumPickupDateStr(t);
+    if (pickupDate <= minDate) {
+      if (pickupDate < minDate) {
+        setPickupDate(minDate);
+      }
+      if (isTimeInPastForToday(pickupTime, minDate, t)) {
+        setPickupTime(getCurrentTimeStr(t));
+      }
+    }
+
     if (navigateOnTabClick && typeof window !== "undefined") {
       const path = window.location.pathname;
       const parts = path.split("/").filter(Boolean);
@@ -1290,16 +1336,18 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       } catch {}
     }
 
+    const minPickupDate = getMinimumPickupDateStr(tripType);
+    const effectivePickupDate = pickupDate < minPickupDate ? minPickupDate : pickupDate;
     const validPickupTime =
-      pickupDate === getTodayStr() && isTimeInPastForToday(pickupTime, pickupDate)
-        ? getCurrentTimeStr()
+      isTimeInPastForToday(pickupTime, effectivePickupDate, tripType)
+        ? getCurrentTimeStr(tripType)
         : pickupTime;
 
     onSearch({
       tripType,
       fromCity,
       toCity,
-      pickupDate,
+      pickupDate: effectivePickupDate,
       pickupTime: validPickupTime,
       returnDate,
       returnTime: dropTime,
@@ -1331,15 +1379,15 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   const selectCalendarDate = (day: number, isPickup: boolean) => {
     const formatted = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const today = getTodayStr();
     if (isPickup) {
-      if (formatted < today) return;
+      const minDate = getMinimumPickupDateStr(tripType);
+      if (formatted < minDate) return;
       setPickupDate(formatted);
       if (returnDate < formatted) {
         setReturnDate(formatted);
       }
-      if (formatted === today && isTimeInPastForToday(pickupTime, formatted)) {
-        setPickupTime(getCurrentTimeStr());
+      if (isTimeInPastForToday(pickupTime, formatted, tripType)) {
+        setPickupTime(getCurrentTimeStr(tripType));
       }
     } else {
       if (formatted < pickupDate) return;
@@ -1798,7 +1846,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               }
               date={mobileDateTimeTarget === "pickup" ? pickupDate : returnDate}
               time={mobileDateTimeTarget === "pickup" ? pickupTime : dropTime}
-              minDate={mobileDateTimeTarget === "pickup" ? getTodayStr() : pickupDate}
+              tripType={mobileDateTimeTarget === "pickup" ? tripType : undefined}
+              minDate={mobileDateTimeTarget === "pickup" ? getMinimumPickupDateStr(tripType) : pickupDate}
               onChangeDate={(d) => {
                 if (mobileDateTimeTarget === "pickup") {
                   setPickupDate(d);
@@ -1959,7 +2008,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={pickupDate}
-                      minDate={getTodayStr()}
+                      minDate={getMinimumPickupDateStr(tripType)}
                       title="Select Departure Date"
                       onClose={() => setOpenDropdown(null)}
                       onSelect={(d) => selectCalendarDate(d, true)}
@@ -2016,6 +2065,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <TimePopover
                       title="Select Pickup Time"
                       date={pickupDate}
+                      tripType={tripType}
                       value={pickupTime}
                       onChange={setPickupTime}
                       onClose={() => setOpenDropdown(null)}
@@ -2121,7 +2171,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={pickupDate}
-                      minDate={getTodayStr()}
+                      minDate={getMinimumPickupDateStr(tripType)}
                       title="Select Departure Date"
                       onClose={() => setOpenDropdown(null)}
                       onSelect={(d) => selectCalendarDate(d, true)}
@@ -2159,6 +2209,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <TimePopover
                       title="Select Pickup Time"
                       date={pickupDate}
+                      tripType={tripType}
                       value={pickupTime}
                       onChange={setPickupTime}
                       onClose={() => setOpenDropdown(null)}
@@ -2213,7 +2264,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       onPrev={prevMonth}
                       onNext={nextMonth}
                       selectedDate={pickupDate}
-                      minDate={getTodayStr()}
+                      minDate={getMinimumPickupDateStr(tripType)}
                       title="Select Pickup Date"
                       onClose={() => setOpenDropdown(null)}
                       onSelect={(d) => selectCalendarDate(d, true)}
@@ -2234,6 +2285,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <TimePopover
                       title="Select Pickup Time"
                       date={pickupDate}
+                      tripType={tripType}
                       value={pickupTime}
                       onChange={setPickupTime}
                       onClose={() => setOpenDropdown(null)}
@@ -2417,7 +2469,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         onPrev={prevMonth}
                         onNext={nextMonth}
                         selectedDate={pickupDate}
-                        minDate={getTodayStr()}
+                        minDate={getMinimumPickupDateStr(tripType)}
                         title="Select Date"
                         onClose={() => setOpenDropdown(null)}
                         onSelect={(d) => selectCalendarDate(d, true)}
@@ -2444,6 +2496,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       <TimePopover
                         title="Select Pickup Time"
                         date={pickupDate}
+                        tripType={tripType}
                         value={pickupTime}
                         onChange={setPickupTime}
                         onClose={() => setOpenDropdown(null)}

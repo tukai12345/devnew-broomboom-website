@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { api } from "@/services/api";
 import { setStoredUser } from "@/utils/auth";
+import { RouteTransitionLoader } from "@/components/RouteTransitionLoader";
 import {
   X,
   Car,
@@ -88,6 +89,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -269,12 +271,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     // Save to session-scoped auth storage (auto logout when user leaves the website)
     setStoredUser(loggedUser);
+    setIsRedirecting(true);
 
     if (onSuccess) {
       onSuccess(loggedUser);
     }
-    setIsSubmitting(false);
-    onClose();
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsRedirecting(false);
+      onClose();
+    }, 700);
   };
 
   if (!isOpen || !mounted) return null;
@@ -282,8 +288,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const activeSlideData = slides[currentSlide];
 
   return createPortal(
-    <div
-      role="dialog"
+    <>
+      {isRedirecting && (
+        <RouteTransitionLoader mode="search-to-fleet" />
+      )}
+      <div
+        role="dialog"
       aria-modal="true"
       aria-labelledby="login-modal-title"
       onClick={(e) => {
@@ -632,7 +642,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         </div>
       </div>
-    </div>,
+    </div>
+    </>,
     document.body
   );
 };

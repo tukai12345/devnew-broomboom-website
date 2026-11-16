@@ -27,6 +27,7 @@ import { Navbar } from "@/components/Navbar";
 import { BookingModal } from "@/components/BookingModal";
 import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { SearchParams } from "@/components/HeroSearch";
+import { RouteTransitionLoader } from "@/components/RouteTransitionLoader";
 import { CitySearchPopover } from "@/components/CitySearchPopover";
 import { api, PricingCalculationResult, AirportRuleItem } from "@/services/api";
 import { CITIES, FLEET_CABS } from "@/data/cabsData";
@@ -139,11 +140,18 @@ const format24Hour = (time12: string): string => {
   return `${hStr}:${m}`;
 };
 
-const getCurrentTimeStr = (): string => {
+const getFleetCategoryBufferMinutes = (tripType?: string): number => {
+  if (tripType === "airport") return 15;
+  if (tripType === "hourly") return 30;
+  return 60;
+};
+
+const getCurrentTimeStr = (tripType?: string): string => {
   const d = new Date();
-  const currentMinutes = d.getMinutes();
-  const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
-  d.setMinutes(roundedMinutes, 0, 0);
+  const fracMinutes = d.getMinutes() + d.getSeconds() / 60;
+  const roundedMinutes = Math.ceil(fracMinutes / 15) * 15;
+  const buffer = getFleetCategoryBufferMinutes(tripType);
+  d.setMinutes(roundedMinutes + buffer, 0, 0);
   const hours = d.getHours();
   const minutes = d.getMinutes();
   const h12 = hours % 12 === 0 ? 12 : hours % 12;
@@ -161,15 +169,17 @@ const getCurrentTime24 = (): string => {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 };
 
-const isTimeInPastForToday = (timeStr: string, dateIso: string): boolean => {
+const isTimeInPastForToday = (timeStr: string, dateIso: string, tripType?: string): boolean => {
   if (!dateIso || !timeStr) return false;
   const d = new Date();
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  if (dateIso < today) return true;
-  if (dateIso > today) return false;
-
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const fracMinutes = d.getMinutes() + d.getSeconds() / 60;
+  const roundedMinutes = Math.ceil(fracMinutes / 15) * 15;
+  const buffer = getFleetCategoryBufferMinutes(tripType);
+  const minObj = new Date(d);
+  minObj.setMinutes(roundedMinutes + buffer, 0, 0);
+  const minDateStr = `${minObj.getFullYear()}-${String(minObj.getMonth() + 1).padStart(2, "0")}-${String(minObj.getDate()).padStart(2, "0")}`;
+  if (dateIso < minDateStr) return true;
+  if (dateIso > minDateStr) return false;
 
   const cleaned = timeStr.replace(/^till\s+/i, "").trim();
   const match = cleaned.match(/(\d+):(\d+)\s*(AM|PM)?/i);
@@ -179,7 +189,9 @@ const isTimeInPastForToday = (timeStr: string, dateIso: string): boolean => {
   const ampm = (match[3] || "AM").toUpperCase();
   if (ampm === "PM" && h < 12) h += 12;
   if (ampm === "AM" && h === 12) h = 0;
-  return (h * 60 + m) < currentMinutes;
+  const targetMinutes = h * 60 + m;
+  const minMinutes = minObj.getHours() * 60 + minObj.getMinutes();
+  return targetMinutes < minMinutes;
 };
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -373,6 +385,7 @@ const FleetPageContent: React.FC = () => {
 
   /* ------------------------------ Booking -------------------------------- */
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleItem | null>(null);
+  const [navigatingReviewVehicle, setNavigatingReviewVehicle] = useState<VehicleItem | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
 
@@ -1179,7 +1192,10 @@ const FleetPageContent: React.FC = () => {
     if (vehicle.advanceAmount) params.set("advance", vehicle.advanceAmount.toString());
     if (vehicle.dueAmount) params.set("dueFare", vehicle.dueAmount.toString());
 
-    router.push(`/fleet/review?${params.toString()}`);
+    setNavigatingReviewVehicle(vehicle);
+    setTimeout(() => {
+      router.push(`/fleet/review?${params.toString()}`);
+    }, 750);
   };
 
   /* ------------------------- Vehicle illustrations ----------------------- */
@@ -1944,6 +1960,16 @@ const FleetPageContent: React.FC = () => {
         isOpen={isMyBookingsOpen}
         onClose={() => setIsMyBookingsOpen(false)}
       />
+
+      {/* Animated Route Transition Loader (Fleet -> Review Booking) */}
+      {navigatingReviewVehicle && (
+        <RouteTransitionLoader
+          mode="fleet-to-review"
+          from={fromCity}
+          to={toCity}
+          cabName={navigatingReviewVehicle.name}
+        />
+      )}
     </main>
   );
 };
@@ -1953,13 +1979,9 @@ const FleetPageContent: React.FC = () => {
 /* -------------------------------------------------------------------------- */
 
 const FleetPageFallback: React.FC = () => (
-  <main className="min-h-screen bg-[#f2f5f8] flex items-center justify-center">
-    <div
-      className="w-8 h-8 rounded-full border-4 border-amber-400 border-t-transparent animate-spin"
-      role="status"
-      aria-label="Loading fleet"
-    />
-  </main>
+  <RouteTransitionLoader
+    mode="search-to-fleet"
+  />
 );
 
 export const FleetClientPage: React.FC = () => (

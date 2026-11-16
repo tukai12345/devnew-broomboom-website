@@ -48,7 +48,7 @@ export const INITIAL_BLOG_DATA: BlogPageData = {
   posts: [
     // ── PAGE 1 ARTICLES (matching screenshot 1) ──
     {
-      slug: "offbeat-monsoon-destinations-in-west-bengal",
+      slug: "monsoon-destinations",
       title: "Offbeat Monsoon Destinations in West Bengal: Explore with BroomBoom Cabs",
       excerpt:
         "Escape to tranquil rain-washed getaways across West Bengal like Garpanchkot, Lamahatta, Jhargram, Kalimpong, and Bishnupur. Discover travel tips, packages, and hassle-free cab booking with BroomBoom Cabs.",
@@ -149,7 +149,7 @@ Plan your monsoon getaway with BroomBoom Cabs. Visit our website or download the
       featured: true,
     },
     {
-      slug: "cab-companies-in-kolkata-why-broomboom-stands-out",
+      slug: "cab-companies-kolkata",
       title: "Cab Companies in Kolkata: Why BroomBoom Cabs Stands Out!",
       excerpt:
         "Looking for the best cab service in Kolkata? Discover why BroomBoom Cabs outshines competitors with transparent pricing, zero surge charges, verified pilots, and reliable 24x7 support.",
@@ -194,7 +194,7 @@ In the dynamic landscape of cab companies in Kolkata, BroomBoom Cabs emerges as 
       featured: true,
     },
     {
-      slug: "kolkata-durga-puja-2024-grand-celebration",
+      slug: "kolkata-durga-puja-2024",
       title: "Kolkata Durga Puja 2024: A Grand Celebration of Tradition and Art",
       excerpt:
         "Experience Kolkata Durga Puja 2024 with our comprehensive guide to top clubs, iconic pandals, idol artisans, shopping hubs, and convenient festive car rental packages with BroomBoom Cabs.",
@@ -311,7 +311,7 @@ BroomBoom Cabs provides the ultimate festive solution with dedicated 8-Hour / 80
       featured: true,
     },
     {
-      slug: "gangasagar-mela-2025-with-broomboom-cabs",
+      slug: "gangasagar-mela-2025",
       title: "Gangasagar Mela 2025 with BroomBoom Cabs: A Spiritual Journey to Remember",
       excerpt:
         "Complete travel guide for Gangasagar Mela 2025 on Sagar Island. Discover the sacred Kapil Muni legend, holy snan timings, ferry transfers, and hassle-free roundtrip cab booking from Kolkata with BroomBoom Cabs.",
@@ -375,7 +375,7 @@ Gangasagar Mela 2025 is an uplifting spiritual milestone to start the New Year. 
 
     // ── PAGE 2 ARTICLES (matching screenshot 2) ──
     {
-      slug: "durga-puja-car-rental-in-india-travel-made-easy",
+      slug: "durga-puja-car-rental-in-india",
       title: "Durga Puja Car Rental in India: Travel Made Easy During the Festive Season",
       excerpt:
         "Experience seamless pandal hopping, family gatherings, and outstation trips during Durga Puja with flexible hourly and daily car rentals from BroomBoom Cabs across India.",
@@ -414,7 +414,7 @@ Durga Puja is a time for joy, devotion, and cherished family reunions. Don't let
       featured: true,
     },
     {
-      slug: "holi-celebrations-journey-to-heart-of-india",
+      slug: "holi-celebrations-2025",
       title: "Holi Celebrations: A Colorful Journey to the Heart of India with BroomBoom Cabs",
       excerpt:
         "Experience the vibrant colors of Holi 2025 in Mathura, Vrindavan, and Barsana. Discover Lathmar Holi, organic gulal celebrations, festive traditions, and comfortable car rentals with BroomBoom Cabs.",
@@ -470,7 +470,7 @@ Wishing you a joyful, colorful, and blessed Holi 2025!`,
       featured: true,
     },
     {
-      slug: "belur-math-hindu-temple-howrah-india",
+      slug: "belur-math-hindu-temples",
       title: "Belur Math - Hindu Temple in Howrah, India",
       excerpt:
         "Plan a peaceful pilgrimage to Belur Math on the Hooghly River. Explore universal architecture, Ramakrishna Mission history, ferry routes to Dakshineswar, aarti timings, and comfortable cab bookings with BroomBoom Cabs.",
@@ -547,7 +547,7 @@ Plan your pilgrimage in advance with BroomBoom Cabs to ensure a peaceful, reliab
       featured: true,
     },
     {
-      slug: "why-broomboom-cabs-is-better-than-other-platforms",
+      slug: "why-broomboom-cabs-better-intercity-travel",
       title: "Why BroomBoom Cabs is Better Than Other Platforms for Intercity Travel",
       excerpt:
         "Discover why millions of travelers trust BroomBoom Cabs over aggregators like CabBazar and Savaari for intercity travel. Compare transparent pricing, verified drivers, 24x7 human support, and regional route coverage.",
@@ -734,7 +734,7 @@ Makar Sankranti 2025 promises to be a joyous occasion, full of new beginnings, s
       featured: true,
     },
     {
-      slug: "top-15-places-to-visit-for-durga-puja-2025",
+      slug: "places-to-visit-in-india-during-dussehra",
       title: "Top 15 Places to Visit in India for Dussehra & Durga Puja 2025: Festival Travel Guide",
       excerpt:
         "Comprehensive festival travel guide for Dussehra and Durga Puja 2025. Explore the top 15 destinations from Kolkata's grand pandals and Mysuru's royal palace to Gujarat's Garba nights with BroomBoom Cabs.",
@@ -859,7 +859,7 @@ Download the BroomBoom Cabs App or book directly via the website. Select your fe
       featured: true,
     },
     {
-      slug: "siliguri-to-darjeeling-shared-cab-service",
+      slug: "siliguri-to-darjeeling-shared-cab-services",
       title: "Siliguri to Darjeeling - Shared Cab Service with BroomBoom Cabs: A Convenient, Affordable Travel Option",
       excerpt:
         "Traveling from Siliguri or Bagdogra Airport to Darjeeling? Discover affordable, comfortable luxury shared cab services with BroomBoom Cabs. Check fares, routes, tea estate stops, and travel tips.",
@@ -915,7 +915,7 @@ If you're planning your vacation from Siliguri or Bagdogra to Darjeeling, Kalimp
       featured: true,
     },
     {
-      slug: "celebrate-republic-day-2025-car-rentals-gantantra-diwas",
+      slug: "republic-day-2025",
       title: "Celebrate 76th Republic Day 2025 with BroomBoom Cabs: Your Ultimate Guide to Booking Car Rentals in the Gantantra Diwas",
       excerpt:
         "Complete guide for India's 76th Republic Day 2025. Discover the parade route on Kartavya Path, ticket booking details, Chief Guest, Delhi sightseeing, and reliable festive car rentals with BroomBoom Cabs.",

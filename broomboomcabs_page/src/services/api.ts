@@ -1059,7 +1059,47 @@ export const api = {
       return fallback;
     }
   },
+
+  /**
+   * Submit career application lead to database
+   */
+  async submitCareerApplication(data: CareerApplicationPayload): Promise<any> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetchWithTimeout(
+      `${baseUrl}/careers`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+      8000
+    );
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || `Failed to submit application (${res.status})`);
+    }
+    return json;
+  },
 };
+
+export interface CareerApplicationPayload {
+  jobId?: string;
+  jobTitle: string;
+  department?: string;
+  name: string;
+  email: string;
+  phone: string;
+  location?: string;
+  experience?: string;
+  linkedIn?: string;
+  portfolio?: string;
+  noticePeriod?: string;
+  cover?: string;
+  resumeFileName?: string;
+  resumeUrl?: string;
+  source?: string;
+}
 
 export interface BackendAddonItem {
   id: string;

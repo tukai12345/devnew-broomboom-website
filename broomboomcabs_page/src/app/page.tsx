@@ -15,6 +15,7 @@ import { LoginModal } from "@/components/LoginModal";
 import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
+import { RouteTransitionLoader } from "@/components/RouteTransitionLoader";
 import { CabVehicle, RentalPackage } from "@/data/cabsData";
 import { isUserLoggedIn } from "@/utils/auth";
 
@@ -50,12 +51,16 @@ export default function Home() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [pendingSearchParams, setPendingSearchParams] = useState<SearchParams | null>(null);
   const [appliedPromo, setAppliedPromo] = useState<string>("BROOMFIRST");
+  const [isNavigatingToFleet, setIsNavigatingToFleet] = useState(false);
+  const [transitionRoute, setTransitionRoute] = useState<{ from?: string; to?: string } | null>(null);
 
   const proceedWithSearch = (params: SearchParams) => {
     setCurrentSearchParams(params);
     setActiveTripType(params.tripType);
     setFromCity(params.fromCity);
     setToCity(params.toCity);
+    setTransitionRoute({ from: params.fromCity, to: params.toCity });
+    setIsNavigatingToFleet(true);
 
     const queryObj: Record<string, string> = {
       from: params.fromCity,
@@ -78,7 +83,9 @@ export default function Home() {
     }
 
     const query = new URLSearchParams(queryObj).toString();
-    router.push(`/fleet?${query}`);
+    setTimeout(() => {
+      router.push(`/fleet?${query}`);
+    }, 750);
   };
 
   const handleSearch = (params: SearchParams) => {
@@ -254,6 +261,15 @@ export default function Home() {
         onSuccess={handleLoginSuccess}
         initialMessage="Please sign in or register to search and book cabs with exclusive member discounts!"
       />
+
+      {/* Animated Route Transition Loader (Login/Search -> Fleet) */}
+      {isNavigatingToFleet && (
+        <RouteTransitionLoader
+          mode="search-to-fleet"
+          from={transitionRoute?.from}
+          to={transitionRoute?.to}
+        />
+      )}
     </main>
   );
 }
