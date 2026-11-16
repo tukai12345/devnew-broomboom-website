@@ -463,16 +463,45 @@ export const ReviewClientPage: React.FC = () => {
     return searchParams.get("petFriendly") === "true";
   });
   const [petCount, setPetCount] = useState(1);
-  const [addonRoofCarrier, setAddonRoofCarrier] = useState(false);
   const [addonLanguage, setAddonLanguage] = useState(false);
   const [addonNewVehicle, setAddonNewVehicle] = useState(false);
-  const [addonSightseeing, setAddonSightseeing] = useState(false);
+  const [addonRefundable, setAddonRefundable] = useState(false);
 
-  const PET_FEE = 1001;
-  const ROOF_FEE = 157;
-  const LANGUAGE_FEE = 209;
-  const NEW_VEHICLE_FEE = 262;
-  const SIGHTSEEING_FEE = 787;
+  // Dynamic Addon Pricing loaded from live backend / admin settings
+  const [addonPricing, setAddonPricing] = useState({
+    petAllowance: 1001,
+    roofCarrier: 157,
+    language: 209,
+    newVehicle: 262,
+    sightseeing: 787,
+    refundable: 751,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getAddons().then((pricing) => {
+      if (isMounted && pricing) {
+        setAddonPricing({
+          petAllowance: pricing.petAllowance,
+          roofCarrier: pricing.roofCarrier,
+          language: pricing.language,
+          newVehicle: pricing.newVehicle,
+          sightseeing: pricing.sightseeing,
+          refundable: pricing.refundable,
+        });
+      }
+    }).catch((err) => {
+      console.warn("Could not fetch live addons, using fallback pricing:", err);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const PET_FEE = addonPricing.petAllowance;
+  const LANGUAGE_FEE = addonPricing.language;
+  const NEW_VEHICLE_FEE = addonPricing.newVehicle;
+  const REFUNDABLE_FEE = addonPricing.refundable || 751;
 
   // Payment Option: "part" | "full"
   const [paymentOption, setPaymentOption] = useState<"part" | "full">("part");
@@ -491,10 +520,9 @@ export const ReviewClientPage: React.FC = () => {
   /* ---------------------------- Calculations ---------------------------- */
   const addonsTotal =
     (addonPet ? PET_FEE * petCount : 0) +
-    (addonRoofCarrier ? ROOF_FEE : 0) +
     (addonLanguage ? LANGUAGE_FEE : 0) +
     (addonNewVehicle ? NEW_VEHICLE_FEE : 0) +
-    (addonSightseeing ? SIGHTSEEING_FEE : 0);
+    (addonRefundable ? REFUNDABLE_FEE : 0);
 
   // Total Fare: Base Fare + Add-ons
   const finalTotal = baseFare + addonsTotal;
@@ -579,10 +607,9 @@ export const ReviewClientPage: React.FC = () => {
         addons: {
           petAllowance: addonPet,
           petCount: addonPet ? petCount : 0,
-          roofCarrier: addonRoofCarrier,
           language: addonLanguage,
           newVehicle: addonNewVehicle,
-          sightseeing: addonSightseeing,
+          refundableBooking: addonRefundable,
         },
         source: "BroomBoom Web",
         searchDetails: {
@@ -653,10 +680,9 @@ export const ReviewClientPage: React.FC = () => {
         addons: {
           petAllowance: addonPet,
           petCount: addonPet ? petCount : 0,
-          roofCarrier: addonRoofCarrier,
           language: addonLanguage,
           newVehicle: addonNewVehicle,
-          sightseeing: addonSightseeing,
+          refundableBooking: addonRefundable,
         },
         traveller: {
           name: fullName,
@@ -1035,7 +1061,7 @@ export const ReviewClientPage: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                        Sanitized pet-friendly cab with protective seat covers (₹1,001 per pet)
+                        Sanitized pet-friendly cab with protective seat covers (₹{PET_FEE.toLocaleString('en-IN')} per pet)
                       </p>
                     </div>
                   </label>
@@ -1086,31 +1112,31 @@ export const ReviewClientPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Add-on 1: Roof Carrier */}
+                {/* Add-on 1: Upgrade to Refundable Booking */}
                 <label
                   className={`p-3.5 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
-                    addonRoofCarrier
+                    addonRefundable
                       ? "border-amber-400 bg-amber-50/50 ring-1 ring-amber-300"
                       : "border-slate-200 hover:border-slate-300 bg-white"
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={addonRoofCarrier}
-                    onChange={(e) => setAddonRoofCarrier(e.target.checked)}
+                    checked={addonRefundable}
+                    onChange={(e) => setAddonRefundable(e.target.checked)}
                     className="w-4 h-4 mt-0.5 rounded accent-amber-500 cursor-pointer"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs sm:text-sm font-bold text-slate-900">
-                        Add Roof Carrier
+                        Upgrade to Refundable booking
                       </span>
                       <span className="text-xs sm:text-sm font-black text-slate-900">
-                        +{inr(ROOF_FEE)}
+                        +{inr(REFUNDABLE_FEE)}
                       </span>
                     </div>
                     <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                      Fit 4 more large bags comfortably on luggage carrier
+                      100% full refund guarantee on cancellation up to 6 hours before pickup
                     </p>
                   </div>
                 </label>
@@ -1169,35 +1195,6 @@ export const ReviewClientPage: React.FC = () => {
                     </div>
                     <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
                       Promised latest 2023 or newer car model with pristine interior
-                    </p>
-                  </div>
-                </label>
-
-                {/* Add-on 4: Local Sightseeing */}
-                <label
-                  className={`p-3.5 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
-                    addonSightseeing
-                      ? "border-amber-400 bg-amber-50/50 ring-1 ring-amber-300"
-                      : "border-slate-200 hover:border-slate-300 bg-white"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={addonSightseeing}
-                    onChange={(e) => setAddonSightseeing(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 rounded accent-amber-500 cursor-pointer"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs sm:text-sm font-bold text-slate-900">
-                        Local sightseeing package
-                      </span>
-                      <span className="text-xs sm:text-sm font-black text-slate-900">
-                        +{inr(SIGHTSEEING_FEE)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                      Covers extra hours of city touring and attractions
                     </p>
                   </div>
                 </label>
@@ -1380,10 +1377,9 @@ export const ReviewClientPage: React.FC = () => {
                           <span>+{inr(PET_FEE * petCount)}</span>
                         </div>
                       )}
-                      {addonRoofCarrier && <div className="flex justify-between"><span>Roof Carrier</span><span>+{inr(ROOF_FEE)}</span></div>}
+                      {addonRefundable && <div className="flex justify-between"><span>Upgrade to Refundable Booking</span><span>+{inr(REFUNDABLE_FEE)}</span></div>}
                       {addonLanguage && <div className="flex justify-between"><span>Driver Language</span><span>+{inr(LANGUAGE_FEE)}</span></div>}
                       {addonNewVehicle && <div className="flex justify-between"><span>New Vehicle (2023+)</span><span>+{inr(NEW_VEHICLE_FEE)}</span></div>}
-                      {addonSightseeing && <div className="flex justify-between"><span>City Sightseeing</span><span>+{inr(SIGHTSEEING_FEE)}</span></div>}
                     </div>
                   </div>
                 )}

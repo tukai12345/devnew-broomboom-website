@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
+import TermsAndConditionsPage, { metadata } from "@/app/terms-and-conditions/page";
 
-export default function UserTermsPage() {
-  redirect("https://broomboomcabs.com/user-terms");
-}
+export { metadata };
+export default TermsAndConditionsPage;

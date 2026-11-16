@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { CabVehicle } from "@/data/cabsData";
 import { SearchParams } from "@/components/HeroSearch";
+import { api } from "@/services/api";
 
 export interface BookingModalProps {
   cab?: CabVehicle | null;
@@ -44,7 +45,30 @@ export function BookingModal({
   // Add-ons State
   const [addonLanguage, setAddonLanguage] = useState(false);
   const [addonNewVehicle, setAddonNewVehicle] = useState(false);
-  const [addonSightseeing, setAddonSightseeing] = useState(false);
+  const [addonRefundable, setAddonRefundable] = useState(false);
+
+  // Live Addon Pricing from backend / admin settings
+  const [addonPricing, setAddonPricing] = useState({
+    language: 209,
+    newVehicle: 262,
+    refundable: 751,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getAddons().then((pricing) => {
+      if (isMounted && pricing) {
+        setAddonPricing({
+          language: pricing.language,
+          newVehicle: pricing.newVehicle,
+          refundable: pricing.refundable || 751,
+        });
+      }
+    }).catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Terms Agreement State
   const [agreedToTerms, setAgreedToTerms] = useState(true);
@@ -52,9 +76,9 @@ export function BookingModal({
   // Dynamic Fare & Advance Calculations
   const baseFare = cab?.discountedPrice ?? 750;
   const addonsTotal =
-    (addonLanguage ? 209 : 0) +
-    (addonNewVehicle ? 262 : 0) +
-    (addonSightseeing ? 787 : 0);
+    (addonLanguage ? addonPricing.language : 0) +
+    (addonNewVehicle ? addonPricing.newVehicle : 0) +
+    (addonRefundable ? addonPricing.refundable : 0);
 
   // If add-on service is added, add to BOTH advance and total fare
   const totalFare = baseFare + addonsTotal;
@@ -157,7 +181,7 @@ export function BookingModal({
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
                       <span className="font-semibold text-sm text-slate-800">Preferred Driver Language</span>
-                      <span className="text-sm font-bold text-slate-900">+₹209</span>
+                      <span className="text-sm font-bold text-slate-900">+₹{addonPricing.language}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
                       Assigns driver fluent in English, Hindi, or Bengali
@@ -176,7 +200,7 @@ export function BookingModal({
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
                       <span className="font-semibold text-sm text-slate-800">New Vehicle (2023+)</span>
-                      <span className="text-sm font-bold text-slate-900">+₹262</span>
+                      <span className="text-sm font-bold text-slate-900">+₹{addonPricing.newVehicle}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
                       Promised latest 2023 or newer car model with pristine interior
@@ -185,20 +209,20 @@ export function BookingModal({
                 </label>
 
                 {/* Add-on 3 */}
-                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none md:col-span-2 lg:col-span-1 ${addonSightseeing ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
+                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none md:col-span-2 lg:col-span-1 ${addonRefundable ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
                   <input
                     type="checkbox"
-                    checked={addonSightseeing}
-                    onChange={(e) => setAddonSightseeing(e.target.checked)}
+                    checked={addonRefundable}
+                    onChange={(e) => setAddonRefundable(e.target.checked)}
                     className="mt-1 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-sm text-slate-800">Local sightseeing package</span>
-                      <span className="text-sm font-bold text-slate-900">+₹787</span>
+                      <span className="font-semibold text-sm text-slate-800">Upgrade to Refundable booking</span>
+                      <span className="text-sm font-bold text-slate-900">+₹{addonPricing.refundable}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Covers extra hours of city touring and attractions
+                      100% full refund guarantee on cancellation up to 6 hours before pickup
                     </p>
                   </div>
                 </label>
@@ -339,9 +363,9 @@ export function BookingModal({
                       <span>+₹{addonsTotal}</span>
                     </div>
                     <div className="text-[11px] text-slate-400 space-y-0.5 mt-1">
-                      {addonLanguage && <div className="flex justify-between"><span>Driver Language</span><span>+₹209</span></div>}
-                      {addonNewVehicle && <div className="flex justify-between"><span>New Vehicle (2023+)</span><span>+₹262</span></div>}
-                      {addonSightseeing && <div className="flex justify-between"><span>Sightseeing Package</span><span>+₹787</span></div>}
+                      {addonLanguage && <div className="flex justify-between"><span>Driver Language</span><span>+₹{addonPricing.language}</span></div>}
+                      {addonNewVehicle && <div className="flex justify-between"><span>New Vehicle (2023+)</span><span>+₹{addonPricing.newVehicle}</span></div>}
+                      {addonRefundable && <div className="flex justify-between"><span>Upgrade to Refundable Booking</span><span>+₹{addonPricing.refundable}</span></div>}
                     </div>
                   </div>
                 )}
@@ -448,7 +472,52 @@ export function BookingModal({
                   const rawDigits = mobile.replace(/[^0-9]/g, "");
                   const tenDigit = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
                   const phoneWith91 = `91${tenDigit}`;
-                  alert(`Proceeding to payment for mobile: +91 ${tenDigit} (91 prefixed: ${phoneWith91}) — ₹${paymentChoice === "advance" ? advanceToken : totalFare}`);
+                  const amountToPay = paymentChoice === "advance" ? advanceToken : totalFare;
+                  const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 900000 + 100000)}`;
+
+                  try {
+                    const sp = searchParams as any;
+                    const computedServiceType =
+                      sp?.tripType === "outstation-round"
+                        ? "Outstation Round-Trip"
+                        : sp?.tripType === "hourly" || sp?.activeTab === "rental"
+                        ? "Hourly Rental"
+                        : "Outstation One-Way";
+
+                    const newBooking = {
+                      bookingId: orderId,
+                      orderId,
+                      pickupAddress: pickupLocation || sp?.fromCity || "Pickup Location",
+                      dropAddress: sp?.toCity || "Drop Location",
+                      customerName: fullName || "Customer",
+                      customerMobile: phoneWith91,
+                      customerEmail: email,
+                      pickupDate: sp?.pickupDate || new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                      pickupTime: sp?.pickupTime || "10:00 AM",
+                      serviceType: computedServiceType,
+                      cabCategory: cab?.category || "Sedan",
+                      cabName: cab?.name || "Sedan (Dzire / Etios)",
+                      fare: totalFare,
+                      totalFare,
+                      amountPaid: amountToPay,
+                      remainingAmount: paymentChoice === "advance" ? Math.max(0, totalFare - advanceToken) : 0,
+                      status: "ACTIVE",
+                      addons: {
+                        language: addonLanguage,
+                        newVehicle: addonNewVehicle,
+                        refundableBooking: addonRefundable,
+                      },
+                    };
+
+                    const stored = localStorage.getItem("broomboom_user_bookings");
+                    const list = stored ? JSON.parse(stored) : [];
+                    list.unshift(newBooking);
+                    localStorage.setItem("broomboom_user_bookings", JSON.stringify(list));
+                  } catch (e) {
+                    console.error("Failed to save booking:", e);
+                  }
+
+                  window.location.href = `/cashfree/payments/success?order_id=${orderId}&order_status=ACTIVE&order_amount=${amountToPay}`;
                 }}
                 className="w-full bg-[#FBBF24] hover:bg-[#F59E0B] disabled:opacity-50 text-slate-950 font-black text-sm uppercase tracking-wide py-4 rounded-xl shadow-sm transition cursor-pointer"
               >

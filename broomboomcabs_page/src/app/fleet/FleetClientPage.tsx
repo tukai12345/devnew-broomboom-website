@@ -1896,11 +1896,11 @@ const FleetPageContent: React.FC = () => {
                     </div>
                   </div>
 
-                  {hasPickupAndDrop && cab.roofCarrierFee && (
+                  {hasPickupAndDrop && (
                     <div className="bg-[#fffdf5] border-t border-amber-100/80 px-3 sm:px-4 py-1.5 text-[11px] text-slate-700 flex items-center gap-1.5 font-medium">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                       <span>
-                        Add Roof Carrier to fit 4 more bags @ {inr(cab.roofCarrierFee)}
+                        Upgrade to Refundable booking available at checkout
                       </span>
                     </div>
                   )}

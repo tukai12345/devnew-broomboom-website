@@ -1011,5 +1011,71 @@ export const api = {
 
     return (await res.json()) as CashfreeStatusResponse;
   },
+
+  /**
+   * Fetch live addon service pricing configured from the admin panel
+   */
+  async getAddons(): Promise<AddonPricingMap> {
+    const fallback: AddonPricingMap = {
+      petAllowance: 1001,
+      roofCarrier: 157,
+      language: 209,
+      newVehicle: 262,
+      sightseeing: 787,
+      refundable: 751,
+      raw: [],
+    };
+
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetchWithTimeout(`${baseUrl}/addons`, {}, 4000);
+      if (!res.ok) return fallback;
+      const data = await res.json();
+      const list: BackendAddonItem[] = data.addons || data.data || (Array.isArray(data) ? data : []);
+      if (!Array.isArray(list) || list.length === 0) return fallback;
+
+      const map: AddonPricingMap = { ...fallback, raw: list };
+      for (const item of list) {
+        const k = (item.key || item.name || '').toLowerCase();
+        const p = Number(item.price);
+        if (isNaN(p)) continue;
+
+        if (k.includes('pet')) {
+          map.petAllowance = p;
+        } else if (k.includes('roof') || k.includes('carrier') || k.includes('luggage')) {
+          map.roofCarrier = p;
+        } else if (k.includes('language') || k.includes('lang')) {
+          map.language = p;
+        } else if (k.includes('vehicle') || k.includes('car') || k.includes('new_vehicle')) {
+          map.newVehicle = p;
+        } else if (k.includes('sight') || k.includes('tour')) {
+          map.sightseeing = p;
+        } else if (k.includes('refund')) {
+          map.refundable = p;
+        }
+      }
+      return map;
+    } catch {
+      return fallback;
+    }
+  },
 };
+
+export interface BackendAddonItem {
+  id: string;
+  key?: string;
+  name: string;
+  price: number;
+  description?: string;
+}
+
+export interface AddonPricingMap {
+  petAllowance: number;
+  roofCarrier: number;
+  language: number;
+  newVehicle: number;
+  sightseeing: number;
+  refundable: number;
+  raw: BackendAddonItem[];
+}
 
