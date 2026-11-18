@@ -271,6 +271,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     // Save to session-scoped auth storage (auto logout when user leaves the website)
     setStoredUser(loggedUser);
+
+    // Upgrade / link the pending or recent search lead with this verified mobile number
+    try {
+      if (typeof window !== "undefined") {
+        const rawLastLead = sessionStorage.getItem("broomboom_last_search_lead");
+        if (rawLastLead) {
+          const lastLead = JSON.parse(rawLastLead);
+          api.createBookingLead({
+            ...lastLead,
+            customerMobile: cleanPhone,
+            customerName: finalName,
+            customerEmail: email.trim() || undefined,
+            source: "Hero Search (Registered)",
+          }).catch(() => {});
+        }
+      }
+    } catch {}
+
     setIsRedirecting(true);
 
     if (onSuccess) {

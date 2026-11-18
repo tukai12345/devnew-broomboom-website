@@ -82,12 +82,17 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
   const displayItems = React.useMemo(() => {
     if (query.trim().length >= 2 && mapResults.length > 0) {
       return mapResults.map((m) => {
-        const parts = (m.name || m.displayName || "").split(",");
+        const fullAddress = m.displayName || m.name || "";
+        const parts = fullAddress.split(",");
         const primary = parts[0]?.trim() || m.name;
+        const secondary = parts.slice(1).join(",").trim();
         return {
           id: m.placeId || m.id || `${m.lat}_${m.lon}_${primary}`,
-          name: primary,
-          displayName: m.displayName || `${primary}, ${m.state || "India"}`,
+          name: fullAddress, // Full descriptive location
+          primaryTitle: primary,
+          fullAddress: fullAddress,
+          displayName: fullAddress,
+          secondaryText: secondary,
           state: m.state || "India",
           lat: m.lat ? parseFloat(String(m.lat)) : undefined,
           lng: m.lon ? parseFloat(String(m.lon)) : undefined,
@@ -104,8 +109,11 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
 
     return filtered.map((c) => ({
       id: c.id,
-      name: c.name,
+      name: `${c.name}, ${c.state}`,
+      primaryTitle: c.name,
+      fullAddress: `${c.name}, ${c.state}`,
       displayName: `${c.name}, ${c.state}`,
+      secondaryText: c.state,
       state: c.state,
       lat: undefined,
       lng: undefined,

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { CITIES } from "@/data/cabsData";
 import { api, CityItem } from "@/services/api";
+import { getStoredUser } from "@/utils/auth";
 
 export interface SearchParams {
   tripType: "outstation-oneway" | "outstation-round" | "airport" | "hourly" | "daily";
@@ -611,13 +612,17 @@ const CityPopover: React.FC<{
   const displayItems = React.useMemo(() => {
     if (query.trim().length >= 2 && mapResults.length > 0) {
       return mapResults.map((m) => {
-        const parts = (m.name || m.displayName || "").split(",");
-        const primary = parts[0]?.trim() || m.name;
+        const fullAddr = (m.displayName || m.name || "").trim();
+        const parts = fullAddr.split(",");
+        const primary = parts[0]?.trim() || fullAddr;
+        const secondary = parts.slice(1).join(", ").trim();
         return {
           id: m.placeId || m.id || `${m.lat}_${m.lon}_${primary}`,
-          name: primary,
-          displayName: m.displayName || `${primary}, ${m.state || "India"}`,
-          state: m.state || "India",
+          primaryTitle: primary,
+          name: fullAddr,
+          fullAddress: fullAddr,
+          displayName: fullAddr,
+          state: secondary || m.state || "India",
           lat: m.lat ? parseFloat(String(m.lat)) : undefined,
           lng: m.lon ? parseFloat(String(m.lon)) : undefined,
           source: m.source || "Map",
@@ -633,7 +638,9 @@ const CityPopover: React.FC<{
 
     return filtered.map((c) => ({
       id: c.id,
-      name: c.name,
+      primaryTitle: c.name,
+      name: `${c.name}, ${c.state}`,
+      fullAddress: `${c.name}, ${c.state}`,
       displayName: `${c.name}, ${c.state}`,
       state: c.state,
       lat: undefined,
@@ -671,7 +678,7 @@ const CityPopover: React.FC<{
               if (displayItems.length > 0) {
                 const item = displayItems[0];
                 onSelect(
-                  item.name,
+                  item.fullAddress || item.name,
                   item.state,
                   item.lat && item.lng ? { lat: item.lat, lng: item.lng } : undefined
                 );
@@ -722,20 +729,20 @@ const CityPopover: React.FC<{
               key={item.id}
               onClick={() =>
                 onSelect(
-                  item.name,
+                  item.fullAddress || item.name,
                   item.state,
                   item.lat && item.lng ? { lat: item.lat, lng: item.lng } : undefined
                 )
               }
               className={`flex items-start justify-between p-2.5 rounded-xl cursor-pointer text-xs transition group ${
-                selected === item.name
+                selected === item.name || selected === item.fullAddress || (item.primaryTitle && selected.startsWith(item.primaryTitle))
                   ? "bg-amber-50 text-amber-950 font-bold"
                   : "hover:bg-slate-50 text-slate-800"
               }`}
             >
               <div className="flex items-start gap-2.5 min-w-0 pr-2">
                 <div className="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-amber-100 text-slate-600 group-hover:text-amber-600 flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                  {item.name.toLowerCase().includes("airport") ? (
+                  {(item.name || "").toLowerCase().includes("airport") ? (
                     <Plane className="w-4 h-4" />
                   ) : (
                     <MapPin className="w-4 h-4" />
@@ -743,19 +750,19 @@ const CityPopover: React.FC<{
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold text-[13px] text-slate-950 truncate flex items-center gap-1.5">
-                    <span>{item.name}</span>
+                    <span>{item.primaryTitle || item.name}</span>
                     {["Nominatim", "Map", "GooglePlaces", "GoogleMaps", "OSRM"].includes(item.source || "") && (
                       <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded font-black tracking-wider uppercase">
                         MAP
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] text-slate-500 line-clamp-1 leading-snug mt-0.5">
-                    {item.displayName !== item.name ? item.displayName : item.state}
+                  <div className="text-[11px] text-slate-500 line-clamp-2 leading-snug mt-0.5 break-words">
+                    {item.fullAddress !== item.primaryTitle ? item.fullAddress : item.state}
                   </div>
                 </div>
               </div>
-              {selected === item.name && (
+              {(selected === item.name || selected === item.fullAddress) && (
                 <Check className="w-4 h-4 text-amber-600 shrink-0 mt-1.5" />
               )}
             </div>
@@ -1348,21 +1355,35 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     let detectedName: string | undefined = undefined;
     try {
       if (typeof window !== "undefined") {
-        const rawUser = localStorage.getItem("broomboom_user") || localStorage.getItem("user");
-        if (rawUser) {
-          const parsed = JSON.parse(rawUser);
-          detectedPhone = parsed.phone || parsed.mobile;
-          detectedName = parsed.name;
+        const authUser = getStoredUser();
+        if (authUser) {
+          detectedPhone = authUser.phone || authUser.identifier;
+          detectedName = authUser.name;
         }
         if (!detectedPhone) {
-          const phoneKey = localStorage.getItem("broomboom_user_phone") || localStorage.getItem("userPhone");
+          const rawSession = sessionStorage.getItem("broomboom_user");
+          if (rawSession) {
+            const parsed = JSON.parse(rawSession);
+            detectedPhone = parsed.phone || parsed.identifier || parsed.mobile;
+            detectedName = parsed.name;
+          }
+        }
+        if (!detectedPhone) {
+          const rawLocal = localStorage.getItem("broomboom_user") || localStorage.getItem("user");
+          if (rawLocal) {
+            const parsed = JSON.parse(rawLocal);
+            detectedPhone = parsed.phone || parsed.mobile || parsed.identifier;
+            detectedName = parsed.name;
+          }
+        }
+        if (!detectedPhone) {
+          const phoneKey = localStorage.getItem("broomboom_user_phone") || sessionStorage.getItem("broomboom_user_phone");
           if (phoneKey) detectedPhone = phoneKey;
         }
       }
     } catch {}
 
-    // Dispatch lead capture asynchronously to Booking Leads API & DB
-    api.createBookingLead({
+    const leadPayload = {
       serviceType: tripType,
       tripType,
       fromCity,
@@ -1395,7 +1416,17 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         durationMinutes: finalDur,
         timestamp: new Date().toISOString(),
       },
-    }).catch(() => {});
+    };
+
+    // Keep lead in session storage so LoginModal or subsequent checkout steps can upgrade it with phone number immediately
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("broomboom_last_search_lead", JSON.stringify(leadPayload));
+      }
+    } catch {}
+
+    // Dispatch lead capture asynchronously to Booking Leads API & DB
+    api.createBookingLead(leadPayload).catch(() => {});
 
     onSearch({
       tripType,

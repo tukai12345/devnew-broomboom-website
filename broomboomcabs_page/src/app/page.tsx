@@ -17,7 +17,8 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
 import { RouteTransitionLoader } from "@/components/RouteTransitionLoader";
 import { CabVehicle, RentalPackage } from "@/data/cabsData";
-import { isUserLoggedIn } from "@/utils/auth";
+import { isUserLoggedIn, getStoredUser } from "@/utils/auth";
+import { api } from "@/services/api";
 
 export default function Home() {
   const router = useRouter();
@@ -108,8 +109,40 @@ export default function Home() {
     proceedWithSearch(params);
   };
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (user?: { identifier: string; role: string; name?: string; phone?: string; email?: string }) => {
     if (pendingSearchParams) {
+      const activeUser = user || getStoredUser();
+      const detectedPhone = activeUser?.phone || activeUser?.identifier;
+      const detectedName = activeUser?.name;
+
+      if (detectedPhone) {
+        api.createBookingLead({
+          serviceType: pendingSearchParams.tripType,
+          tripType: pendingSearchParams.tripType,
+          fromCity: pendingSearchParams.fromCity,
+          toCity: pendingSearchParams.toCity || undefined,
+          pickupAddress: pendingSearchParams.fromCity,
+          dropAddress: pendingSearchParams.toCity || undefined,
+          pickupDate: pendingSearchParams.pickupDate,
+          pickupTime: pendingSearchParams.pickupTime,
+          returnDate: pendingSearchParams.tripType === "outstation-round" ? pendingSearchParams.returnDate : undefined,
+          returnTime: pendingSearchParams.dropTime || undefined,
+          dropTime: pendingSearchParams.dropTime || undefined,
+          hourlyPackage: pendingSearchParams.tripType === "hourly" ? pendingSearchParams.hourlyPackage : undefined,
+          airportMode: pendingSearchParams.tripType === "airport" ? pendingSearchParams.airportMode : undefined,
+          distanceKm: pendingSearchParams.distanceKm,
+          durationMinutes: pendingSearchParams.durationMinutes,
+          customerName: detectedName,
+          customerMobile: detectedPhone,
+          source: "Hero Search (Registered)",
+          rawSearchParams: {
+            ...pendingSearchParams,
+            customerMobile: detectedPhone,
+            timestamp: new Date().toISOString(),
+          },
+        }).catch(() => {});
+      }
+
       const hasPickup = Boolean(pendingSearchParams.fromCity && pendingSearchParams.fromCity.trim().length > 0);
       const hasDrop = pendingSearchParams.tripType === "hourly" || Boolean(pendingSearchParams.toCity && pendingSearchParams.toCity.trim().length > 0);
 

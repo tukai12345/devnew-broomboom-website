@@ -542,7 +542,24 @@ export const api = {
     if (!query || query.trim().length < 2) return [];
     const cleanQ = query.trim();
 
-    // 1. Try BroomBoom User Backend first (has custom DB places + Nominatim integration)
+    // 1. Try local backend first (has Google Maps + Nominatim full address pipeline)
+    try {
+      const res = await fetchWithTimeout(
+        `http://localhost:5004/api/cities/search?q=${encodeURIComponent(cleanQ)}`,
+        {},
+        3500
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch {
+      // Local backend unavailable
+    }
+
+    // 2. Try BroomBoom production backend
     try {
       const baseUrl = getApiBaseUrl();
       const res = await fetchWithTimeout(
@@ -560,7 +577,7 @@ export const api = {
       console.warn("Backend city search notice:", err);
     }
 
-    // 2. Direct OpenStreetMap Nominatim Fallback for any location in India
+    // 3. Direct OpenStreetMap Nominatim Fallback for any location in India
     try {
       const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=in&q=${encodeURIComponent(
         cleanQ
@@ -579,8 +596,8 @@ export const api = {
         const rawList = await res.json();
         if (Array.isArray(rawList)) {
           return rawList.map((item: any) => {
+            const fullAddress = item.display_name || cleanQ;
             const parts = (item.display_name || "").split(",");
-            const cleanName = item.name || parts[0]?.trim() || cleanQ;
             const state =
               item.address?.state ||
               item.address?.state_district ||
@@ -589,8 +606,8 @@ export const api = {
 
             return {
               id: String(item.place_id || `${item.lat}_${item.lon}`),
-              name: cleanName,
-              displayName: item.display_name || `${cleanName}, ${state}`,
+              name: fullAddress,
+              displayName: fullAddress,
               lat: item.lat,
               lon: item.lon,
               state: state,
