@@ -1,7 +1,3 @@
-/**
- * BroomBoom Cabs - User Backend API Client
- * Connected to: https://broombroom-user-backend-kohl.vercel.app/api
- */
 
 export interface BackendUserLead {
   id?: string;
@@ -226,14 +222,11 @@ export interface CashfreeStatusResponse {
   message?: string;
 }
 
-const LOCAL_API_BASE_URL = "http://localhost:5004/api";
-const PROD_API_BASE_URL = "https://broombroom-user-backend-kohl.vercel.app/api";
+const PROD_API_BASE_URL =
+  "https://www.broomboomcabs.com/new-api/api";
 
 export const getApiBaseUrl = (): string => {
-  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
-  }
-  return LOCAL_API_BASE_URL;
+  return PROD_API_BASE_URL;
 };
 
 async function fetchWithTimeout(
@@ -249,20 +242,6 @@ async function fetchWithTimeout(
       ...options,
       signal: controller.signal,
     });
-  } catch (err: any) {
-    // Only fall back to cloud backend on connection failure (not on AbortError timeout for mutating POSTs,
-    // which could otherwise create a booking on prod while paying on local)
-    const isGet = !options.method || options.method.toUpperCase() === "GET";
-    const isTimeout = err?.name === "AbortError";
-    if (url.includes("localhost:5004") && (isGet || !isTimeout)) {
-      const fallbackUrl = url.replace(LOCAL_API_BASE_URL, PROD_API_BASE_URL);
-      try {
-        return await fetch(fallbackUrl, {
-          ...options,
-        });
-      } catch {}
-    }
-    throw err;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -1081,7 +1060,63 @@ export const api = {
     }
     return json;
   },
+
+  /**
+   * Submit Hero Search booking lead to database
+   */
+  async createBookingLead(data: BookingLeadPayload): Promise<any> {
+    try {
+      const res = await fetchWithTimeout(
+        "/api/booking-leads",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        },
+        5000
+      );
+      const json = await res.json().catch(() => ({}));
+      if (json && json.data) {
+        try {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("broomboom_last_search_lead", JSON.stringify(json.data));
+            localStorage.setItem("broomboom_last_search_lead", JSON.stringify(json.data));
+          }
+        } catch {}
+      }
+      return json;
+    } catch (err) {
+      console.warn("Could not save booking lead to API:", err);
+      return null;
+    }
+  },
 };
+
+export interface BookingLeadPayload {
+  serviceType: string;
+  tripType?: string;
+  fromCity: string;
+  toCity?: string;
+  pickupAddress?: string;
+  dropAddress?: string;
+  pickupDate: string;
+  pickupTime: string;
+  returnDate?: string;
+  returnTime?: string;
+  dropTime?: string;
+  hourlyPackage?: string;
+  airportMode?: string;
+  flightNumber?: string;
+  distanceKm?: number;
+  durationMinutes?: number;
+  customerName?: string;
+  customerMobile?: string;
+  customerEmail?: string;
+  source?: string;
+  estimatedFare?: number;
+  notes?: string;
+  rawSearchParams?: any;
+}
 
 export interface CareerApplicationPayload {
   jobId?: string;

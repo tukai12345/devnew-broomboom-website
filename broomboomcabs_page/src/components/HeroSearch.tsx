@@ -1343,6 +1343,60 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         ? getCurrentTimeStr(tripType)
         : pickupTime;
 
+    // Collect logged-in user credentials if available in client storage
+    let detectedPhone: string | undefined = undefined;
+    let detectedName: string | undefined = undefined;
+    try {
+      if (typeof window !== "undefined") {
+        const rawUser = localStorage.getItem("broomboom_user") || localStorage.getItem("user");
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser);
+          detectedPhone = parsed.phone || parsed.mobile;
+          detectedName = parsed.name;
+        }
+        if (!detectedPhone) {
+          const phoneKey = localStorage.getItem("broomboom_user_phone") || localStorage.getItem("userPhone");
+          if (phoneKey) detectedPhone = phoneKey;
+        }
+      }
+    } catch {}
+
+    // Dispatch lead capture asynchronously to Booking Leads API & DB
+    api.createBookingLead({
+      serviceType: tripType,
+      tripType,
+      fromCity,
+      toCity: toCity || undefined,
+      pickupAddress: fromCity,
+      dropAddress: toCity || undefined,
+      pickupDate: effectivePickupDate,
+      pickupTime: validPickupTime,
+      returnDate: tripType === "outstation-round" ? returnDate : undefined,
+      returnTime: dropTime || undefined,
+      dropTime: dropTime || undefined,
+      hourlyPackage: tripType === "hourly" ? hourlyPackage : undefined,
+      airportMode: tripType === "airport" ? airportMode : undefined,
+      distanceKm: finalDist ?? undefined,
+      durationMinutes: finalDur ?? undefined,
+      customerName: detectedName,
+      customerMobile: detectedPhone,
+      source: "Hero Search",
+      rawSearchParams: {
+        tripType,
+        fromCity,
+        toCity,
+        pickupDate: effectivePickupDate,
+        pickupTime: validPickupTime,
+        returnDate,
+        returnTime: dropTime,
+        hourlyPackage,
+        airportMode,
+        distanceKm: finalDist,
+        durationMinutes: finalDur,
+        timestamp: new Date().toISOString(),
+      },
+    }).catch(() => {});
+
     onSearch({
       tripType,
       fromCity,
