@@ -260,7 +260,7 @@ export const LucknowToPrayagrajClient: React.FC = () => {
       category: "Fare & Inclusions",
       question: "What is the typical one-way taxi fare from Lucknow to Prayagraj?",
       answer:
-        "BroomBoom taxi fares from Lucknow to Prayagraj are calculated dynamically by our backend pricing engine based on verified road distance and vehicle category. All fares include fuel, driver allowance, and door-to-door pickup/drop with zero return fare charges.",
+        "BroomBoom taxi fares from Lucknow to Prayagraj are calculated dynamically by our backend pricing engine based on verified road distance and vehicle category. All fares include fuel, verified chauffeur, and door-to-door pickup/drop with zero return fare charges.",
     },
     {
       category: "Return Charges",
@@ -374,7 +374,7 @@ export const LucknowToPrayagrajClient: React.FC = () => {
             </p>
           </div>
           <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 shrink-0">
-            ✓ Inclusive of Fuel &amp; Driver Allowance
+            ✓ Inclusive of Fuel &amp; Chauffeur Service
           </div>
         </div>
 

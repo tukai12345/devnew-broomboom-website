@@ -226,7 +226,7 @@ export function SpecialCarRentalClient({ info }: SpecialCarRentalClientProps) {
                 <div className="text-xs font-bold text-amber-900">Starting Rental Rate</div>
                 <div className="text-lg font-black text-amber-700 mt-0.5">{info.startingPrice}</div>
                 <div className="text-[11px] text-amber-800 mt-1">
-                  Includes driver allowance &amp; AC fuel.
+                  Includes verified chauffeur &amp; AC fuel.
                 </div>
               </div>
             </div>

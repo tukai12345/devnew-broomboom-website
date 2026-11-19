@@ -43,12 +43,16 @@ export function BookingModal({
   const [paymentChoice, setPaymentChoice] = useState<"advance" | "full">("advance");
 
   // Add-ons State
+  const [addonPet, setAddonPet] = useState(false);
+  const [addonCarrier, setAddonCarrier] = useState(false);
   const [addonLanguage, setAddonLanguage] = useState(false);
   const [addonNewVehicle, setAddonNewVehicle] = useState(false);
   const [addonRefundable, setAddonRefundable] = useState(false);
 
   // Live Addon Pricing from backend / admin settings
   const [addonPricing, setAddonPricing] = useState({
+    petAllowance: 1001,
+    roofCarrier: 157,
     language: 209,
     newVehicle: 262,
     refundable: 751,
@@ -59,8 +63,10 @@ export function BookingModal({
     api.getAddons().then((pricing) => {
       if (isMounted && pricing) {
         setAddonPricing({
-          language: pricing.language,
-          newVehicle: pricing.newVehicle,
+          petAllowance: pricing.petAllowance || 1001,
+          roofCarrier: pricing.roofCarrier || 157,
+          language: pricing.language || 209,
+          newVehicle: pricing.newVehicle || 262,
           refundable: pricing.refundable || 751,
         });
       }
@@ -76,6 +82,8 @@ export function BookingModal({
   // Dynamic Fare & Advance Calculations
   const baseFare = cab?.discountedPrice ?? 750;
   const addonsTotal =
+    (addonPet ? addonPricing.petAllowance : 0) +
+    (addonCarrier ? addonPricing.roofCarrier : 0) +
     (addonLanguage ? addonPricing.language : 0) +
     (addonNewVehicle ? addonPricing.newVehicle : 0) +
     (addonRefundable ? addonPricing.refundable : 0);
@@ -170,6 +178,44 @@ export function BookingModal({
                 Available Trip Add-ons
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Add-on: Pet */}
+                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none ${addonPet ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
+                  <input
+                    type="checkbox"
+                    checked={addonPet}
+                    onChange={(e) => setAddonPet(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-sm text-slate-800">Travel with Pet</span>
+                      <span className="text-sm font-bold text-slate-900">+₹{addonPricing.petAllowance}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Sanitized pet-friendly cab with protective seat covers
+                    </p>
+                  </div>
+                </label>
+
+                {/* Add-on: Roof Carrier */}
+                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none ${addonCarrier ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
+                  <input
+                    type="checkbox"
+                    checked={addonCarrier}
+                    onChange={(e) => setAddonCarrier(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-sm text-slate-800">Luggage Roof Carrier</span>
+                      <span className="text-sm font-bold text-slate-900">+₹{addonPricing.roofCarrier}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Extra top carrier space for large family bags
+                    </p>
+                  </div>
+                </label>
+
                 {/* Add-on 1 */}
                 <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none ${addonLanguage ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
                   <input
@@ -209,7 +255,7 @@ export function BookingModal({
                 </label>
 
                 {/* Add-on 3 */}
-                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none md:col-span-2 lg:col-span-1 ${addonRefundable ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
+                <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition select-none md:col-span-2 ${addonRefundable ? "border-amber-400 bg-amber-50/30" : "border-slate-200 hover:border-amber-300"}`}>
                   <input
                     type="checkbox"
                     checked={addonRefundable}
@@ -432,7 +478,7 @@ export function BookingModal({
                         {paymentChoice === "advance" && <div className="w-2 h-2 rounded-full bg-amber-500" />}
                       </div>
                       <span className="font-bold text-slate-900 text-sm">
-                        Pay 20% Advance Token{addonsTotal > 0 ? " + Add-ons" : ""}
+                        Pay Advance Token{addonsTotal > 0 ? " + Add-ons" : ""}
                       </span>
                     </div>
                     <span className="font-black text-slate-900">₹{advanceToken}</span>

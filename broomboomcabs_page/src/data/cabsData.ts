@@ -335,17 +335,25 @@ export interface RentalPackage {
   id: string;
   duration: string;
   km: string;
+  packageHours?: number;
+  includedKms?: number;
   basePrice: number;
   sedanPrice: number;
   suvPrice: number;
+  suvPlusPrice?: number;
+  traveller13Price?: number;
+  traveller17Price?: number;
+  traveller25Price?: number;
+  categoryPrices?: Record<string, number>;
   idealFor: string;
 }
 
 export const RENTAL_PACKAGES: RentalPackage[] = [
-  { id: "pkg-5-50", duration: "5 Hours", km: "50 Kms", basePrice: 3551, sedanPrice: 3551, suvPrice: 4551, idealFor: "Half-day city tour or shopping" },
-  { id: "pkg-8-80", duration: "8 Hours", km: "80 Kms", basePrice: 4551, sedanPrice: 4551, suvPrice: 5551, idealFor: "Full day office or full city tour" },
-  { id: "pkg-10-100", duration: "10 Hours", km: "100 Kms", basePrice: 5051, sedanPrice: 5051, suvPrice: 7051, idealFor: "Extended day errands & meetings" },
-  { id: "pkg-12-120", duration: "12 Hours", km: "120 Kms", basePrice: 6051, sedanPrice: 6051, suvPrice: 8051, idealFor: "Wedding events & whole day errands" },
+  { id: "pkg-1-15", duration: "1 Hour", km: "15 Kms", packageHours: 1, includedKms: 15, basePrice: 1351, sedanPrice: 1351, suvPrice: 1551, suvPlusPrice: 1851, traveller13Price: 3200, traveller17Price: 3800, traveller25Price: 4500, idealFor: "Quick city errand or short transit" },
+  { id: "pkg-5-50", duration: "5 Hours", km: "50 Kms", packageHours: 5, includedKms: 50, basePrice: 3551, sedanPrice: 3551, suvPrice: 4551, suvPlusPrice: 6051, traveller13Price: 9051, traveller17Price: 10051, traveller25Price: 12051, idealFor: "Half-day city tour or shopping" },
+  { id: "pkg-8-80", duration: "8 Hours", km: "80 Kms", packageHours: 8, includedKms: 80, basePrice: 4551, sedanPrice: 4551, suvPrice: 5551, suvPlusPrice: 7551, traveller13Price: 10051, traveller17Price: 11051, traveller25Price: 13051, idealFor: "Full day office or full city tour" },
+  { id: "pkg-10-100", duration: "10 Hours", km: "100 Kms", packageHours: 10, includedKms: 100, basePrice: 5051, sedanPrice: 5051, suvPrice: 7051, suvPlusPrice: 8051, traveller13Price: 11051, traveller17Price: 12051, traveller25Price: 14051, idealFor: "Extended day errands & meetings" },
+  { id: "pkg-12-120", duration: "12 Hours", km: "120 Kms", packageHours: 12, includedKms: 120, basePrice: 6051, sedanPrice: 6051, suvPrice: 8051, suvPlusPrice: 9051, traveller13Price: 12051, traveller17Price: 13051, traveller25Price: 15051, idealFor: "Wedding events & whole day errands" },
 ];
 
 export interface FaqItem {

@@ -55,6 +55,7 @@ interface VehicleItem {
   roofCarrierFee?: number;
   imageType: "sedan" | "suv" | "suv-plus" | "minibus" | "tempo";
   extraKmRate?: number;
+  extraHourRate?: number;
   advanceAmount?: number;
   dueAmount?: number;
 }
@@ -601,6 +602,7 @@ const FleetPageContent: React.FC = () => {
           "SUV+",
           "13 Seater Traveller",
           "17 Seater Traveller",
+          "25 Seater Traveller",
           "24 Seater Traveller",
         ];
 
@@ -683,13 +685,14 @@ const FleetPageContent: React.FC = () => {
     const effectiveDuration = backendRoute?.durationMinutes || (queryDur ? parseInt(queryDur, 10) : 0);
 
     if (effectiveDistance > 0) {
-      const kms = isRound ? Math.round(effectiveDistance * 2) : Math.round(effectiveDistance);
+      const exactOneWay = parseFloat(effectiveDistance.toFixed(1));
+      const kms = isRound ? parseFloat((effectiveDistance * 2).toFixed(1)) : exactOneWay;
       const hours = isRound
         ? Number(((effectiveDuration * 2) / 60).toFixed(1))
         : Number((effectiveDuration / 60).toFixed(1));
       return {
         kms,
-        oneWayKms: Math.round(effectiveDistance),
+        oneWayKms: exactOneWay,
         hours,
         durationMinutes: isRound ? effectiveDuration * 2 : effectiveDuration,
         hasDistance: true,
@@ -725,23 +728,24 @@ const FleetPageContent: React.FC = () => {
     const kms = isRental
       ? currentPkgKms
       : isAirport
-      ? (backendRoute?.distance && backendRoute.distance > 0 ? backendRoute.distance : 15)
+      ? (backendRoute?.distance && backendRoute.distance > 0 ? parseFloat(backendRoute.distance.toFixed(1)) : (routeMeta.kms > 0 ? routeMeta.kms : 15))
       : (routeMeta.kms > 0 ? routeMeta.kms : 100);
     const roundTo10 = (n: number) => Math.round(n / 10) * 10;
     const calcTax = (discPrice: number) => Math.round((discPrice * 0.05) / 10) * 10;
     const displayIncludedKms = isRental
       ? currentPkgKms
       : isAirport
-      ? 15
+      ? (backendRoute?.distance && backendRoute.distance > 0 ? parseFloat(backendRoute.distance.toFixed(1)) : (routeMeta.kms > 0 ? routeMeta.kms : 15))
       : (routeMeta.kms > 0 ? routeMeta.kms : 0);
 
     const RENTAL_MATRIX: Record<string, Record<number, number>> = {
-      Sedan: { 5: 3551, 8: 4551, 10: 5051, 12: 6051 },
-      SUV: { 5: 4551, 8: 5551, 10: 7051, 12: 8051 },
-      "SUV+": { 5: 6051, 8: 7551, 10: 8051, 12: 9051 },
-      "13 Seater Traveller": { 5: 9051, 8: 10051, 10: 11051, 12: 12051 },
-      "17 Seater Traveller": { 5: 10051, 8: 11051, 10: 12051, 12: 13051 },
-      "24 Seater Traveller": { 5: 12051, 8: 13051, 10: 14051, 12: 15051 },
+      Sedan: { 1: 1351, 5: 3551, 8: 4551, 10: 5051, 12: 6051 },
+      SUV: { 1: 1551, 5: 4551, 8: 5551, 10: 7051, 12: 8051 },
+      "SUV+": { 1: 1851, 5: 6051, 8: 7551, 10: 8051, 12: 9051 },
+      "13 Seater Traveller": { 1: 3200, 5: 9051, 8: 10051, 10: 11051, 12: 12051 },
+      "17 Seater Traveller": { 1: 3800, 5: 10051, 8: 11051, 10: 12051, 12: 13051 },
+      "24 Seater Traveller": { 1: 4500, 5: 12051, 8: 13051, 10: 14051, 12: 15051 },
+      "25 Seater Traveller": { 1: 4500, 5: 12051, 8: 13051, 10: 14051, 12: 15051 },
     };
 
     const getVehiclePricing = (
@@ -749,7 +753,13 @@ const FleetPageContent: React.FC = () => {
       perKmFallback: number,
       defaultDiscount: number = 12
     ) => {
-      const live = backendPrices[categoryName];
+      const live =
+        backendPrices[categoryName] ||
+        (categoryName.includes("24")
+          ? backendPrices["25 Seater Traveller"]
+          : categoryName.includes("25")
+          ? backendPrices["24 Seater Traveller"]
+          : undefined);
       if (live && live.fare > 0) {
         return {
           discountedPrice: live.fare,
@@ -757,7 +767,8 @@ const FleetPageContent: React.FC = () => {
           discountPercent: live.discountPercent || defaultDiscount,
           advance: live.advance,
           dueFare: live.dueFare,
-          extraKmRate: (live.details as any)?.ratePerKm || (live.details as any)?.extraKmRate || perKmFallback,
+          extraKmRate: (live.details as any)?.extraKmRate || (live.details as any)?.ratePerKm || perKmFallback,
+          extraHourRate: (live.details as any)?.extraHourRate || (live.details as any)?.waitingChargePerHour || (live.details as any)?.hourlyRate || (isRental ? 200 : isAirport ? 150 : 120),
         };
       }
 
@@ -770,6 +781,7 @@ const FleetPageContent: React.FC = () => {
           advance: Math.round(matrixFare * 0.2),
           dueFare: Math.round(matrixFare * 0.8),
           extraKmRate: categoryName.includes("Traveller") ? 40 : 20,
+          extraHourRate: categoryName.includes("Traveller") ? 400 : 200,
         };
       }
 
@@ -790,17 +802,18 @@ const FleetPageContent: React.FC = () => {
             advance: localAirportRes.advance,
             dueFare: localAirportRes.dueFare,
             extraKmRate: (localAirportRes.details as any)?.extraKmRate || perKmFallback,
+            extraHourRate: (localAirportRes.details as any)?.waitingChargePerHour || (localAirportRes.details as any)?.extraHourRate || 150,
           };
         }
 
         // Canonical admin airport defaults matching backend MongoDB rules (no outstation 1200 fallback)
-        const adminAirportDefaults: Record<string, { fare0to15: number; fare15to25: number; extraKmRate: number; advance: number }> = {
-          Sedan: { fare0to15: 750, fare15to25: 1050, extraKmRate: 15, advance: 500 },
-          SUV: { fare0to15: 1050, fare15to25: 1450, extraKmRate: 20, advance: 500 },
-          "SUV+": { fare0to15: 1350, fare15to25: 1850, extraKmRate: 24, advance: 500 },
-          "13 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 35, advance: 1000 },
-          "17 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 40, advance: 1000 },
-          "24 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 45, advance: 1500 },
+        const adminAirportDefaults: Record<string, { fare0to15: number; fare15to25: number; extraKmRate: number; advance: number; waitingChargePerHour: number }> = {
+          Sedan: { fare0to15: 750, fare15to25: 1050, extraKmRate: 15, advance: 500, waitingChargePerHour: 150 },
+          SUV: { fare0to15: 1050, fare15to25: 1450, extraKmRate: 20, advance: 500, waitingChargePerHour: 200 },
+          "SUV+": { fare0to15: 1350, fare15to25: 1850, extraKmRate: 24, advance: 500, waitingChargePerHour: 250 },
+          "13 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 35, advance: 1000, waitingChargePerHour: 350 },
+          "17 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 40, advance: 1000, waitingChargePerHour: 400 },
+          "24 Seater Traveller": { fare0to15: 750, fare15to25: 1050, extraKmRate: 45, advance: 1500, waitingChargePerHour: 500 },
         };
         const def = adminAirportDefaults[categoryName] || adminAirportDefaults["Sedan"];
         const d = kms > 0 ? kms : 15;
@@ -818,6 +831,7 @@ const FleetPageContent: React.FC = () => {
           advance: Math.min(adminFare, def.advance),
           dueFare: Math.max(0, adminFare - def.advance),
           extraKmRate: def.extraKmRate,
+          extraHourRate: def.waitingChargePerHour,
         };
       }
 
@@ -832,6 +846,7 @@ const FleetPageContent: React.FC = () => {
         advance: Math.round(fallbackFare * fallbackAdvancePct),
         dueFare: Math.round(fallbackFare * (1 - fallbackAdvancePct)),
         extraKmRate: perKmRate,
+        extraHourRate: isRoundTripCalc ? 120 : 150,
       };
     };
 
@@ -862,6 +877,7 @@ const FleetPageContent: React.FC = () => {
         advanceAmount: sedanPricing.advance,
         dueAmount: sedanPricing.dueFare,
         extraKmRate: sedanPricing.extraKmRate,
+        extraHourRate: sedanPricing.extraHourRate,
         roofCarrierFee: 157,
         imageType: "sedan",
       },
@@ -884,6 +900,7 @@ const FleetPageContent: React.FC = () => {
         advanceAmount: suvPlusPricing.advance,
         dueAmount: suvPlusPricing.dueFare,
         extraKmRate: suvPlusPricing.extraKmRate,
+        extraHourRate: suvPlusPricing.extraHourRate,
         roofCarrierFee: 262,
         imageType: "suv-plus",
       },
@@ -906,6 +923,7 @@ const FleetPageContent: React.FC = () => {
         advanceAmount: suvPricing.advance,
         dueAmount: suvPricing.dueFare,
         extraKmRate: suvPricing.extraKmRate,
+        extraHourRate: suvPricing.extraHourRate,
         roofCarrierFee: 262,
         imageType: "suv",
       },
@@ -928,6 +946,7 @@ const FleetPageContent: React.FC = () => {
         advanceAmount: traveller17Pricing.advance,
         dueAmount: traveller17Pricing.dueFare,
         extraKmRate: traveller17Pricing.extraKmRate,
+        extraHourRate: traveller17Pricing.extraHourRate,
         imageType: "minibus",
       },
       {
@@ -949,6 +968,7 @@ const FleetPageContent: React.FC = () => {
         advanceAmount: traveller24Pricing.advance,
         dueAmount: traveller24Pricing.dueFare,
         extraKmRate: traveller24Pricing.extraKmRate,
+        extraHourRate: traveller24Pricing.extraHourRate,
         imageType: "minibus",
       },
       {
@@ -970,6 +990,7 @@ const FleetPageContent: React.FC = () => {
         advanceAmount: traveller13Pricing.advance,
         dueAmount: traveller13Pricing.dueFare,
         extraKmRate: traveller13Pricing.extraKmRate,
+        extraHourRate: traveller13Pricing.extraHourRate,
         imageType: "tempo",
       },
       {
@@ -991,6 +1012,7 @@ const FleetPageContent: React.FC = () => {
         advanceAmount: traveller17Pricing.advance,
         dueAmount: traveller17Pricing.dueFare,
         extraKmRate: traveller17Pricing.extraKmRate,
+        extraHourRate: traveller17Pricing.extraHourRate,
         imageType: "tempo",
       },
     ];
@@ -1179,6 +1201,7 @@ const FleetPageContent: React.FC = () => {
       modelType: vehicle.modelType,
       modelBadgeText: vehicle.modelBadgeText || "",
       extraKmRate: (vehicle.extraKmRate || 15).toString(),
+      extraHourRate: (vehicle.extraHourRate || 150).toString(),
       distance: (routeMeta.kms || "").toString(),
       oneWayDistance: (routeMeta.oneWayKms || "").toString(),
       duration: (routeMeta.durationMinutes || "").toString(),
@@ -1742,7 +1765,7 @@ const FleetPageContent: React.FC = () => {
                   <p className="text-xs text-slate-600 font-medium">
                     {routeMeta.hasDistance ? (
                       <>
-                        <strong className="text-slate-900 font-extrabold">{routeMeta.kms.toLocaleString("en-IN")} km</strong>{" "}
+                        <strong className="text-slate-900 font-extrabold">{routeMeta.kms.toLocaleString("en-IN", { maximumFractionDigits: 1 })} km</strong>{" "}
                         {isHourly ? "package distance" : "road distance"}
                         {isRoundTrip ? " (Round-Trip)" : !isHourly ? " (One-Way)" : ""}
                         {" • "}
@@ -1857,7 +1880,7 @@ const FleetPageContent: React.FC = () => {
                         {hasPickupAndDrop ? (
                           <>
                             <div className="text-[11px] text-slate-600 font-medium mt-0.5">
-                              Total km {cab.includedKms.toLocaleString("en-IN")}
+                              Total km {cab.includedKms.toLocaleString("en-IN", { maximumFractionDigits: 1 })}
                             </div>
                             {cab.extraKmRate && (
                               <div className="text-[10px] text-slate-500 font-semibold mt-0.5">

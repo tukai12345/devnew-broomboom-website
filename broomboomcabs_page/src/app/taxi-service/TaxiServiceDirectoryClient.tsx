@@ -130,7 +130,7 @@ const TAXI_FAQS = [
     category: "Pricing & Transparency",
     question: "Are there any hidden fees, night charges, or return fare penalties?",
     answer:
-      "No. BroomBoom operates on 100% transparent pricing. On outstation one-way trips, you pay strictly for the one-way distance with zero return fare. Fuel, driver allowance, and GST are clearly detailed before checkout.",
+      "No. BroomBoom operates on 100% transparent pricing. On outstation one-way trips, you pay strictly for the one-way distance with zero return fare. Fuel, chauffeur service, and GST are clearly detailed before checkout.",
   },
   {
     category: "Pet Policy",

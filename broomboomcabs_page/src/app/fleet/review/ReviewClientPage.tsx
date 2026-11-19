@@ -105,6 +105,7 @@ export const ReviewClientPage: React.FC = () => {
   const imageType = searchParams.get("imageType") || "sedan";
   const carImageParam = searchParams.get("carImage");
   const extraKmRate = searchParams.get("extraKmRate") || "15";
+  const extraHourRate = searchParams.get("extraHourRate") || "150";
 
   // Exact car image selection based on passed carImage, imageType, or vehicle details
   const selectedCarImage =
@@ -152,6 +153,8 @@ export const ReviewClientPage: React.FC = () => {
   const [liveKms, setLiveKms] = useState<number>(
     includedKmsParam > 0 ? includedKmsParam : (isAirport ? 15 : 150)
   );
+  const [liveExtraKmRate, setLiveExtraKmRate] = useState<string>(extraKmRate);
+  const [liveExtraHourRate, setLiveExtraHourRate] = useState<string>(extraHourRate);
   const [backendInclusions, setBackendInclusions] = useState<string[]>([]);
   const [backendExclusions, setBackendExclusions] = useState<string[]>([]);
   const [incTab, setIncTab] = useState<"all" | "inclusions" | "exclusions">("all");
@@ -206,6 +209,12 @@ export const ReviewClientPage: React.FC = () => {
             setLiveKms(15);
           }
           const dAny = res.details as any;
+          if (dAny?.extraKmRate || dAny?.ratePerKm) {
+            setLiveExtraKmRate(String(dAny.extraKmRate || dAny.ratePerKm));
+          }
+          if (dAny?.extraHourRate || dAny?.waitingChargePerHour || dAny?.hourlyRate) {
+            setLiveExtraHourRate(String(dAny.extraHourRate || dAny.waitingChargePerHour || dAny.hourlyRate));
+          }
           if (Array.isArray(dAny?.inclusions) && dAny.inclusions.length > 0) {
             setBackendInclusions(dAny.inclusions);
           }
@@ -232,7 +241,7 @@ export const ReviewClientPage: React.FC = () => {
         if (itemLower.includes("kilometer") || itemLower.includes("km") || itemLower.includes("transfer charges")) {
           return {
             title: `${includedKms.toLocaleString("en-IN")} Kms Included`,
-            desc: `₹${extraKmRate}/km applies beyond included distance`,
+            desc: `₹${liveExtraKmRate}/km applies beyond included distance`,
           };
         }
         if (itemLower.includes("driver")) {
@@ -258,7 +267,7 @@ export const ReviewClientPage: React.FC = () => {
       return [
         {
           title: `${includedKms.toLocaleString("en-IN")} Kms `,
-          desc: `₹${extraKmRate}/km applies in distance`,
+          desc: `₹${liveExtraKmRate}/km applies in distance`,
         },
         {
           title: "Complimentary Airport Waiting",
@@ -296,7 +305,7 @@ export const ReviewClientPage: React.FC = () => {
       return [
         {
           title: `${includedKms.toLocaleString("en-IN")} Kms Roundtrip`,
-          desc: `₹${extraKmRate}/km applies in distance for return trip`,
+          desc: `₹${liveExtraKmRate}/km applies in distance for return trip`,
         },
         {
           title: "Driver Allowance & Night Stay",
@@ -313,7 +322,7 @@ export const ReviewClientPage: React.FC = () => {
     return [
       {
         title: `${includedKms.toLocaleString("en-IN")} Kms One-way`,
-        desc: `₹${extraKmRate}/km applies in distance`,
+        desc: `₹${liveExtraKmRate}/km applies in distance`,
       },
       {
         title: "Driver Allowance",
@@ -324,7 +333,7 @@ export const ReviewClientPage: React.FC = () => {
         desc: "Sanitized air-conditioned cab with all fuel expenses included",
       },
     ];
-  }, [backendInclusions, includedKms, extraKmRate, isAirport, isRental, isRound, hourlyPackage]);
+  }, [backendInclusions, includedKms, liveExtraKmRate, isAirport, isRental, isRound, hourlyPackage]);
 
   const exclusionsList = useMemo(() => {
     if (backendExclusions.length > 0) {
@@ -345,7 +354,7 @@ export const ReviewClientPage: React.FC = () => {
         if (itemLower.includes("waiting")) {
           return {
             title: "Extra Waiting Charges",
-            desc: "₹150/hour applicable after complimentary waiting period",
+            desc: `₹${liveExtraHourRate}/hour applicable after complimentary waiting period`,
           };
         }
         if (itemLower.includes("night")) {
@@ -379,11 +388,11 @@ export const ReviewClientPage: React.FC = () => {
         },
         {
           title: "Extra Kilometers",
-          desc: `₹${extraKmRate}/km applicable beyond the included ${includedKms} km`,
+          desc: `₹${liveExtraKmRate}/km applicable beyond the included ${includedKms} km`,
         },
         {
           title: "Extended Waiting Time",
-          desc: "₹150/hour applicable after the first 60 minutes of complimentary waiting",
+          desc: `₹${liveExtraHourRate}/hour applicable after the first 60 minutes of complimentary waiting`,
         },
         {
           title: "Night Allowance (11 PM - 6 AM)",
@@ -400,11 +409,11 @@ export const ReviewClientPage: React.FC = () => {
         },
         {
           title: "Extra Kilometers",
-          desc: `₹${extraKmRate}/km applicable beyond package distance`,
+          desc: `₹${liveExtraKmRate}/km applicable beyond package distance`,
         },
         {
           title: "Extra Rental Hours",
-          desc: "₹150/hour applicable beyond booked package duration",
+          desc: `₹${liveExtraHourRate}/hour applicable beyond booked package duration`,
         },
         {
           title: "Night Driving Charges",
@@ -425,14 +434,14 @@ export const ReviewClientPage: React.FC = () => {
       },
       {
         title: "Extra Kilometers",
-        desc: `₹${extraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km`,
+        desc: `₹${liveExtraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km`,
       },
       {
         title: "Night Allowance (11 PM - 6 AM)",
         desc: "₹250/- applicable if journey continues between 11:00 PM and 6:00 AM",
       },
     ];
-  }, [backendExclusions, extraKmRate, includedKms, isAirport, isRental]);
+  }, [backendExclusions, liveExtraKmRate, liveExtraHourRate, includedKms, isAirport, isRental]);
 
   /* ------------------------------- State -------------------------------- */
   // User Form
@@ -463,6 +472,7 @@ export const ReviewClientPage: React.FC = () => {
     return searchParams.get("petFriendly") === "true";
   });
   const [petCount, setPetCount] = useState(1);
+  const [addonCarrier, setAddonCarrier] = useState(false);
   const [addonLanguage, setAddonLanguage] = useState(false);
   const [addonNewVehicle, setAddonNewVehicle] = useState(false);
   const [addonRefundable, setAddonRefundable] = useState(false);
@@ -499,6 +509,7 @@ export const ReviewClientPage: React.FC = () => {
   }, []);
 
   const PET_FEE = addonPricing.petAllowance;
+  const CARRIER_FEE = addonPricing.roofCarrier;
   const LANGUAGE_FEE = addonPricing.language;
   const NEW_VEHICLE_FEE = addonPricing.newVehicle;
   const REFUNDABLE_FEE = addonPricing.refundable || 751;
@@ -520,6 +531,7 @@ export const ReviewClientPage: React.FC = () => {
   /* ---------------------------- Calculations ---------------------------- */
   const addonsTotal =
     (addonPet ? PET_FEE * petCount : 0) +
+    (addonCarrier ? CARRIER_FEE : 0) +
     (addonLanguage ? LANGUAGE_FEE : 0) +
     (addonNewVehicle ? NEW_VEHICLE_FEE : 0) +
     (addonRefundable ? REFUNDABLE_FEE : 0);
@@ -569,7 +581,7 @@ export const ReviewClientPage: React.FC = () => {
     const displayPhone = `+91 ${tenDigitPhone}`;
 
     setIsSubmitting(true);
-    setPaymentStepText("Creating Booking in Backend...");
+    setPaymentStepText("Pay now..");
     let finalId = `BB-${Math.floor(100000 + Math.random() * 900000)}`;
 
     try {
@@ -607,6 +619,7 @@ export const ReviewClientPage: React.FC = () => {
         addons: {
           petAllowance: addonPet,
           petCount: addonPet ? petCount : 0,
+          roofCarrier: addonCarrier,
           language: addonLanguage,
           newVehicle: addonNewVehicle,
           refundableBooking: addonRefundable,
@@ -680,6 +693,7 @@ export const ReviewClientPage: React.FC = () => {
         addons: {
           petAllowance: addonPet,
           petCount: addonPet ? petCount : 0,
+          roofCarrier: addonCarrier,
           language: addonLanguage,
           newVehicle: addonNewVehicle,
           refundableBooking: addonRefundable,
@@ -1141,6 +1155,35 @@ export const ReviewClientPage: React.FC = () => {
                   </div>
                 </label>
 
+                {/* Add-on: Luggage Roof Carrier */}
+                <label
+                  className={`p-3.5 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
+                    addonCarrier
+                      ? "border-amber-400 bg-amber-50/50 ring-1 ring-amber-300"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={addonCarrier}
+                    onChange={(e) => setAddonCarrier(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded accent-amber-500 cursor-pointer"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-slate-900">
+                        Luggage Roof Carrier
+                      </span>
+                      <span className="text-xs sm:text-sm font-black text-slate-900">
+                        +{inr(CARRIER_FEE)}
+                      </span>
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                      Extra roof carrier space for large travel bags
+                    </p>
+                  </div>
+                </label>
+
                 {/* Add-on 2: Preferred Language */}
                 <label
                   className={`p-3.5 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
@@ -1358,8 +1401,12 @@ export const ReviewClientPage: React.FC = () => {
                     <span>Base Trip Fare</span>
                     <span>{inr(baseFare)}</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    Cab charges, Chauffeur &amp; Fuel included
+                  <div className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                    <span>{includedKms} km included</span>
+                    <span>•</span>
+                    <span>Extra km: ₹{liveExtraKmRate}/km</span>
+                    <span>•</span>
+                    <span>Extra hr: ₹{liveExtraHourRate}/hr</span>
                   </div>
                 </div>
 
@@ -1377,6 +1424,7 @@ export const ReviewClientPage: React.FC = () => {
                           <span>+{inr(PET_FEE * petCount)}</span>
                         </div>
                       )}
+                      {addonCarrier && <div className="flex justify-between"><span>Luggage Roof Carrier</span><span>+{inr(CARRIER_FEE)}</span></div>}
                       {addonRefundable && <div className="flex justify-between"><span>Upgrade to Refundable Booking</span><span>+{inr(REFUNDABLE_FEE)}</span></div>}
                       {addonLanguage && <div className="flex justify-between"><span>Driver Language</span><span>+{inr(LANGUAGE_FEE)}</span></div>}
                       {addonNewVehicle && <div className="flex justify-between"><span>New Vehicle (2023+)</span><span>+{inr(NEW_VEHICLE_FEE)}</span></div>}
@@ -1458,7 +1506,7 @@ export const ReviewClientPage: React.FC = () => {
                   />
                   <div>
                     <div className="text-xs font-black text-slate-900">
-                      Pay 20% Advance Token{addonsTotal > 0 ? " + Add-ons" : ""}
+                      Pay Advance Token{addonsTotal > 0 ? " + Add-ons" : ""}
                     </div>
                     <div className="text-[11px] text-slate-500 mt-0.5">Pay balance {inr(finalTotal - partPayAmount)} to driver</div>
                   </div>

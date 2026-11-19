@@ -60,10 +60,11 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
     }
 
     let active = true;
+    const abortCtrl = new AbortController();
     setIsSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const results = await api.searchCities(q);
+        const results = await api.searchCities(q, abortCtrl.signal);
         if (active) {
           setMapResults(results);
           setIsSearching(false);
@@ -75,6 +76,7 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
 
     return () => {
       active = false;
+      abortCtrl.abort();
       clearTimeout(timer);
     };
   }, [query]);

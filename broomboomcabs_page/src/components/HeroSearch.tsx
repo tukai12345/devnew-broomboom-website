@@ -76,6 +76,7 @@ const TRIP_TABS: { id: TripType; label: string; badge?: string }[] = [
 ];
 
 const HOURLY_PACKAGES = [
+  { label: "1 hr 15 kms", desc: "Quick city errand or short transit", tag: "NEW" },
   { label: "5 hrs 50 kms", desc: "Half-day city tour or shopping", tag: "POPULAR" },
   { label: "8 hrs 80 kms", desc: "Full-day business or city exploration", tag: "POPULAR" },
   { label: "10 hrs 100 kms", desc: "Extended day errands & meetings", tag: "BEST VALUE" },
@@ -590,10 +591,11 @@ const CityPopover: React.FC<{
     }
 
     let active = true;
+    const abortCtrl = new AbortController();
     setIsSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const results = await api.searchCities(q);
+        const results = await api.searchCities(q, abortCtrl.signal);
         if (active) {
           setMapResults(results);
           setIsSearching(false);
@@ -605,6 +607,7 @@ const CityPopover: React.FC<{
 
     return () => {
       active = false;
+      abortCtrl.abort();
       clearTimeout(timer);
     };
   }, [query]);
@@ -1074,6 +1077,53 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const [returnDate, setReturnDate] = useState(getTodayStr());
   const [dropTime, setDropTime] = useState("09:45 PM");
   const [hourlyPackage, setHourlyPackage] = useState("8 hrs 80 kms");
+  const [hourlyPackagesList, setHourlyPackagesList] = useState(HOURLY_PACKAGES);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchLiveRentalPackages = async () => {
+      try {
+        const pkgs = await api.getDynamicRentalPackages();
+        if (mounted && Array.isArray(pkgs) && pkgs.length > 0) {
+          const mapped = pkgs.map((p) => {
+            const h = p.packageHours || parseInt(p.duration, 10);
+            const km = p.includedKms || parseInt(p.km, 10);
+            const label = `${h} hr${h > 1 ? "s" : ""} ${km} kms`;
+            const tag = h === 1 ? "NEW" : h === 8 ? "POPULAR" : h === 10 ? "BEST VALUE" : null;
+            return {
+              label,
+              desc: p.idealFor || `${h} hours disposal within ${km} kms`,
+              tag,
+            };
+          });
+          setHourlyPackagesList(mapped);
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic hourly packages:", err);
+      }
+    };
+
+    fetchLiveRentalPackages();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === "broomboom_cached_rental_packages" ||
+        e.key === "broomboom_rental_fares" ||
+        e.key === "broomboom_rental_packages_updated"
+      ) {
+        fetchLiveRentalPackages();
+      }
+    };
+    const handleCustom = () => fetchLiveRentalPackages();
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("broomboom_rental_fares_updated", handleCustom);
+    return () => {
+      mounted = false;
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("broomboom_rental_fares_updated", handleCustom);
+    };
+  }, []);
   const [airportMode, setAirportMode] = useState<"to-airport" | "from-airport">("to-airport");
 
   const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
@@ -1821,7 +1871,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="text-[13px] font-bold text-slate-900 truncate">{hourlyPackage}</div>
                       <div className="text-[11px] text-slate-500 mt-0.5 truncate">
-                        {HOURLY_PACKAGES.find((p) => p.label === hourlyPackage)?.desc || "Customizable duration"}
+                        {hourlyPackagesList.find((p) => p.label === hourlyPackage)?.desc || "Customizable duration"}
                       </div>
                     </div>
                     <ChevronDown className="w-4 h-4 text-amber-500 shrink-0" />
@@ -1829,7 +1879,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   {openDropdown === "package" && (
                     <PopoverShell align="right" width="w-72" title="Hourly Rental Plans" onClose={() => setOpenDropdown(null)}>
                       <div className="space-y-0.5">
-                        {HOURLY_PACKAGES.map((pkg) => (
+                        {hourlyPackagesList.map((pkg) => (
                           <div
                             key={pkg.label}
                             onClick={() => {
@@ -1901,6 +1951,24 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Exact Road Distance Display */}
+              {routeDistance != null && routeDistance > 0 && fromCity && toCity && (
+                <div className="flex items-center justify-between px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-200/80 text-[11px] font-semibold text-amber-950">
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Exact Road Distance:</span>
+                  </span>
+                  <span className="font-extrabold font-mono text-slate-900">
+                    {routeDistance.toFixed(1)} km
+                    {routeDurationMinutes != null && routeDurationMinutes > 0 && (
+                      <span className="text-slate-500 font-normal ml-1">
+                        (~{Math.floor(routeDurationMinutes / 60)}h {routeDurationMinutes % 60}m)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
 
               {/* Search Button */}
               <button
@@ -2390,7 +2458,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         Hourly Rental Plans
                       </div>
                       <div className="space-y-0.5">
-                        {HOURLY_PACKAGES.map((pkg) => (
+                        {hourlyPackagesList.map((pkg) => (
                           <div
                             key={pkg.label}
                             onClick={() => {
@@ -2592,7 +2660,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               </>
             )}
 
-            {/* Footer row with Add Stops */}
+            {/* Footer row with Add Stops & Exact Road Distance */}
             <div className="mt-5 flex flex-row items-center justify-between gap-3 text-xs pb-0">
               <button
                 type="button"
@@ -2603,6 +2671,19 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   new
                 </span>
               </button>
+
+              {routeDistance != null && routeDistance > 0 && fromCity && toCity && (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-50 rounded-full border border-amber-300 text-[12px] font-bold text-amber-950 shadow-xs">
+                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Exact Road Distance:</span>
+                  <span className="font-extrabold text-slate-900 font-mono">{routeDistance.toFixed(1)} km</span>
+                  {routeDurationMinutes != null && routeDurationMinutes > 0 && (
+                    <span className="text-slate-500 font-medium">
+                      (~{Math.floor(routeDurationMinutes / 60)}h {routeDurationMinutes % 60}m)
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Centered Search pill */}

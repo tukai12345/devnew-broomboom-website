@@ -10,8 +10,12 @@ export const metadata: Metadata = {
   keywords:
     "cabs booking, outstation taxi, one way cabs, airport transfer, car rental, BroomBoom, Motu Cabs, taxi service",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/broomboom-icon.png", type: "image/png" },
+      { url: "/favicon.png", type: "image/png" }
+    ],
+    apple: "/broomboom-icon.png",
+    shortcut: "/broomboom-icon.png",
   },
   robots: {
     index: true,

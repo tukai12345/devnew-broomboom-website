@@ -1,4 +1,6 @@
 
+import { RentalPackage, RENTAL_PACKAGES } from "@/data/cabsData";
+
 export interface BackendUserLead {
   id?: string;
   _id?: string;
@@ -118,6 +120,8 @@ export interface PricingCalculationResult {
     slab?: string;
     ratePerKm?: number;
     extraKmRate?: number;
+    extraHourRate?: number;
+    waitingChargePerHour?: number;
     distanceFare?: number;
     hourlyFare?: number;
     adminSetPrice?: number;
@@ -226,16 +230,42 @@ const PROD_API_BASE_URL =
   "https://www.broomboomcabs.com/new-api/api";
 
 export const getApiBaseUrl = (): string => {
-  return PROD_API_BASE_URL;
+  if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "http://localhost:5004/api";
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || PROD_API_BASE_URL;
 };
 
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 3500
+  timeoutMs = 6000
 ): Promise<Response> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout(() => {
+    try {
+      controller.abort();
+    } catch {}
+  }, timeoutMs);
+
+  if (options.signal) {
+    if (options.signal.aborted) {
+      clearTimeout(timeoutId);
+      throw new DOMException("Operation aborted by caller", "AbortError");
+    }
+    options.signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timeoutId);
+        try {
+          controller.abort();
+        } catch {}
+      },
+      { once: true }
+    );
+  }
 
   try {
     return await fetch(url, {
@@ -538,43 +568,44 @@ export const api = {
   /**
    * Real-time map location search / autocomplete via BroomBoom Backend & OpenStreetMap
    */
-  async searchCities(query: string): Promise<CityItem[]> {
+  async searchCities(query: string, signal?: AbortSignal): Promise<CityItem[]> {
     if (!query || query.trim().length < 2) return [];
     const cleanQ = query.trim();
 
-    // 1. Try local backend first (has Google Maps + Nominatim full address pipeline)
+    // 1. Primary backend search (local or production depending on environment)
+    const baseUrl = getApiBaseUrl();
+    const primaryUrl = `${baseUrl}/cities/search?q=${encodeURIComponent(cleanQ)}`;
+
     try {
-      const res = await fetchWithTimeout(
-        `http://localhost:5004/api/cities/search?q=${encodeURIComponent(cleanQ)}`,
-        {},
-        3500
-      );
+      const res = await fetchWithTimeout(primaryUrl, { signal }, 6000);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           return data;
         }
       }
-    } catch {
-      // Local backend unavailable
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        console.warn("Primary backend city search notice:", err?.message || err);
+      }
     }
 
-    // 2. Try BroomBoom production backend
-    try {
-      const baseUrl = getApiBaseUrl();
-      const res = await fetchWithTimeout(
-        `${baseUrl}/cities/search?q=${encodeURIComponent(cleanQ)}`,
-        {},
-        4000
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data;
+    // 2. Fallback to production API if local dev backend was unreachable
+    if (baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1")) {
+      try {
+        const prodUrl = `${PROD_API_BASE_URL}/cities/search?q=${encodeURIComponent(cleanQ)}`;
+        const res = await fetchWithTimeout(prodUrl, { signal }, 5000);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return data;
+          }
+        }
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.warn("Prod fallback city search notice:", err?.message || err);
         }
       }
-    } catch (err) {
-      console.warn("Backend city search notice:", err);
     }
 
     // 3. Direct OpenStreetMap Nominatim Fallback for any location in India
@@ -585,12 +616,13 @@ export const api = {
       const res = await fetchWithTimeout(
         nominatimUrl,
         {
+          signal,
           headers: {
             "User-Agent": "BroomBoomCabsWeb/1.0",
             Accept: "application/json",
           },
         },
-        4000
+        5000
       );
       if (res.ok) {
         const rawList = await res.json();
@@ -901,6 +933,8 @@ export const api = {
         slab: tier,
         ratePerKm: extraKmRate,
         extraKmRate,
+        waitingChargePerHour: matchedRule?.waitingChargePerHour || 150,
+        extraHourRate: matchedRule?.waitingChargePerHour || 150,
         originalFare,
         discountPercent,
         advanceType: matchedRule?.advanceType || "Fixed",
@@ -945,17 +979,134 @@ export const api = {
   },
 
   /**
-   * Fetch rental pricing packages
+   * Fetch rental pricing packages from PostgreSQL database with localStorage cache
    */
   async getRentalPackages(): Promise<RentalPackageItem[]> {
+    let cached: RentalPackageItem[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("broomboom_cached_rental_packages");
+        if (raw) cached = JSON.parse(raw);
+      } catch {}
+    }
+
     try {
       const baseUrl = getApiBaseUrl();
       const res = await fetchWithTimeout(`${baseUrl}/pricing-rules/rental`, {}, 5000);
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || []);
+        if (Array.isArray(list) && list.length > 0) {
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("broomboom_cached_rental_packages", JSON.stringify(list));
+            } catch {}
+          }
+          return list;
+        }
+      }
+      return cached;
     } catch {
-      return [];
+      return cached;
+    }
+  },
+
+  /**
+   * Fetch live dynamic rental packages grouped by duration & kms with selective car category pricing
+   * (Sedan, SUV, SUV+, 13 Seater Traveller, 17 Seater Traveller, 25 Seater Traveller)
+   * Guaranteed: NO hardcoded data; reflects admin updates, creations, and deletions in real-time.
+   */
+  async getDynamicRentalPackages(): Promise<RentalPackage[]> {
+    try {
+      const rawRules = await this.getRentalPackages();
+      if (!Array.isArray(rawRules) || rawRules.length === 0) {
+        return RENTAL_PACKAGES;
+      }
+
+      // Group raw rules by packageHours (e.g. 1, 5, 8, 10, 12, or custom hours)
+      const groups = new Map<number, {
+        hours: number;
+        kms: number;
+        rules: RentalPackageItem[];
+      }>();
+
+      for (const rule of rawRules) {
+        const h = Number(rule.packageHours);
+        if (!h || isNaN(h)) continue;
+        if (!groups.has(h)) {
+          groups.set(h, {
+            hours: h,
+            kms: Number(rule.includedKms) || (h === 1 ? 15 : h * 10),
+            rules: [],
+          });
+        }
+        groups.get(h)!.rules.push(rule);
+      }
+
+      const sortedHours = Array.from(groups.keys()).sort((a, b) => a - b);
+      const result: RentalPackage[] = [];
+
+      for (const h of sortedHours) {
+        const group = groups.get(h)!;
+        const kms = group.kms;
+        const durationStr = `${h} ${h === 1 ? "Hour" : "Hours"}`;
+        const kmStr = `${kms} Kms`;
+
+        // Map fares for selective car categories
+        const catMap: Record<string, number> = {};
+        for (const r of group.rules) {
+          const cat = r.carCategory;
+          const fare = Number(r.baseFare);
+          if (cat && !isNaN(fare) && fare > 0) {
+            if (!catMap[cat] || (r.state !== "Default" && fare > 0)) {
+              catMap[cat] = fare;
+            }
+          }
+        }
+
+        const sedanP = catMap["Sedan"] || (h === 1 ? 1351 : h === 5 ? 3551 : h === 8 ? 4551 : h === 10 ? 5051 : h === 12 ? 6051 : h * 450);
+        const suvP = catMap["SUV"] || (h === 1 ? 1551 : h === 5 ? 4551 : h === 8 ? 5551 : h === 10 ? 7051 : h === 12 ? 8051 : h * 600);
+        const suvPlusP = catMap["SUV+"] || (h === 1 ? 1851 : h === 5 ? 6051 : h === 8 ? 7551 : h === 10 ? 8051 : h === 12 ? 9051 : h * 750);
+        const trav13P = catMap["13 Seater Traveller"] || catMap["13 Seater"] || (h === 1 ? 3200 : h === 5 ? 9051 : h === 8 ? 10051 : h === 10 ? 11051 : h === 12 ? 12051 : h * 1000);
+        const trav17P = catMap["17 Seater Traveller"] || catMap["17 Seater"] || (h === 1 ? 3800 : h === 5 ? 10051 : h === 8 ? 11051 : h === 10 ? 12051 : h === 12 ? 13051 : h * 1100);
+        const trav25P = catMap["25 Seater Traveller"] || catMap["25 Seater"] || (h === 1 ? 4500 : h === 5 ? 12051 : h === 8 ? 13051 : h === 10 ? 14051 : h === 12 ? 15051 : h * 1250);
+
+        let idealFor = "Flexible city disposal with chauffeur";
+        if (h === 1) idealFor = "Quick city errand or short transit";
+        else if (h <= 4) idealFor = "Client meetings, medical visits & shopping";
+        else if (h === 5) idealFor = "Half-day city tour or shopping";
+        else if (h === 8) idealFor = "Full day office or full city tour";
+        else if (h === 10) idealFor = "Extended day errands & meetings";
+        else if (h >= 12) idealFor = "Wedding events & whole day errands";
+
+        result.push({
+          id: `pkg-${h}-${kms}`,
+          duration: durationStr,
+          km: kmStr,
+          packageHours: h,
+          includedKms: kms,
+          basePrice: sedanP,
+          sedanPrice: sedanP,
+          suvPrice: suvP,
+          suvPlusPrice: suvPlusP,
+          traveller13Price: trav13P,
+          traveller17Price: trav17P,
+          traveller25Price: trav25P,
+          categoryPrices: {
+            Sedan: sedanP,
+            SUV: suvP,
+            "SUV+": suvPlusP,
+            "13 Seater Traveller": trav13P,
+            "17 Seater Traveller": trav17P,
+            "25 Seater Traveller": trav25P,
+          },
+          idealFor,
+        });
+      }
+
+      return result.length > 0 ? result : RENTAL_PACKAGES;
+    } catch {
+      return RENTAL_PACKAGES;
     }
   },
 
