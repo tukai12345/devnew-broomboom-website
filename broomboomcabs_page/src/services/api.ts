@@ -1234,12 +1234,46 @@ export const api = {
    */
   async createBookingLead(data: BookingLeadPayload): Promise<any> {
     try {
+      const payload: BookingLeadPayload = { ...data };
+
+      // Ensure customer mobile and profile info are attached if user is logged in
+      if (typeof window !== "undefined") {
+        try {
+          if (!payload.customerMobile) {
+            const rawSession = sessionStorage.getItem("broomboom_user");
+            const rawLocal = localStorage.getItem("broomboom_user") || localStorage.getItem("user");
+            const userObj = rawSession ? JSON.parse(rawSession) : (rawLocal ? JSON.parse(rawLocal) : null);
+            if (userObj) {
+              if (userObj.phone || userObj.mobile || userObj.identifier) {
+                payload.customerMobile = userObj.phone || userObj.mobile || userObj.identifier;
+              }
+              if (!payload.customerName && userObj.name) {
+                payload.customerName = userObj.name;
+              }
+              if (!payload.customerEmail && userObj.email) {
+                payload.customerEmail = userObj.email;
+              }
+            }
+          }
+          if (!payload.customerMobile) {
+            const storedPhone = localStorage.getItem("broomboom_user_phone") || sessionStorage.getItem("broomboom_user_phone");
+            if (storedPhone) payload.customerMobile = storedPhone;
+          }
+        } catch {}
+      }
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetchWithTimeout(
         "/api/booking-leads",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          headers,
+          body: JSON.stringify(payload),
         },
         5000
       );
