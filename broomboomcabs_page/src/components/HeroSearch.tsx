@@ -429,18 +429,17 @@ const PopoverShell: React.FC<{
   onClose,
   fullScreenOnMobile = false,
 }) => {
-  const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
 
   useEffect(() => {
-    setMounted(true);
     const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
+    window.addEventListener("resize", check, { passive: true });
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  if (!mounted) return null;
+  if (typeof document === "undefined") return null;
 
   if (isMobile) {
     if (fullScreenOnMobile) {
@@ -448,7 +447,7 @@ const PopoverShell: React.FC<{
         <div
           data-popover-shell
           onClick={(e) => e.stopPropagation()}
-          className="fixed inset-0 z-[99999] bg-white flex flex-col animate-in fade-in duration-150"
+          className="fixed inset-0 z-[99999] bg-white flex flex-col"
         >
           {/* Mobile Top Header (from the screen above) */}
           <div className="pt-[max(0.75rem,env(safe-area-inset-top))] px-4 pb-3 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 shadow-xs">
@@ -505,12 +504,12 @@ const PopoverShell: React.FC<{
         className="fixed inset-0 z-[9999] flex flex-col justify-end"
       >
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
           onClick={onClose}
         />
         <div
           onClick={(e) => e.stopPropagation()}
-          className="relative z-10 w-full max-h-[85vh] bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-4 pb-[max(2rem,env(safe-area-inset-bottom))] flex flex-col animate-in slide-in-from-bottom duration-200"
+          className="relative z-10 w-full max-h-[85vh] bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-4 pb-[max(2rem,env(safe-area-inset-bottom))] flex flex-col"
         >
           <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3" />
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
@@ -549,7 +548,7 @@ const PopoverShell: React.FC<{
       data-popover-shell
       onClick={(e) => e.stopPropagation()}
       style={{ zIndex: 100 }}
-      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-amber-300 ring-1 ring-black/5 z-50 p-3 animate-in fade-in zoom-in-95 duration-150`}
+      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-amber-300 ring-1 ring-black/5 z-50 p-3`}
     >
       {children}
     </div>
@@ -653,10 +652,7 @@ const CityPopover: React.FC<{
   }, [query, mapResults, citiesList]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 80);
-    return () => clearTimeout(timer);
+    inputRef.current?.focus({ preventScroll: true });
   }, []);
 
   return (
@@ -671,6 +667,7 @@ const CityPopover: React.FC<{
         <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
         <input
           ref={inputRef}
+          autoFocus
           type="text"
           placeholder={placeholder}
           value={query}
@@ -1202,10 +1199,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
   useEffect(() => {
     if (openDropdown === "from" || openDropdown === "to") {
-      const t = setTimeout(() => {
-        searchInputRef.current?.focus({ preventScroll: true });
-      }, 50);
-      return () => clearTimeout(t);
+      searchInputRef.current?.focus({ preventScroll: true });
     }
   }, [openDropdown]);
 

@@ -33,23 +33,21 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
 
   const [mapResults, setMapResults] = useState<CityItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    const timer = setTimeout(() => {
-      inputRef.current?.focus({ preventScroll: true });
-    }, 80);
+    window.addEventListener("resize", check, { passive: true });
+    inputRef.current?.focus({ preventScroll: true });
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("resize", check);
     };
   }, []);
+
+  if (typeof document === "undefined") return null;
 
   useEffect(() => {
     const q = query.trim();
@@ -249,15 +247,13 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
     </div>
   );
 
-  if (!mounted) return null;
-
   // Mobile View: Full screen modal from top of screen without exposed background gaps
   if (isMobile) {
     return createPortal(
       <div
         data-popover-shell
         onClick={(e) => e.stopPropagation()}
-        className="fixed inset-0 z-[99999] bg-white flex flex-col animate-in fade-in duration-150"
+        className="fixed inset-0 z-[99999] bg-white flex flex-col"
       >
         {/* Top Header Bar */}
         <div className="pt-[max(0.75rem,env(safe-area-inset-top))] px-4 pb-3 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 shadow-xs">
@@ -311,7 +307,7 @@ export const CitySearchPopover: React.FC<CitySearchPopoverProps> = ({
       onClick={(e) => e.stopPropagation()}
       className={`absolute top-full ${
         align === "right" ? "right-0" : "left-0"
-      } mt-2 w-80 md:w-96 max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-2xl border border-amber-200/90 z-50 p-3 animate-in fade-in zoom-in-95 duration-150`}
+      } mt-2 w-80 md:w-96 max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-2xl border border-amber-200/90 z-50 p-3`}
     >
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
         <span className="font-bold text-xs text-slate-900">{title}</span>
