@@ -4,11 +4,11 @@ import { GoogleTagManager, GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BroomBoom Cabs - Outstation, Airport & Hourly Rental Cabs Booking",
+  title: "BroomBoom Cabs - All India Car Rental App Nearby",
   description:
-    "Book verified outstation cabs, airport taxi & local hourly rentals with BroomBoom Cabs. Zero cancellation fee, clean AC cars, instant booking & transparent lowest fares across India.",
+    "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station",
   keywords:
-    "cabs booking, outstation taxi, one way cabs, airport transfer, car rental, BroomBoom, Motu Cabs, taxi service",
+    "outstation cab, car rental, book a cab in advance, cab booking app, all india cab , best outstation cab, best car rental service, cab near me",
   icons: {
     icon: [
       { url: "/broomboom-icon.png", type: "image/png" },
