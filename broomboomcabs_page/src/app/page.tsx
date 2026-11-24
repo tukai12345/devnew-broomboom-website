@@ -236,7 +236,6 @@ export default function Home() {
         onSearch={handleSearch}
         initialFrom={fromCity}
         initialTo={toCity}
-        navigateOnTabClick={true}
       />
 
       {/* Offers Section (Exact 1:1 match with screenshot) */}

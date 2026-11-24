@@ -1455,20 +1455,16 @@ export const ReviewClientPage: React.FC = () => {
                     />
                     <span className="text-[11px] sm:text-xs text-slate-600 leading-relaxed">
                       I have read and agree to BroomBoom&apos;s{" "}
-                      <Link href="/terms-of-service" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                      <Link href="/terms-and-conditions" target="_blank" className="text-blue-600 hover:underline font-semibold">
                         Terms &amp; Conditions
                       </Link>
                       ,{" "}
                       <Link href="/privacy-policy" target="_blank" className="text-blue-600 hover:underline font-semibold">
                         Privacy Policy
-                      </Link>
-                      ,{" "}
-                      <Link href="/user-agreement" target="_blank" className="text-blue-600 hover:underline font-semibold">
-                        User Agreement
                       </Link>{" "}
                       &amp;{" "}
-                      <Link href="/cancellation-rules" target="_blank" className="text-blue-600 hover:underline font-semibold">
-                        Cancellation Rules
+                      <Link href="/user-terms" target="_blank" className="text-blue-600 hover:underline font-semibold">
+                        User Terms
                       </Link>
                       .
                     </span>

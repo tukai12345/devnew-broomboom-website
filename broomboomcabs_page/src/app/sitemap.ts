@@ -14,7 +14,7 @@ import { CORPORATE_PICK_DROP_SLUGS } from "@/data/corporatePickDropRoutes";
 import { RESERVED_CABS_SLUGS } from "@/data/reservedCabsRoutes";
 import { SHOPPING_MALL_SLUGS } from "@/data/shoppingMallKolkataRoutes";
 
-const DEFAULT_SITE_URL = "https://dev.broomboomcabs.com";
+const DEFAULT_SITE_URL = "https://www.broomboomcabs.com";
 
 function getSiteUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;

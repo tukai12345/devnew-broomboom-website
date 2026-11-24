@@ -62,16 +62,26 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   return {
     title: `Outstation Cabs in ${cityData.cityName} | Lowest Fares & Zero Return Fare — BroomBoom Cabs`,
     description: `Book verified one-way & round-trip outstation cabs in ${cityData.cityName}, ${cityData.state}. Zero return fare, 100% AC cars, GPS live tracking, and 24x7 customer support.`,
+    keywords: `outstation cabs in ${cityData.cityName}, one way cab ${cityData.cityName}, outstation taxi ${cityData.cityName}, intercity cab from ${cityData.cityName}, outstation car rental ${cityData.cityName}, zero return fare taxi ${cityData.cityName}, round trip cab ${cityData.cityName}`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/outstation-cabs/${cleanCity}`,
+      canonical: `https://www.broomboomcabs.com/outstation-cabs/${cleanCity}`,
     },
     openGraph: {
       title: `Outstation Cabs in ${cityData.cityName} | Lowest Fares — BroomBoom Cabs`,
       description: `Book verified outstation cabs from ${cityData.cityName}. Zero return fare on one-way drops, GPS tracking & 24x7 support.`,
-      url: `https://dev.broomboomcabs.com/outstation-cabs/${cleanCity}`,
+      url: `https://www.broomboomcabs.com/outstation-cabs/${cleanCity}`,
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Outstation Cabs in ${cityData.cityName} | BroomBoom Cabs`,
+      description: `Book verified outstation cabs from ${cityData.cityName}. Zero return fare on one-way drops, GPS tracking & 24x7 support.`,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

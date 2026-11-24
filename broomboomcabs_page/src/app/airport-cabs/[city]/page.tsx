@@ -59,8 +59,26 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   return {
     title: `Airport Cabs in ${cityData.cityName} (${cityData.airportCode}) | On-Time Guarantee — BroomBoom Cabs`,
     description: `Book dependable airport taxi to and from ${cityData.airportName} (${cityData.airportCode}) in ${cityData.cityName}. Live flight tracking, 45 mins free wait time, and zero surge.`,
+    keywords: `airport cabs in ${cityData.cityName}, ${cityData.cityName} airport taxi, ${cityData.airportCode} airport cab booking, ${cityData.cityName} airport transfer, prepaid airport taxi ${cityData.cityName}, airport drop taxi ${cityData.cityName}, ${cityData.airportName} cab`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/airport-cabs/${cityData.cityId}`,
+      canonical: `https://www.broomboomcabs.com/airport-cabs/${cityData.cityId}`,
+    },
+    openGraph: {
+      title: `Airport Cabs in ${cityData.cityName} (${cityData.airportCode}) | BroomBoom Cabs`,
+      description: `Book dependable airport taxi to and from ${cityData.airportName} in ${cityData.cityName}. Live flight tracking & zero surge.`,
+      url: `https://www.broomboomcabs.com/airport-cabs/${cityData.cityId}`,
+      siteName: "BroomBoom Cabs",
+      locale: "en_IN",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Airport Cabs in ${cityData.cityName} (${cityData.airportCode}) | BroomBoom Cabs`,
+      description: `Book dependable airport taxi in ${cityData.cityName} with live flight tracking.`,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

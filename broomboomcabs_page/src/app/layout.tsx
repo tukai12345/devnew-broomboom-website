@@ -3,23 +3,76 @@ import type { Metadata, Viewport } from "next";
 import { GoogleTagManager, GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.broomboomcabs.com"),
+
   title: "BroomBoom Cabs - All India Car Rental App Nearby",
+
   description:
     "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station",
+
   keywords:
-    "outstation cab, car rental, book a cab in advance, cab booking app, all india cab , best outstation cab, best car rental service, cab near me",
+    "outstation cab, car rental, book a cab in advance, cab booking app, all india cab, best outstation cab, best car rental service, cab near me",
+
+  applicationName: "BroomBoom Cabs",
+
+  authors: [
+    { name: "BroomBoom Transportation Services Private Limited" },
+  ],
+
+  creator: "BroomBoom Transportation Services Private Limited",
+
+  publisher: "BroomBoom Transportation Services Private Limited",
+
+  category: "Travel",
+
+  alternates: {
+    canonical: "https://www.broomboomcabs.com",
+  },
+
+  other: {
+    copyright: "2023 BroomBoom Transportation Services Private Limited",
+    "facebook-domain-verification": "cn9ly9midci1qm2kb9tokwvglffd7g",
+  },
+
   icons: {
     icon: [
       { url: "/broomboom-icon.png", type: "image/png" },
-      { url: "/favicon.png", type: "image/png" }
+      { url: "/favicon.png", type: "image/png" },
     ],
     apple: "/broomboom-icon.png",
     shortcut: "/broomboom-icon.png",
   },
+
   robots: {
     index: true,
     follow: true,
+  },
+
+  openGraph: {
+    type: "website",
+    url: "https://www.broomboomcabs.com/",
+    title: "BroomBoom Cabs - All India Car Rental App Nearby",
+    description:
+      "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station",
+    siteName: "BroomBoom Cabs",
+    images: [
+      {
+        url: "https://www.broomboomcabs.com/logo2.png",
+        width: 1200,
+        height: 630,
+        alt: "BroomBoom Cabs - All India Car Rental",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "BroomBoom Cabs - All India Car Rental App Nearby",
+    description:
+      "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station",
+    images: ["https://www.broomboomcabs.com/logo2.png"],
   },
 };
 

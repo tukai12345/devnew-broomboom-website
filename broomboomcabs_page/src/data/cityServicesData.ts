@@ -1,3 +1,5 @@
+import { CITIES } from "./cabsData";
+
 export interface CityOutstationRoute {
   destination: string;
   distance: string;
@@ -744,10 +746,49 @@ const defaultRentalPackages: CityRentalPackage[] = [
   },
 ];
 
+const NON_CITY_SLUGS = new Set([
+  "user-agreement",
+  "user-terms",
+  "terms-and-conditions",
+  "terms-of-service",
+  "cancellation-rules",
+  "cancellation-policy",
+  "privacy-policy",
+  "pilot-terms",
+  "fleet",
+  "services",
+  "api",
+  "admin",
+  "my-bookings",
+  "my-trip",
+  "my-trips",
+  "about-us",
+  "contact-us",
+  "career",
+  "careers",
+  "driver-job",
+  "cab-attachment",
+  "hourly-rentals",
+  "airport-cabs",
+  "outstation-cabs",
+  "car-rental",
+  "book-taxi",
+  "taxi-service",
+  "taxi-near",
+  "self-driven",
+  "reserved-cabs",
+  "thank-you",
+  "favicon.ico",
+  "sitemap.xml",
+  "robots.txt",
+]);
+
 export function getCityServiceData(cityId?: string): CityServiceInfo | undefined {
   if (!cityId || typeof cityId !== "string") return undefined;
   let target = cityId.trim().toLowerCase();
   if (target === "kolkata1") target = "kolkata";
+
+  if (NON_CITY_SLUGS.has(target)) return undefined;
 
   // Check top 10 first
   const foundTop10 = TOP_10_CITIES_SERVICES.find(
@@ -757,15 +798,19 @@ export function getCityServiceData(cityId?: string): CityServiceInfo | undefined
 
   // Check extra registry
   const extra = KNOWN_EXTRA_CITIES_REGISTRY[target];
+  const cabCity = !extra ? CITIES.find((c) => c.id.toLowerCase() === target) : undefined;
+
+  // If not a recognized city in registry or cab list, do not generate a fake city
+  if (!extra && !cabCity) {
+    return undefined;
+  }
+
   const cityName = extra
     ? extra.name
-    : target
-        .split("-")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+    : cabCity?.name || target;
 
-  const state = extra ? extra.state : "India";
-  const airportCode = extra?.airportCode || "";
+  const state = extra ? extra.state : cabCity?.state || "India";
+  const airportCode = extra?.airportCode || cabCity?.airportCode || "";
   const airportName = extra?.airportName || `${cityName} Airport`;
   const outstationRoutes = extra?.routes || [
     { destination: "Nearby Metro / City Hub", distance: "150 km", duration: "3h 00m", hatchPrice: 2199, sedanPrice: 2599, suvPrice: 3599 },

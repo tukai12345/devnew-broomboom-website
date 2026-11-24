@@ -21,9 +21,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const parsed = parseTaxiServiceSlug(slug, "book-taxi");
 
+  const keywords =
+    parsed.type === "route"
+      ? `${parsed.from} to ${parsed.to} cab, ${parsed.from} to ${parsed.to} taxi fare, ${parsed.from} to ${parsed.to} one way cab, book ${parsed.from} to ${parsed.to} cab, online cab booking ${parsed.from} to ${parsed.to}`
+      : parsed.type === "pet"
+      ? `pet friendly cabs ${parsed.from}, dog taxi ${parsed.from}, cat cab ${parsed.from}, travel with pets cab ${parsed.from}`
+      : `taxi service in ${parsed.cityName}, cab booking ${parsed.cityName}, cabs near ${parsed.cityName}, 24x7 taxi ${parsed.cityName}`;
+
   return {
     title: parsed.pageTitle,
     description: parsed.pageDescription,
+    keywords,
     alternates: {
       canonical: parsed.canonicalUrl,
     },
@@ -34,6 +42,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: parsed.pageTitle,
+      description: parsed.pageDescription,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

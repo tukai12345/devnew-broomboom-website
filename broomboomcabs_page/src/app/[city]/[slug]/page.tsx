@@ -1,10 +1,12 @@
 import React from "react";
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { parseTaxiServiceSlug } from "@/utils/taxiRouteParser";
 import { RouteTaxiClient } from "@/app/taxi-service/[slug]/RouteTaxiClient";
 import { PetFriendlyCityClient } from "@/app/taxi-service/[slug]/PetFriendlyCityClient";
 import { AreaTaxiClient } from "@/app/taxi-service/[slug]/AreaTaxiClient";
 import { KOLKATA_ROUTES } from "@/data/kolkataRoutes";
+import { getCityServiceData } from "@/data/cityServicesData";
 
 interface PageProps {
   params: Promise<{
@@ -22,6 +24,13 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { city, slug } = await params;
+  const cityData = getCityServiceData(city);
+  if (!cityData) {
+    return {
+      title: "Page Not Found | BroomBoom Cabs",
+      robots: { index: false, follow: false },
+    };
+  }
   const parsed = parseTaxiServiceSlug(slug, city);
 
   return {
@@ -43,6 +52,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CityRouteSlugPage({ params }: PageProps) {
   const { city, slug } = await params;
+  const cityData = getCityServiceData(city);
+  if (!cityData) {
+    notFound();
+  }
   const parsed = parseTaxiServiceSlug(slug, city);
 
   const formattedCity =

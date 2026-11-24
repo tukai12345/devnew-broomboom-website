@@ -31,16 +31,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `Taxi Near Me in ${cityName} — Instant Cab Booking 24x7 | BroomBoom Cabs`,
     description: `Book the nearest available taxi in ${cityName} with 3 to 8 minute doorstep pickup. AC Hatchback, Sedan, and SUV cabs with zero peak-hour surge pricing.`,
+    keywords: `taxi near me in ${cityName}, cab near me ${cityName}, nearest taxi service ${cityName}, book cab ${cityName}, 24x7 taxi ${cityName}, fast cab pickup ${cityName}, local taxi booking ${cityName}`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/taxi-near/${cleanCity}`,
+      canonical: `https://www.broomboomcabs.com/taxi-near/${cleanCity}`,
     },
     openGraph: {
       title: `Taxi Near Me in ${cityName} — Rapid 24x7 Cab Service | BroomBoom`,
       description: `Instant cab booking in ${cityName}. Clean AC cabs with verified local chauffeurs, live GPS tracking, and lowest transparent fares.`,
-      url: `https://dev.broomboomcabs.com/taxi-near/${cleanCity}`,
+      url: `https://www.broomboomcabs.com/taxi-near/${cleanCity}`,
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Taxi Near Me in ${cityName} | BroomBoom Cabs`,
+      description: `Instant cab booking in ${cityName}. Clean AC cabs with verified local chauffeurs and rapid doorstep pickup.`,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

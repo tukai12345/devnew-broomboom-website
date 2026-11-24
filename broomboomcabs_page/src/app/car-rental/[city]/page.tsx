@@ -71,16 +71,26 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   return {
     title: `Car Rentals in ${cityData.cityName} | Chauffeur & Unlimited Stops — BroomBoom Cabs`,
     description: `Book private car rentals in ${cityData.cityName}, ${cityData.state}. Flexible 2h to 12h packages, unlimited local stops, professional chauffeur, and transparent pricing.`,
+    keywords: `car rental in ${cityData.cityName}, hourly car hire ${cityData.cityName}, chauffeur driven car ${cityData.cityName}, local cab package ${cityData.cityName}, full day taxi ${cityData.cityName}, 8 hr 80 km cab ${cityData.cityName}, car hire with driver ${cityData.cityName}`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/car-rental/${cleanCity}`,
+      canonical: `https://www.broomboomcabs.com/car-rental/${cleanCity}`,
     },
     openGraph: {
       title: `Car Rentals in ${cityData.cityName} | BroomBoom Cabs`,
-      description: `Book private car rentals in ${cityData.cityName}. Transparent pricing with chauffeur.`,
-      url: `https://dev.broomboomcabs.com/car-rental/${cleanCity}`,
+      description: `Book private car rentals in ${cityData.cityName}. Transparent pricing with chauffeur and unlimited stops.`,
+      url: `https://www.broomboomcabs.com/car-rental/${cleanCity}`,
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Car Rentals in ${cityData.cityName} | BroomBoom Cabs`,
+      description: `Book private car rentals in ${cityData.cityName} with verified chauffeur and unlimited stops.`,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

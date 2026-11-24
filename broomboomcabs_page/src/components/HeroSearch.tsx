@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   ArrowRightLeft,
@@ -1052,7 +1051,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   heading,
   navigateOnTabClick = false,
 }) => {
-  const router = useRouter();
   const initialType = (activeTripType as TripType) || "outstation-round";
   const [tripType, setTripType] = useState<TripType>(initialType);
   const [fromCity, setFromCity] = useState(initialFrom);
@@ -1301,30 +1299,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         setPickupTime(getCurrentTimeStr(t));
       }
     }
-
-    if (navigateOnTabClick && typeof window !== "undefined") {
-      const path = window.location.pathname;
-      const parts = path.split("/").filter(Boolean);
-      const currentCity = parts.length >= 2 ? parts[1] : null;
-
-      if (t === "outstation-oneway") {
-        if (!path.startsWith("/outstation-cabs")) {
-          router.push(currentCity ? `/outstation-cabs/${currentCity}` : "/outstation-cabs");
-        }
-      } else if (t === "outstation-round") {
-        if (!path.startsWith("/outstation-cabs")) {
-          router.push(currentCity ? `/outstation-cabs/${currentCity}?type=outstation-round` : "/outstation-cabs?type=outstation-round");
-        }
-      } else if (t === "airport") {
-        if (!path.startsWith("/airport-cabs")) {
-          router.push(currentCity ? `/airport-cabs/${currentCity}` : "/airport-cabs");
-        }
-      } else if (t === "hourly") {
-        if (!path.startsWith("/car-rental")) {
-          router.push(currentCity ? `/car-rental/${currentCity}` : "/car-rental");
-        }
-      }
-    }
   };
 
   const handleSwap = (e: React.MouseEvent) => {
@@ -1551,49 +1525,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const defaultSubtitle =
     "BroomBoom Cabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station.";
 
-  const activeTitle =
-    heading?.title ||
-    (!isSelected
-      ? defaultTitle
-      : tripType === "outstation-oneway"
-      ? (
-        <>
-          Book Verified Outstation Cabs on <span className="text-amber-400">BroomBoom</span> at Lowest Fares
-        </>
-      )
-      : tripType === "outstation-round"
-      ? (
-        <>
-          Outstation Round-Trip Cabs with <span className="text-amber-400">Zero Hidden Charges</span>
-        </>
-      )
-      : tripType === "airport"
-      ? (
-        <>
-          Reliable Airport Transfers with <span className="text-amber-400">100% On-Time Guarantee</span>
-        </>
-      )
-      : tripType === "hourly"
-      ? (
-        <>
-          Hourly Car Rentals with <span className="text-amber-400">Unlimited Stops</span> in Your City
-        </>
-      )
-      : defaultTitle);
-
-  const activeSubtitle =
-    heading?.subtitle ||
-    (!isSelected
-      ? defaultSubtitle
-      : tripType === "outstation-oneway"
-      ? "Pay only for one-way drop • Zero return fare • 100% AC verified cars & professional highway chauffeurs"
-      : tripType === "outstation-round"
-      ? "Intercity road trips made effortless • Assured car models & transparent all-inclusive pricing"
-      : tripType === "airport"
-      ? "Live flight tracking • 45 minutes free wait time • Doorstep to terminal pickups & drops"
-      : tripType === "hourly"
-      ? "Chauffeur on standby • Flexible 1 to 12-hour rental packages for meetings, shopping & errands"
-      : defaultSubtitle);
+  const activeTitle = heading?.title || defaultTitle;
+  const activeSubtitle = heading?.subtitle || defaultSubtitle;
 
   return (
     <div

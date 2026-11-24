@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const DEFAULT_SITE_URL = "https://dev.broomboomcabs.com";
+const DEFAULT_SITE_URL = "https://www.broomboomcabs.com";
 
 function getSiteUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;

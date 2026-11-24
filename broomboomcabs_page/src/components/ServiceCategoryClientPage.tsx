@@ -155,7 +155,6 @@ function ServiceCategoryClientContent({ serviceId }: ServiceCategoryClientPagePr
         onSearch={handleSearch}
         initialFrom={fromCity}
         initialTo={toCity}
-        navigateOnTabClick={true}
         heading={{
           title: headingTitle,
           subtitle: headingSubtitle,

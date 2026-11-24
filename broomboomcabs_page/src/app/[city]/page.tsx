@@ -26,7 +26,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!cityData) {
     return {
-      title: "Cab Service | BroomBoom Cabs",
+      title: "Page Not Found | BroomBoom Cabs",
+      robots: { index: false, follow: false },
     };
   }
 

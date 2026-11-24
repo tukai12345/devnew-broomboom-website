@@ -32,15 +32,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const canonicalSlug = temple.slug === "iskcon(mayapur)" ? "iskcon(mayapur)" : temple.slug;
-  const canonicalUrl = `https://dev.broomboomcabs.com/taxi-service-temple-kolkata/${encodeURIComponent(
+  const canonicalUrl = `https://www.broomboomcabs.com/taxi-service-temple-kolkata/${encodeURIComponent(
     canonicalSlug
   )}`;
   const title = `${temple.name} Taxi Service from Kolkata | Cab Fare & Darshan Booking - BroomBoom Cabs`;
   const description = `Book dedicated round-trip taxi from Kolkata to ${temple.name} (${temple.location}). Starting at ₹${temple.startingPrice}. Clean AC Sedans & SUVs, experienced chauffeurs, doorstep pickup, and waiting during puja darshan.`;
+  const keywords = `${temple.name} cab from kolkata, ${temple.name} taxi fare, kolkata to ${temple.name} car rental, ${temple.name} pilgrimage cab, ${temple.location} taxi service, darshan cab package ${temple.name}`;
 
   return {
     title,
     description,
+    keywords,
     alternates: {
       canonical: canonicalUrl,
     },
@@ -51,6 +53,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

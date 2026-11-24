@@ -15,7 +15,7 @@ export function parseTaxiServiceSlug(
   basePath: string = "taxi-service"
 ): ParsedTaxiSlug {
   const cleanSlug = slug.toLowerCase().trim();
-  const canonicalUrl = `https://dev.broomboomcabs.com/${basePath}/${cleanSlug}`;
+  const canonicalUrl = `https://www.broomboomcabs.com/${basePath}/${cleanSlug}`;
 
   // 1. Check Pet Friendly
   if (/^pet-friendly-cabs?-in-/i.test(cleanSlug)) {

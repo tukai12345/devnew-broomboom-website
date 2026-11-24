@@ -31,15 +31,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const canonicalUrl = `https://dev.broomboomcabs.com/taxi-service-shoppingmalls-kolkata/${encodeURIComponent(
+  const canonicalUrl = `https://www.broomboomcabs.com/taxi-service-shoppingmalls-kolkata/${encodeURIComponent(
     mall.slug
   )}`;
   const title = `${mall.name} Taxi Service Kolkata | Cab Fare & Hourly Rental - BroomBoom Cabs`;
   const description = `Book taxi to ${mall.name} (${mall.zone}, Kolkata). Starting at ₹${mall.startingPrice}. Point-to-point drop & 4hr/8hr hourly rentals with waiting, zero parking queues, large luggage boot, and clean AC cabs.`;
+  const keywords = `${mall.name} taxi kolkata, cab to ${mall.name}, ${mall.name} hourly car rental, ${mall.name} shopping cab, taxi service in ${mall.zone}, shopping mall cab kolkata`;
 
   return {
     title,
     description,
+    keywords,
     alternates: {
       canonical: canonicalUrl,
     },
@@ -50,6 +52,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }
