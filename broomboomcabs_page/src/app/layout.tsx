@@ -1,8 +1,12 @@
+
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { GoogleTagManager, GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
+/* ------------------------------------------------------------------ */
+/* SEO METADATA                                                       */
+/* ------------------------------------------------------------------ */
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.broomboomcabs.com"),
@@ -10,7 +14,7 @@ export const metadata: Metadata = {
   title: "BroomBoom Cabs - All India Car Rental App Nearby",
 
   description:
-    "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station",
+    "BroomBoomCabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
 
   keywords:
     "outstation cab, car rental, book a cab in advance, cab booking app, all india cab, best outstation cab, best car rental service, cab near me",
@@ -31,35 +35,51 @@ export const metadata: Metadata = {
     canonical: "https://www.broomboomcabs.com",
   },
 
+  /* CUSTOM META TAGS */
   other: {
+    brand: "BroomBoom Cabs",
     copyright: "2023 BroomBoom Transportation Services Private Limited",
     "facebook-domain-verification": "cn9ly9midci1qm2kb9tokwvglffd7g",
   },
 
+  /* FAVICON */
   icons: {
     icon: [
-      { url: "/broomboom-icon.png", type: "image/png" },
       { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/broomboom-icon.png", type: "image/png" },
     ],
-    apple: "/broomboom-icon.png",
-    shortcut: "/broomboom-icon.png",
+    apple: "/apple-touch-icon.png",
+    shortcut: "/favicon.png",
   },
 
+  /* SEARCH ENGINE ROBOTS */
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 
+  /* OPEN GRAPH / FACEBOOK / SOCIAL SHARING */
   openGraph: {
     type: "website",
     url: "https://www.broomboomcabs.com/",
     title: "BroomBoom Cabs - All India Car Rental App Nearby",
+
     description:
-      "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station",
+      "BroomBoomCabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
+
     siteName: "BroomBoom Cabs",
+
     images: [
       {
-        url: "https://www.broomboomcabs.com/logo2.png",
+        url: "https://www.broomboomcabs.com/logo.png",
         width: 1200,
         height: 630,
         alt: "BroomBoom Cabs - All India Car Rental",
@@ -67,14 +87,22 @@ export const metadata: Metadata = {
     ],
   },
 
+  /* TWITTER / X */
   twitter: {
     card: "summary_large_image",
+
     title: "BroomBoom Cabs - All India Car Rental App Nearby",
+
     description:
-      "BroomBoomCabs- All India Outstation Cab Booking App & Car Rental services Nearby. Book Cab in Advance for City Ride,Outstation,Rental,Airport & Station",
-    images: ["https://www.broomboomcabs.com/logo2.png"],
+      "BroomBoomCabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
+
+    images: ["https://www.broomboomcabs.com/logo.png"],
   },
 };
+
+/* ------------------------------------------------------------------ */
+/* VIEWPORT                                                           */
+/* ------------------------------------------------------------------ */
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -89,10 +117,12 @@ export const viewport: Viewport = {
 
 const PHONE_NUMBER = "+918240765499";
 const WHATSAPP_NUMBER = "918240765499";
-const WHATSAPP_MESSAGE = "Hi BroomBoom Cabs, I want to book a cab.";
+
+const WHATSAPP_MESSAGE =
+  "Hi BroomBoom Cabs, I want to book a cab.";
 
 /* ------------------------------------------------------------------ */
-/* GOOGLE TRACKING                                                     */
+/* GOOGLE TRACKING                                                    */
 /* ------------------------------------------------------------------ */
 
 const GTM_ID = "GTM-N6D7HH8";
@@ -114,7 +144,7 @@ function FloatingContactButtons() {
         paddingRight: "env(safe-area-inset-right, 0px)",
       }}
     >
-      {/* Call button */}
+      {/* CALL BUTTON */}
       <a
         href={`tel:${PHONE_NUMBER}`}
         aria-label="Call BroomBoom Cabs"
@@ -122,19 +152,18 @@ function FloatingContactButtons() {
       >
         <span className="pointer-events-none absolute inset-0 rounded-full bg-amber-400/60 animate-ping opacity-40" />
 
-       <svg
-  xmlns="http://www.w3.org/2000/svg"
-  viewBox="0 0 24 24"
-  fill="currentColor"
-  // Add -scale-x-100 here 👇
-  className="relative h-6 w-6 sm:h-7 sm:w-7 -scale-x-100"
-  aria-hidden="true"
->
-  <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.36 11.36 0 0 0 .57 3.57 1 1 0 0 1-.25 1.02l-2.2 2.2Z" />
-</svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="relative h-6 w-6 sm:h-7 sm:w-7 -scale-x-100"
+          aria-hidden="true"
+        >
+          <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.36 11.36 0 0 0 .57 3.57 1 1 0 0 1-.25 1.02l-2.2 2.2Z" />
+        </svg>
       </a>
 
-      {/* WhatsApp button */}
+      {/* WHATSAPP BUTTON */}
       <a
         href={whatsappHref}
         target="_blank"
@@ -170,17 +199,19 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="min-h-screen flex flex-col antialiased text-slate-800 bg-slate-50 selection:bg-amber-400 selection:text-slate-950">
+
         {/* WEBSITE CONTENT */}
         {children}
 
         {/* FLOATING CALL + WHATSAPP BUTTONS */}
         <FloatingContactButtons />
+
       </body>
 
-      {/* Google Tag Manager (GTM-N6D7HH8) */}
+      {/* GOOGLE TAG MANAGER */}
       <GoogleTagManager gtmId={GTM_ID} />
 
-      {/* Google Analytics 4 (G-JD89KXBSS2) */}
+      {/* GOOGLE ANALYTICS 4 */}
       <GoogleAnalytics gaId={GA_ID} />
     </html>
   );

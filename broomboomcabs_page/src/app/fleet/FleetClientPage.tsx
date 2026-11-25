@@ -393,6 +393,25 @@ const FleetPageContent: React.FC = () => {
   /* ------------------------------- Refs ---------------------------------- */
   const searchStripRef = useRef<HTMLDivElement | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
+  const pickupDateRef = useRef<HTMLInputElement | null>(null);
+  const pickupTimeRef = useRef<HTMLInputElement | null>(null);
+  const dropDateRef = useRef<HTMLInputElement | null>(null);
+  const dropTimeRef = useRef<HTMLInputElement | null>(null);
+
+  const openPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      if (typeof el.showPicker === "function") {
+        el.showPicker();
+      } else {
+        el.focus();
+        el.click();
+      }
+    } catch {
+      el.focus();
+    }
+  };
 
   /* --------------------- Close popovers on outside click ----------------- */
   useEffect(() => {
@@ -710,7 +729,7 @@ const FleetPageContent: React.FC = () => {
 
   /* ----------------------------- Fleet data ------------------------------ */
   const allVehicles: VehicleItem[] = useMemo(() => {
-    // ✅ 1. Resolve rental package FIRST (previously declared too late — TDZ bug)
+    // 1. Resolve rental package FIRST
     const isRental =
       tripType.toLowerCase().includes("hourly") ||
       tripType.toLowerCase().includes("rental");
@@ -724,7 +743,7 @@ const FleetPageContent: React.FC = () => {
       if (matchK) currentPkgKms = parseInt(matchK[1], 10);
     }
 
-    // ✅ 2. Safe to reference them now
+    // 2. Safe to reference them now
     const kms = isRental
       ? currentPkgKms
       : isAirport
@@ -1509,95 +1528,111 @@ const FleetPageContent: React.FC = () => {
             </div>
 
             {/* 5. PICK-UP DATE */}
-            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
+            <div
+              onClick={() => openPicker(pickupDateRef)}
+              className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative"
+            >
               <FieldLabel>PICK-UP DATE</FieldLabel>
-              <div className="relative font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
+              <div className="font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
                 <span>{formatDisplayDate(pickupDateIso)}</span>
-                <input
-                  type="date"
-                  min={getTodayStr()}
-                  value={pickupDateIso}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setPickupDateIso(e.target.value);
-                      if (e.target.value === getTodayStr() && isTimeInPastForToday(pickupTime, e.target.value)) {
-                        setPickupTime(getCurrentTimeStr());
-                      }
-                      if (dropDateIso < e.target.value) setDropDateIso(e.target.value);
-                    }
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  aria-label="Pick-up date"
-                />
               </div>
+              <input
+                ref={pickupDateRef}
+                type="date"
+                min={getTodayStr()}
+                value={pickupDateIso}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setPickupDateIso(e.target.value);
+                    if (e.target.value === getTodayStr() && isTimeInPastForToday(pickupTime, e.target.value)) {
+                      setPickupTime(getCurrentTimeStr());
+                    }
+                    if (dropDateIso < e.target.value) setDropDateIso(e.target.value);
+                  }
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                aria-label="Pick-up date"
+              />
             </div>
 
-            {/* 6. PICK-UP TIME (moved before return fields) */}
-            <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[120px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
+            {/* 6. PICK-UP TIME */}
+            <div
+              onClick={() => openPicker(pickupTimeRef)}
+              className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[120px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative"
+            >
               <FieldLabel icon={<Clock className="w-2.5 h-2.5 text-amber-500" />}>
                 PICK-UP TIME
               </FieldLabel>
-              <div className="relative flex items-center justify-between gap-1 font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
+              <div className="flex items-center justify-between gap-1 font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
                 <span className="truncate">{pickupTime}</span>
                 <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 opacity-80 group-hover:opacity-100" />
-                <input
-                  type="time"
-                  min={pickupDateIso === getTodayStr() ? getCurrentTime24() : undefined}
-                  value={format24Hour(pickupTime)}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      if (pickupDateIso === getTodayStr() && e.target.value < getCurrentTime24()) {
-                        setPickupTime(getCurrentTimeStr());
-                      } else {
-                        setPickupTime(format12Hour(e.target.value));
-                      }
-                    }
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  aria-label="Pick-up time timer"
-                />
               </div>
+              <input
+                ref={pickupTimeRef}
+                type="time"
+                min={pickupDateIso === getTodayStr() ? getCurrentTime24() : undefined}
+                value={format24Hour(pickupTime)}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    if (pickupDateIso === getTodayStr() && e.target.value < getCurrentTime24()) {
+                      setPickupTime(getCurrentTimeStr());
+                    } else {
+                      setPickupTime(format12Hour(e.target.value));
+                    }
+                  }
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                aria-label="Pick-up time timer"
+              />
             </div>
 
             {/* 7 & 8. RETURN DATE / RETURN TIME — only for round-trip */}
             {isRoundTrip && (
               <>
-                <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative">
+                <div
+                  onClick={() => openPicker(dropDateRef)}
+                  className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[125px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 lg:border-r border-slate-200 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative"
+                >
                   <FieldLabel>RETURN DATE</FieldLabel>
-                  <div className="relative font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
+                  <div className="font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
                     <span>{formatDisplayDate(dropDateIso)}</span>
-                    <input
-                      type="date"
-                      value={dropDateIso}
-                      min={pickupDateIso || getTodayStr()}
-                      onChange={(e) => {
-                        if (e.target.value && e.target.value >= (pickupDateIso || getTodayStr())) {
-                          setDropDateIso(e.target.value);
-                        }
-                      }}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      aria-label="Return date"
-                    />
                   </div>
+                  <input
+                    ref={dropDateRef}
+                    type="date"
+                    value={dropDateIso}
+                    min={pickupDateIso || getTodayStr()}
+                    onChange={(e) => {
+                      if (e.target.value && e.target.value >= (pickupDateIso || getTodayStr())) {
+                        setDropDateIso(e.target.value);
+                      }
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    aria-label="Return date"
+                  />
                 </div>
 
-                <div className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[130px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative pr-2">
+                <div
+                  onClick={() => openPicker(dropTimeRef)}
+                  className="col-span-1 lg:flex-1 min-w-0 lg:min-w-[130px] bg-white lg:bg-transparent border border-slate-200 lg:border-0 px-3.5 py-2 cursor-pointer group rounded-xl lg:rounded-lg hover:bg-white transition-colors relative pr-2"
+                >
                   <FieldLabel icon={<Clock className="w-2.5 h-2.5 text-amber-500" />}>
                     RETURN TIME
                   </FieldLabel>
-                  <div className="relative flex items-center justify-between gap-1 font-bold text-slate-700 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
+                  <div className="flex items-center justify-between gap-1 font-bold text-slate-700 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition">
                     <span className="truncate">{dropTime}</span>
                     <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 opacity-80 group-hover:opacity-100" />
-                    <input
-                      type="time"
-                      value={format24Hour(dropTime)}
-                      onChange={(e) => {
-                        if (e.target.value) setDropTime(`till ${format12Hour(e.target.value)}`);
-                      }}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      aria-label="Return time timer"
-                    />
                   </div>
+                  <input
+                    ref={dropTimeRef}
+                    type="time"
+                    value={format24Hour(dropTime)}
+                    onChange={(e) => {
+                      if (e.target.value) setDropTime(`till ${format12Hour(e.target.value)}`);
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    aria-label="Return time timer"
+                  />
                 </div>
               </>
             )}
