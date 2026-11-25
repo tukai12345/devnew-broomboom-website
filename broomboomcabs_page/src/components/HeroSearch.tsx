@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowRightLeft,
@@ -21,15 +21,18 @@ import {
   Clock,
   Info,
   Calendar,
+  Plus,
 } from "lucide-react";
 import { CITIES } from "@/data/cabsData";
-import { api, CityItem } from "@/services/api";
+import { api } from "@/services/api";
 import { getStoredUser } from "@/utils/auth";
 
 export interface SearchParams {
   tripType: "outstation-oneway" | "outstation-round" | "airport" | "hourly" | "daily";
   fromCity: string;
   toCity: string;
+  stops?: string[];
+  stopCoords?: { lat: number; lng: number }[];
   pickupDate: string;
   pickupTime: string;
   returnDate: string;
@@ -42,6 +45,13 @@ export interface SearchParams {
   durationMinutes?: number;
   fromCoords?: { lat: number; lng: number };
   toCoords?: { lat: number; lng: number };
+}
+
+interface StopPoint {
+  id: string;
+  city: string;
+  state: string;
+  coords: { lat: number; lng: number } | null;
 }
 
 interface HeroSearchProps {
@@ -65,6 +75,13 @@ type DropdownKey =
   | "package"
   | null;
 
+interface IndexedCity {
+  id: string;
+  name: string;
+  state: string;
+  searchKey: string;
+}
+
 /* ------------------------------- data ------------------------------- */
 
 const TRIP_TABS: { id: TripType; label: string; badge?: string }[] = [
@@ -81,6 +98,16 @@ const HOURLY_PACKAGES = [
   { label: "10 hrs 100 kms", desc: "Extended day errands & meetings", tag: "BEST VALUE" },
   { label: "12 hrs 120 kms", desc: "Full day disposal & multi-city stops", tag: null },
 ];
+
+const MAX_STOPS = 3;
+
+// Only show the top 10 static cities in the search bar (never DB-stored user searches)
+const TOP_10_CITIES: IndexedCity[] = CITIES.slice(0, 10).map((c) => ({
+  id: c.id,
+  name: c.name,
+  state: c.state,
+  searchKey: `${c.name} ${c.state}`.toLowerCase(),
+}));
 
 /* ------------------------------- helpers ------------------------------- */
 
@@ -132,7 +159,6 @@ export const getCategoryBufferMinutes = (tripType?: string): number => {
   if (!tripType) return 15;
   if (tripType === "airport") return 15;
   if (tripType === "hourly") return 30;
-  // outstation-oneway, outstation-round, daily, etc. require 1 hour lead time
   return 60;
 };
 
@@ -213,7 +239,7 @@ const MobileDateTimePicker: React.FC<{
   onChangeDate: (date: string) => void;
   onChangeTime: (time: string) => void;
   onClose: () => void;
-}> = ({ title, date, time, tripType, minDate, onChangeDate, onChangeTime, onClose }) => {
+}> = React.memo(({ title, date, time, tripType, minDate, onChangeDate, onChangeTime, onClose }) => {
   const isPickup = title.toLowerCase().includes("pickup");
   const { hour, minute, meridiem } = parseTimeDetails(time);
 
@@ -253,7 +279,7 @@ const MobileDateTimePicker: React.FC<{
     return isTimeSlotBeforeNow(hour, m, meridiem, date, tripType);
   };
 
-  const dates = React.useMemo(() => {
+  const dates = useMemo(() => {
     const list = [];
     const todayStr = getTodayStr();
     const start = minDate ? new Date(`${minDate}T00:00:00`) : new Date();
@@ -272,10 +298,8 @@ const MobileDateTimePicker: React.FC<{
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex flex-col justify-end md:hidden">
-      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200" onClick={onClose} />
-      <div className="relative z-10 w-full max-h-[90vh] bg-white rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-200">
-        
-        {/* Header */}
+      <div className="fixed inset-0 bg-slate-950/60" onClick={onClose} />
+      <div className="relative z-10 w-full max-h-[90vh] bg-white rounded-t-3xl shadow-2xl flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-slate-100">
           <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition cursor-pointer">
@@ -283,9 +307,7 @@ const MobileDateTimePicker: React.FC<{
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex h-[300px] border-b border-slate-100">
-          {/* Dates */}
           <div className="flex-1 overflow-y-auto snap-y snap-mandatory border-r border-slate-100">
             {dates.map((d) => (
               <div
@@ -300,7 +322,6 @@ const MobileDateTimePicker: React.FC<{
             ))}
           </div>
 
-          {/* Time */}
           <div className="flex-[1.5] flex">
             <div className="flex-1 overflow-y-auto snap-y snap-mandatory">
               {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => {
@@ -392,7 +413,6 @@ const MobileDateTimePicker: React.FC<{
           </div>
         </div>
 
-        {/* Preview & Confirm */}
         <div className="p-4 space-y-3 pb-[max(2rem,env(safe-area-inset-bottom))]">
           <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3">
             <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1">
@@ -411,7 +431,8 @@ const MobileDateTimePicker: React.FC<{
     </div>,
     document.body
   );
-};
+});
+MobileDateTimePicker.displayName = "MobileDateTimePicker";
 
 const PopoverShell: React.FC<{
   children: React.ReactNode;
@@ -420,7 +441,7 @@ const PopoverShell: React.FC<{
   title?: string;
   onClose?: () => void;
   fullScreenOnMobile?: boolean;
-}> = ({
+}> = React.memo(({
   children,
   align = "left",
   width = "w-80",
@@ -433,9 +454,11 @@ const PopoverShell: React.FC<{
   );
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", check, { passive: true });
-    return () => window.removeEventListener("resize", check);
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
 
   if (typeof document === "undefined") return null;
@@ -448,7 +471,6 @@ const PopoverShell: React.FC<{
           onClick={(e) => e.stopPropagation()}
           className="fixed inset-0 z-[99999] bg-white flex flex-col"
         >
-          {/* Mobile Top Header (from the screen above) */}
           <div className="pt-[max(0.75rem,env(safe-area-inset-top))] px-4 pb-3 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 shadow-xs">
             <div className="flex items-center gap-2.5">
               {onClose && (
@@ -488,7 +510,6 @@ const PopoverShell: React.FC<{
             )}
           </div>
 
-          {/* Full content area */}
           <div className="flex-1 overflow-hidden p-4 flex flex-col min-h-0 bg-white">
             {children}
           </div>
@@ -503,7 +524,7 @@ const PopoverShell: React.FC<{
         className="fixed inset-0 z-[9999] flex flex-col justify-end"
       >
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+          className="fixed inset-0 bg-slate-950/60"
           onClick={onClose}
         />
         <div
@@ -547,111 +568,50 @@ const PopoverShell: React.FC<{
       data-popover-shell
       onClick={(e) => e.stopPropagation()}
       style={{ zIndex: 100 }}
-      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-amber-300 ring-1 ring-black/5 z-50 p-3`}
+      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-2 ${width} max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-xl border border-amber-300 ring-1 ring-black/5 z-50 p-3`}
     >
       {children}
     </div>
   );
-};
+});
+PopoverShell.displayName = "PopoverShell";
 
 const CityPopover: React.FC<{
   placeholder: string;
-  query: string;
-  onQueryChange: (v: string) => void;
   selected: string;
   onSelect: (name: string, state?: string, coords?: { lat: number; lng: number }) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
-  citiesList?: { id: string; name: string; state: string }[];
   align?: "left" | "right";
   title?: string;
   onClose?: () => void;
-}> = ({
+}> = React.memo(({
   placeholder,
-  query,
-  onQueryChange,
   selected,
   onSelect,
-  inputRef,
-  citiesList = CITIES,
   align = "left",
   title,
   onClose,
 }) => {
-  const [mapResults, setMapResults] = useState<CityItem[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const localInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setMapResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    let active = true;
-    const abortCtrl = new AbortController();
-    setIsSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const results = await api.searchCities(q, abortCtrl.signal);
-        if (active) {
-          setMapResults(results);
-          setIsSearching(false);
-        }
-      } catch {
-        if (active) setIsSearching(false);
-      }
-    }, 250);
-
-    return () => {
-      active = false;
-      abortCtrl.abort();
-      clearTimeout(timer);
-    };
-  }, [query]);
-
-  const displayItems = React.useMemo(() => {
-    if (query.trim().length >= 2 && mapResults.length > 0) {
-      return mapResults.map((m) => {
-        const fullAddr = (m.displayName || m.name || "").trim();
-        const parts = fullAddr.split(",");
-        const primary = parts[0]?.trim() || fullAddr;
-        const secondary = parts.slice(1).join(", ").trim();
-        return {
-          id: m.placeId || m.id || `${m.lat}_${m.lon}_${primary}`,
-          primaryTitle: primary,
-          name: fullAddr,
-          fullAddress: fullAddr,
-          displayName: fullAddr,
-          state: secondary || m.state || "India",
-          lat: m.lat ? parseFloat(String(m.lat)) : undefined,
-          lng: m.lon ? parseFloat(String(m.lon)) : undefined,
-          source: m.source || "Map",
-        };
-      });
-    }
-
-    const filtered = citiesList.filter(
-      (c) =>
-        c.name.toLowerCase().includes(query.toLowerCase()) ||
-        c.state.toLowerCase().includes(query.toLowerCase())
-    );
+  // Filter strictly from TOP_10_CITIES so DB-saved searches never appear in the search bar
+  const displayItems = useMemo(() => {
+    const lowerQ = query.trim().toLowerCase();
+    const filtered = lowerQ
+      ? TOP_10_CITIES.filter((c) => c.searchKey.includes(lowerQ))
+      : TOP_10_CITIES;
 
     return filtered.map((c) => ({
       id: c.id,
       primaryTitle: c.name,
       name: `${c.name}, ${c.state}`,
       fullAddress: `${c.name}, ${c.state}`,
-      displayName: `${c.name}, ${c.state}`,
       state: c.state,
-      lat: undefined,
-      lng: undefined,
-      source: "Popular",
     }));
-  }, [query, mapResults, citiesList]);
+  }, [query]);
 
   useEffect(() => {
-    inputRef.current?.focus({ preventScroll: true });
+    localInputRef.current?.focus({ preventScroll: true });
   }, []);
 
   return (
@@ -665,22 +625,18 @@ const CityPopover: React.FC<{
       <div className="relative mb-3 shrink-0">
         <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
         <input
-          ref={inputRef}
+          ref={localInputRef}
           autoFocus
           type="text"
           placeholder={placeholder}
           value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
               if (displayItems.length > 0) {
                 const item = displayItems[0];
-                onSelect(
-                  item.fullAddress || item.name,
-                  item.state,
-                  item.lat && item.lng ? { lat: item.lat, lng: item.lng } : undefined
-                );
+                onSelect(item.fullAddress || item.name, item.state);
               } else if (query.trim()) {
                 onSelect(query.trim());
               }
@@ -694,7 +650,7 @@ const CityPopover: React.FC<{
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              onQueryChange("");
+              setQuery("");
             }}
             className="absolute right-2.5 top-2.5 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center text-xs cursor-pointer"
             aria-label="Clear"
@@ -704,35 +660,31 @@ const CityPopover: React.FC<{
         )}
       </div>
 
-      {isSearching && (
-        <div className="flex items-center gap-2 px-2.5 py-1.5 mb-2 bg-amber-50 rounded-lg text-[11px] font-bold text-amber-800 animate-pulse border border-amber-200/50 shrink-0">
-          <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-          <span>Searching map locations across India...</span>
-        </div>
-      )}
-
       <div className="flex-1 md:max-h-64 overflow-y-auto space-y-0.5 divide-y divide-slate-100 min-h-0">
-        {isSearching && displayItems.length === 0 ? (
-          <div className="py-8 flex flex-col items-center justify-center gap-2 text-center text-slate-500">
-            <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-            <p className="text-xs font-bold text-slate-700">Searching live map locations...</p>
-            <p className="text-[10px] text-slate-400">Searching all cities, towns &amp; places in India</p>
-          </div>
-        ) : displayItems.length === 0 ? (
-          <p className="text-[11px] text-slate-400 text-center py-6">
-            No places found. Type city, town, landmark or PIN
-          </p>
+        {displayItems.length === 0 ? (
+          query.trim() ? (
+            <div
+              onClick={() => onSelect(query.trim())}
+              className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs bg-amber-50/70 hover:bg-amber-100 text-slate-900 font-bold transition"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <span className="truncate">Use &ldquo;{query.trim()}&rdquo;</span>
+              </div>
+              <span className="text-[10px] font-black uppercase text-amber-700 shrink-0">Select</span>
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate-400 text-center py-6">
+              Select a city from the list
+            </p>
+          )
         ) : (
           displayItems.map((item) => (
             <div
               key={item.id}
-              onClick={() =>
-                onSelect(
-                  item.fullAddress || item.name,
-                  item.state,
-                  item.lat && item.lng ? { lat: item.lat, lng: item.lng } : undefined
-                )
-              }
+              onClick={() => onSelect(item.fullAddress || item.name, item.state)}
               className={`flex items-start justify-between p-2.5 rounded-xl cursor-pointer text-xs transition group ${
                 selected === item.name || selected === item.fullAddress || (item.primaryTitle && selected.startsWith(item.primaryTitle))
                   ? "bg-amber-50 text-amber-950 font-bold"
@@ -748,16 +700,11 @@ const CityPopover: React.FC<{
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div className="font-bold text-[13px] text-slate-950 truncate flex items-center gap-1.5">
-                    <span>{item.primaryTitle || item.name}</span>
-                    {["Nominatim", "Map", "GooglePlaces", "GoogleMaps", "OSRM"].includes(item.source || "") && (
-                      <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded font-black tracking-wider uppercase">
-                        MAP
-                      </span>
-                    )}
+                  <div className="font-bold text-[13px] text-slate-950 truncate">
+                    {item.primaryTitle || item.name}
                   </div>
                   <div className="text-[11px] text-slate-500 line-clamp-2 leading-snug mt-0.5 break-words">
-                    {item.fullAddress !== item.primaryTitle ? item.fullAddress : item.state}
+                    {item.state}
                   </div>
                 </div>
               </div>
@@ -770,7 +717,8 @@ const CityPopover: React.FC<{
       </div>
     </PopoverShell>
   );
-};
+});
+CityPopover.displayName = "CityPopover";
 
 const CalendarPopover: React.FC<{
   month: Date;
@@ -782,7 +730,7 @@ const CalendarPopover: React.FC<{
   align?: "left" | "right";
   title?: string;
   onClose?: () => void;
-}> = ({ month, onPrev, onNext, selectedDate, minDate, onSelect, align = "left", title, onClose }) => {
+}> = React.memo(({ month, onPrev, onNext, selectedDate, minDate, onSelect, align = "left", title, onClose }) => {
   const year = month.getFullYear();
   const monthIdx = month.getMonth();
   const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
@@ -794,7 +742,6 @@ const CalendarPopover: React.FC<{
   const currentMonthIdx = today.getMonth();
   const todayDay = today.getDate();
 
-  // If viewed month is the current month (or earlier), disable navigating back to past months
   const isPastMonth = year < currentYear || (year === currentYear && monthIdx <= currentMonthIdx);
 
   return (
@@ -878,7 +825,8 @@ const CalendarPopover: React.FC<{
       </div>
     </PopoverShell>
   );
-};
+});
+CalendarPopover.displayName = "CalendarPopover";
 
 const TimePopover: React.FC<{
   title: string;
@@ -888,7 +836,7 @@ const TimePopover: React.FC<{
   tripType?: string;
   align?: "left" | "right";
   onClose?: () => void;
-}> = ({
+}> = React.memo(({
   title,
   value,
   onChange,
@@ -1038,7 +986,8 @@ const TimePopover: React.FC<{
       )}
     </PopoverShell>
   );
-};
+});
+TimePopover.displayName = "TimePopover";
 
 /* ------------------------------ main ------------------------------ */
 
@@ -1049,7 +998,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   initialFrom = "",
   initialTo = "",
   heading,
-  navigateOnTabClick = false,
 }) => {
   const initialType = (activeTripType as TripType) || "outstation-round";
   const [tripType, setTripType] = useState<TripType>(initialType);
@@ -1064,12 +1012,16 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const [fromCoords, setFromCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [toCoords, setToCoords] = useState<{ lat: number; lng: number } | null>(null);
 
+  // Multi-stop route state
+  const [stops, setStops] = useState<StopPoint[]>([]);
+  const [activeStopDropdownId, setActiveStopDropdownId] = useState<string | null>(null);
+
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDurationMinutes, setRouteDurationMinutes] = useState<number | null>(null);
 
   const [pickupDate, setPickupDate] = useState(() => getMinimumPickupDateStr(initialType));
   const [pickupTime, setPickupTime] = useState(() => getCurrentTimeStr(initialType));
-  const [returnDate, setReturnDate] = useState(getTodayStr());
+  const [returnDate, setReturnDate] = useState(getTodayStr);
   const [dropTime, setDropTime] = useState("09:45 PM");
   const [hourlyPackage, setHourlyPackage] = useState("8 hrs 80 kms");
   const [hourlyPackagesList, setHourlyPackagesList] = useState(HOURLY_PACKAGES);
@@ -1119,20 +1071,18 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       window.removeEventListener("broomboom_rental_fares_updated", handleCustom);
     };
   }, []);
+
   const [airportMode, setAirportMode] = useState<"to-airport" | "from-airport">("to-airport");
 
   const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
   const [mobileDateTimeTarget, setMobileDateTimeTarget] = useState<"pickup" | "return" | null>(null);
-  
-  const [searchFromQuery, setSearchFromQuery] = useState("");
-  const [searchToQuery, setSearchToQuery] = useState("");
+
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
   const isInitialMount = useRef(true);
@@ -1147,16 +1097,17 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       const t = activeTripType as TripType;
       setTripType(t);
       const minDate = getMinimumPickupDateStr(t);
-      if (pickupDate <= minDate) {
-        if (pickupDate < minDate) {
-          setPickupDate(minDate);
-        }
-        if (isTimeInPastForToday(pickupTime, minDate, t)) {
-          setPickupTime(getCurrentTimeStr(t));
-        }
-      }
+      setPickupDate((prevDate) => {
+        const nextDate = prevDate < minDate ? minDate : prevDate;
+        setPickupTime((prevTime) =>
+          nextDate <= minDate && isTimeInPastForToday(prevTime, minDate, t)
+            ? getCurrentTimeStr(t)
+            : prevTime
+        );
+        return nextDate;
+      });
     }
-  }, [activeTripType, pickupDate, pickupTime]);
+  }, [activeTripType]);
 
   useEffect(() => {
     setFromCity(initialFrom ?? "");
@@ -1190,59 +1141,41 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         return;
       }
       setOpenDropdown(null);
+      setActiveStopDropdownId(null);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  useEffect(() => {
-    if (openDropdown === "from" || openDropdown === "to") {
-      searchInputRef.current?.focus({ preventScroll: true });
-    }
-  }, [openDropdown]);
+  // Multi-leg route distance calculation (From -> Stop 1 -> ... -> To)
+  const computeFullRouteMetrics = useCallback(
+    async (
+      originCity: string,
+      destCity: string,
+      originCoords: { lat: number; lng: number } | null,
+      destCoords: { lat: number; lng: number } | null,
+      activeStops: StopPoint[]
+    ) => {
+      const validStops = tripType.includes("outstation")
+        ? activeStops.filter((s) => s.city.trim().length > 0)
+        : [];
 
-  const [backendCities, setBackendCities] = useState<CityItem[]>([]);
+      const waypoints = [
+        { city: originCity.trim(), coords: originCoords },
+        ...validStops.map((s) => ({ city: s.city.trim(), coords: s.coords })),
+        { city: destCity.trim(), coords: destCoords },
+      ];
 
-  useEffect(() => {
-    let active = true;
-    api
-      .getCities()
-      .then((data) => {
-        if (active && data && data.length > 0) setBackendCities(data);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
+      let totalDist = 0;
+      let totalDur = 0;
 
-  const combinedCities = React.useMemo(() => {
-    const list = [...CITIES];
-    const existing = new Set(CITIES.map((c) => c.name.toLowerCase()));
-    for (const bc of backendCities) {
-      if (bc.name && !existing.has(bc.name.toLowerCase())) {
-        existing.add(bc.name.toLowerCase());
-        list.push({
-          id: bc.id || bc.name,
-          name: bc.name,
-          state: bc.state || "India",
-        });
-      }
-    }
-    return list;
-  }, [backendCities]);
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const legFrom = waypoints[i];
+        const legTo = waypoints[i + 1];
+        if (!legFrom.city || !legTo.city || legFrom.city.toLowerCase() === legTo.city.toLowerCase()) {
+          continue;
+        }
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function calculateMapDistance() {
-      if (!fromCity || !toCity || fromCity.trim().toLowerCase() === toCity.trim().toLowerCase()) {
-        setRouteDistance(null);
-        setRouteDurationMinutes(null);
-        return;
-      }
-
-      try {
         const payload: {
           from: string;
           to: string;
@@ -1251,24 +1184,60 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
           dropLat?: number;
           dropLng?: number;
         } = {
-          from: fromCity.trim(),
-          to: toCity.trim(),
+          from: legFrom.city,
+          to: legTo.city,
         };
 
-        if (fromCoords) {
-          payload.pickupLat = fromCoords.lat;
-          payload.pickupLng = fromCoords.lng;
+        if (legFrom.coords) {
+          payload.pickupLat = legFrom.coords.lat;
+          payload.pickupLng = legFrom.coords.lng;
         }
-        if (toCoords) {
-          payload.dropLat = toCoords.lat;
-          payload.dropLng = toCoords.lng;
+        if (legTo.coords) {
+          payload.dropLat = legTo.coords.lat;
+          payload.dropLng = legTo.coords.lng;
         }
 
         const res = await api.calculateDistance(payload);
+        if (res && res.distance > 0) {
+          totalDist += res.distance;
+          totalDur += res.durationMinutes || 0;
+        } else {
+          return null;
+        }
+      }
+
+      return totalDist > 0 ? { distance: totalDist, durationMinutes: totalDur } : null;
+    },
+    [tripType]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function calculateMapDistance() {
+      const validStops = tripType.includes("outstation")
+        ? stops.filter((s) => s.city.trim().length > 0)
+        : [];
+
+      if (
+        !fromCity ||
+        !toCity ||
+        (validStops.length === 0 && fromCity.trim().toLowerCase() === toCity.trim().toLowerCase())
+      ) {
+        setRouteDistance(null);
+        setRouteDurationMinutes(null);
+        return;
+      }
+
+      try {
+        const res = await computeFullRouteMetrics(fromCity, toCity, fromCoords, toCoords, stops);
         if (!cancelled) {
           if (res && res.distance > 0) {
             setRouteDistance(res.distance);
             setRouteDurationMinutes(res.durationMinutes);
+          } else {
+            setRouteDistance(null);
+            setRouteDurationMinutes(null);
           }
         }
       } catch {
@@ -1281,9 +1250,52 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [fromCity, toCity, fromCoords, toCoords]);
+  }, [fromCity, toCity, fromCoords, toCoords, stops, tripType, computeFullRouteMetrics]);
 
-  const toggle = (key: DropdownKey) => setOpenDropdown((cur) => (cur === key ? null : key));
+  const toggle = (key: DropdownKey) => {
+    setActiveStopDropdownId(null);
+    setOpenDropdown((cur) => (cur === key ? null : key));
+  };
+
+  /* -------------------- Stop handlers -------------------- */
+  const handleAddStop = () => {
+    if (stops.length >= MAX_STOPS) return;
+    const newId = `stop_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    setStops((prev) => [...prev, { id: newId, city: "", state: "", coords: null }]);
+    setOpenDropdown(null);
+    setActiveStopDropdownId(newId);
+  };
+
+  const handleRemoveStop = (id: string) => {
+    setStops((prev) => prev.filter((s) => s.id !== id));
+    if (activeStopDropdownId === id) {
+      setActiveStopDropdownId(null);
+    }
+  };
+
+  const handleSelectStop = useCallback(
+    (id: string, city: string, state?: string, coords?: { lat: number; lng: number }) => {
+      setStops((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                city,
+                state: state || s.state,
+                coords: coords || null,
+              }
+            : s
+        )
+      );
+      setActiveStopDropdownId(null);
+    },
+    []
+  );
+
+  const toggleStopDropdown = (stop: StopPoint) => {
+    setOpenDropdown(null);
+    setActiveStopDropdownId((cur) => (cur === stop.id ? null : stop.id));
+  };
 
   const changeTripType = (t: TripType) => {
     setHasInteracted(true);
@@ -1312,6 +1324,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     setToCity(tempCity);
     setToState(tempState);
     setToCoords(tempCoords);
+    if (stops.length > 1) {
+      setStops((prev) => [...prev].reverse());
+    }
   };
 
   const [isSubmittingSearch, setIsSubmittingSearch] = useState(false);
@@ -1321,36 +1336,19 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     let finalDist = routeDistance;
     let finalDur = routeDurationMinutes;
 
+    const validStops = tripType.includes("outstation")
+      ? stops.filter((s) => s.city.trim().length > 0)
+      : [];
+
     if (
       !finalDist &&
       fromCity &&
       toCity &&
-      fromCity.trim().toLowerCase() !== toCity.trim().toLowerCase()
+      (validStops.length > 0 || fromCity.trim().toLowerCase() !== toCity.trim().toLowerCase())
     ) {
       try {
-        const payload: {
-          from: string;
-          to: string;
-          pickupLat?: number;
-          pickupLng?: number;
-          dropLat?: number;
-          dropLng?: number;
-        } = {
-          from: fromCity.trim(),
-          to: toCity.trim(),
-        };
-        if (fromCoords) {
-          payload.pickupLat = fromCoords.lat;
-          payload.pickupLng = fromCoords.lng;
-        }
-        if (toCoords) {
-          payload.dropLat = toCoords.lat;
-          payload.dropLng = toCoords.lng;
-        }
-
-        // Race with 3s timeout so backend Google Maps / OSRM route resolves without freezing
-        const distPromise = api.calculateDistance(payload);
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+        const distPromise = computeFullRouteMetrics(fromCity, toCity, fromCoords, toCoords, stops);
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500));
         const res = await Promise.race([distPromise, timeoutPromise]);
         if (res && res.distance > 0) {
           finalDist = res.distance;
@@ -1368,7 +1366,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         ? getCurrentTimeStr(tripType)
         : pickupTime;
 
-    // Collect logged-in user credentials if available in client storage
+    const stopCities = validStops.map((s) => s.city.trim());
+    const resolvedStopCoords = validStops
+      .filter((s): s is StopPoint & { coords: { lat: number; lng: number } } => Boolean(s.coords))
+      .map((s) => s.coords);
+
     let detectedPhone: string | undefined = undefined;
     let detectedName: string | undefined = undefined;
     try {
@@ -1379,33 +1381,32 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
           detectedName = authUser.name;
         }
         if (!detectedPhone) {
-          const rawSession = sessionStorage.getItem("broomboom_user");
-          if (rawSession) {
-            const parsed = JSON.parse(rawSession);
+          const raw =
+            sessionStorage.getItem("broomboom_user") ||
+            localStorage.getItem("broomboom_user") ||
+            localStorage.getItem("user");
+          if (raw) {
+            const parsed = JSON.parse(raw);
             detectedPhone = parsed.phone || parsed.identifier || parsed.mobile;
             detectedName = parsed.name;
           }
         }
         if (!detectedPhone) {
-          const rawLocal = localStorage.getItem("broomboom_user") || localStorage.getItem("user");
-          if (rawLocal) {
-            const parsed = JSON.parse(rawLocal);
-            detectedPhone = parsed.phone || parsed.mobile || parsed.identifier;
-            detectedName = parsed.name;
-          }
-        }
-        if (!detectedPhone) {
-          const phoneKey = localStorage.getItem("broomboom_user_phone") || sessionStorage.getItem("broomboom_user_phone");
-          if (phoneKey) detectedPhone = phoneKey;
+          detectedPhone =
+            localStorage.getItem("broomboom_user_phone") ||
+            sessionStorage.getItem("broomboom_user_phone") ||
+            undefined;
         }
       }
     } catch {}
 
+    // Store search details in DB (never fed back into the search bar dropdown)
     const leadPayload = {
       serviceType: tripType,
       tripType,
       fromCity,
       toCity: toCity || undefined,
+      stops: stopCities.length > 0 ? stopCities : undefined,
       pickupAddress: fromCity,
       dropAddress: toCity || undefined,
       pickupDate: effectivePickupDate,
@@ -1424,6 +1425,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         tripType,
         fromCity,
         toCity,
+        stops: stopCities,
         pickupDate: effectivePickupDate,
         pickupTime: validPickupTime,
         returnDate,
@@ -1436,20 +1438,20 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       },
     };
 
-    // Keep lead in session storage so LoginModal or subsequent checkout steps can upgrade it with phone number immediately
     try {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("broomboom_last_search_lead", JSON.stringify(leadPayload));
       }
     } catch {}
 
-    // Dispatch lead capture asynchronously to Booking Leads API & DB
     api.createBookingLead(leadPayload).catch(() => {});
 
     onSearch({
       tripType,
       fromCity,
       toCity,
+      stops: stopCities.length > 0 ? stopCities : undefined,
+      stopCoords: resolvedStopCoords.length > 0 ? resolvedStopCoords : undefined,
       pickupDate: effectivePickupDate,
       pickupTime: validPickupTime,
       returnDate,
@@ -1466,19 +1468,20 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     setIsSubmittingSearch(false);
   };
 
-  const prevMonth = (e: React.MouseEvent) => {
+  const prevMonth = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const today = new Date();
     const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const target = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
-    if (target < currentMonth) return;
-    setCalendarMonth(target);
-  };
+    setCalendarMonth((prev) => {
+      const target = new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
+      return target < currentMonth ? prev : target;
+    });
+  }, []);
 
-  const nextMonth = (e: React.MouseEvent) => {
+  const nextMonth = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
-  };
+    setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }, []);
 
   const selectCalendarDate = (day: number, isPickup: boolean) => {
     const formatted = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -1499,12 +1502,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     setOpenDropdown(null);
   };
 
-  const pickupParts = parseDateParts(pickupDate);
-  const returnParts = parseDateParts(returnDate);
-  const pickupTimeParts = parseTimeParts(pickupTime);
-  const dropTimeParts = parseTimeParts(dropTime);
+  const pickupParts = useMemo(() => parseDateParts(pickupDate), [pickupDate]);
+  const returnParts = useMemo(() => parseDateParts(returnDate), [returnDate]);
+  const pickupTimeParts = useMemo(() => parseTimeParts(pickupTime), [pickupTime]);
+  const dropTimeParts = useMemo(() => parseTimeParts(dropTime), [dropTime]);
 
-  /* Class tokens optimized for mobile (Side-by-Side Grid) */
   const field =
     "py-2 px-3 sm:py-3.5 sm:px-4 hover:bg-amber-50/50 cursor-pointer transition relative group flex flex-col justify-center min-h-[60px] sm:min-h-[102px] min-w-0 bg-white";
   const label = "text-[10px] sm:text-xs text-slate-500 font-semibold mb-0.5 flex items-center gap-1";
@@ -1515,6 +1517,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const timeLine = "flex items-baseline gap-1 tracking-tight leading-none";
 
   const isSelected = hasInteracted || Boolean(heading);
+  const hasAnyDropdownOpen = Boolean(openDropdown || activeStopDropdownId);
 
   const defaultTitle = (
     <>
@@ -1532,21 +1535,19 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
     <div
       className="relative pt-6 sm:pt-8 md:pt-10 pb-10 sm:pb-12 md:pb-12 bg-cover bg-center bg-no-repeat overflow-visible"
       style={{
-        zIndex: openDropdown ? 50 : 20,
+        zIndex: hasAnyDropdownOpen ? 50 : 20,
         backgroundImage: `linear-gradient(rgba(10, 16, 26, 0.65), rgba(10, 16, 26, 0.80)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80')`,
       }}
     >
       <div
         ref={containerRef}
-        style={{ zIndex: openDropdown ? 50 : 20 }}
-        className={`max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 relative ${openDropdown ? "z-40" : "z-20"}`}
+        style={{ zIndex: hasAnyDropdownOpen ? 50 : 20 }}
+        className={`max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 relative ${hasAnyDropdownOpen ? "z-40" : "z-20"}`}
       >
-        
-        {/* =============================== HEADER (SHOWN ON ALL) ==================================== */}
-        <div className="mb-2 sm:mb-3 hidden sm:flex items-center justify-center animate-in fade-in duration-200">
-        </div>
+        {/* =============================== HEADER ==================================== */}
+        <div className="mb-2 sm:mb-3 hidden sm:flex items-center justify-center" />
 
-        <div className="mb-4 sm:mb-6 text-white text-center flex flex-col items-center animate-in fade-in duration-200 px-2">
+        <div className="mb-4 sm:mb-6 text-white text-center flex flex-col items-center px-2">
           <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-[32px] font-black text-white tracking-tight leading-tight max-w-4xl mx-auto drop-shadow-md">
             {activeTitle}
           </h1>
@@ -1560,11 +1561,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         {/* ================================================================================= */}
         <div className="md:hidden">
           <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200">
-
             {/* Top Tabs */}
             <div className="p-2 bg-white border-b border-slate-100">
               <div className="flex bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-slate-200 overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => changeTripType("outstation-oneway")}
                   className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
                     isSelected && tripType.includes("outstation")
@@ -1581,6 +1582,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 <div className="w-px bg-slate-200 my-2" />
 
                 <button
+                  type="button"
                   onClick={() => changeTripType("airport")}
                   className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
                     isSelected && tripType === "airport"
@@ -1597,6 +1599,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 <div className="w-px bg-slate-200 my-2" />
 
                 <button
+                  type="button"
                   onClick={() => changeTripType("hourly")}
                   className={`flex-1 min-w-0 py-1.5 px-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
                     isSelected && tripType === "hourly"
@@ -1613,19 +1616,22 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
             </div>
 
             <div className="p-3">
-              {/* Info banner — outstation only */}
               {tripType.includes("outstation") && (
                 <div className="bg-[#FEF6E7] text-[#B9831B] text-[10px] font-medium p-1.5 rounded-md flex items-center gap-1.5 mb-2.5">
                   <Info className="w-3.5 h-3.5 shrink-0" />
-                  <span>Includes one pick up &amp; drop</span>
+                  <span>
+                    {stops.length > 0
+                      ? `Multi-stop route (${stops.length} stop${stops.length > 1 ? "s" : ""} added)`
+                      : "Includes one pick up & drop"}
+                  </span>
                 </div>
               )}
 
-              {/* Airport mode toggle — NEW */}
               {tripType === "airport" && (
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex flex-1 border border-slate-300 rounded-md p-0.5 bg-white h-[34px]">
                     <button
+                      type="button"
                       onClick={() => setAirportMode("to-airport")}
                       className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
                         airportMode === "to-airport"
@@ -1637,6 +1643,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       <span className="truncate">To Airport</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => setAirportMode("from-airport")}
                       className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
                         airportMode === "from-airport"
@@ -1651,11 +1658,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 </div>
               )}
 
-              {/* Outstation one-way / round toggle */}
               {tripType.includes("outstation") && (
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex flex-1 border border-slate-300 rounded-md p-0.5 bg-white h-[34px]">
                     <button
+                      type="button"
                       onClick={() => changeTripType("outstation-oneway")}
                       className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
                         isSelected && tripType === "outstation-oneway"
@@ -1669,6 +1676,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       <span className="truncate">One Way</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => changeTripType("outstation-round")}
                       className={`flex-1 min-w-0 text-[12px] font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 px-1 ${
                         isSelected && tripType === "outstation-round"
@@ -1685,7 +1693,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 </div>
               )}
 
-              {/* Pickup & Drop Inputs — swap button clears text with pr-12 */}
+              {/* Pickup, Stops & Drop Inputs */}
               <div className="relative space-y-2">
                 <div
                   onClick={() => toggle("from")}
@@ -1696,9 +1704,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       <div className="w-2 h-2 rounded-full border-2 border-amber-500 bg-white" />
                     ) : (
                       <>
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                        <div className="w-px h-3.5 bg-slate-300" />
-                        <div className="w-1.5 h-1.5 rounded-full border border-slate-300 bg-white" />
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <div className="w-px h-3 bg-slate-300" />
                       </>
                     )}
                   </div>
@@ -1708,10 +1715,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
                   {openDropdown === "from" && (
                     <CityPopover
-                      citiesList={combinedCities}
                       placeholder="Search pickup city..."
-                      query={searchFromQuery}
-                      onQueryChange={setSearchFromQuery}
                       selected={fromCity}
                       title="Select Pickup City"
                       onClose={() => setOpenDropdown(null)}
@@ -1721,35 +1725,76 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         if (coords) setFromCoords(coords);
                         setOpenDropdown(null);
                       }}
-                      inputRef={searchInputRef}
                     />
                   )}
                 </div>
 
-                {/* Swap — hidden for hourly (no drop field) */}
+                {tripType.includes("outstation") &&
+                  stops.map((stop, idx) => (
+                    <div
+                      key={stop.id}
+                      onClick={() => toggleStopDropdown(stop)}
+                      className="bg-amber-50/60 border border-amber-200 rounded-md p-2.5 pr-10 flex items-center gap-2.5 cursor-pointer relative min-w-0"
+                    >
+                      <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <span
+                        className={`flex-1 min-w-0 text-[12px] font-bold uppercase tracking-wide truncate ${
+                          stop.city ? "text-slate-900" : "text-amber-700/70"
+                        }`}
+                      >
+                        {stop.city || `STOP ${idx + 1} LOCATION`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveStop(stop.id);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 border border-slate-200 flex items-center justify-center transition"
+                        title="Remove Stop"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+
+                      {activeStopDropdownId === stop.id && (
+                        <CityPopover
+                          placeholder={`Search stop ${idx + 1} city...`}
+                          selected={stop.city}
+                          title={`Select Stop ${idx + 1}`}
+                          onClose={() => setActiveStopDropdownId(null)}
+                          onSelect={(n, st, coords) => handleSelectStop(stop.id, n, st, coords)}
+                        />
+                      )}
+                    </div>
+                  ))}
+
                 {tripType !== "hourly" && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       handleSwap(e);
                       if (tripType === "airport") {
                         setAirportMode((m) => (m === "to-airport" ? "from-airport" : "to-airport"));
                       }
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-blue-100 rounded-full flex items-center justify-center shadow-sm hover:bg-blue-50 transition active:scale-95 text-blue-500"
+                    className={`absolute right-2 ${
+                      stops.length > 0 ? "top-5" : "top-1/2 -translate-y-1/2"
+                    } z-10 w-8 h-8 bg-white border border-blue-100 rounded-full flex items-center justify-center shadow-sm hover:bg-blue-50 transition active:scale-95 text-blue-500`}
                     title="Swap Locations"
                   >
                     <ArrowUpDown className="w-4 h-4" />
                   </button>
                 )}
 
-                {/* Drop field — hidden for hourly */}
                 {tripType !== "hourly" && (
                   <div
                     onClick={() => toggle("to")}
                     className="bg-[#F9FAFB] border border-slate-200 rounded-md p-2.5 pr-12 flex items-center gap-2.5 cursor-pointer relative min-w-0"
                   >
                     <div className="flex flex-col items-center gap-1 shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full border border-slate-300 bg-white" />
+                      <div className="w-2 h-2 rounded-full border-2 border-red-500 bg-white" />
                     </div>
                     <span className={`flex-1 min-w-0 text-[12px] font-bold uppercase tracking-wide truncate ${toCity ? "text-slate-900" : "text-slate-400"}`}>
                       {toCity || "DROP ADDRESS"}
@@ -1757,10 +1802,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
 
                     {openDropdown === "to" && (
                       <CityPopover
-                        citiesList={combinedCities}
                         placeholder="Search destination city..."
-                        query={searchToQuery}
-                        onQueryChange={setSearchToQuery}
                         selected={toCity}
                         align="right"
                         title="Select Destination City"
@@ -1771,21 +1813,28 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                           if (coords) setToCoords(coords);
                           setOpenDropdown(null);
                         }}
-                        inputRef={searchInputRef}
                       />
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Add Stops — outstation only */}
-              {tripType.includes("outstation") && (
-                <button className="text-amber-600 text-[12px] font-bold mt-2 mb-2.5 flex items-center">
-                  + Add Stops
+              {tripType.includes("outstation") && stops.length < MAX_STOPS && (
+                <button
+                  type="button"
+                  onClick={handleAddStop}
+                  className="text-amber-600 hover:text-amber-700 text-[12px] font-bold mt-2 mb-2.5 flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Add Stops</span>
+                  {stops.length > 0 && (
+                    <span className="text-[10px] text-slate-400 font-semibold">
+                      ({stops.length}/{MAX_STOPS})
+                    </span>
+                  )}
                 </button>
               )}
 
-              {/* Hourly Package Selector — NEW */}
               {tripType === "hourly" && (
                 <div className="mt-3">
                   <div className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1.5">
@@ -1839,7 +1888,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 </div>
               )}
 
-              {/* Date & Time cards — full-width for non-round trips, 2 cols for round-trip */}
+              {/* Date & Time cards */}
               <div className={`mt-3 mb-3 ${tripType === "outstation-round" ? "grid grid-cols-2 gap-2" : ""}`}>
                 <div
                   onClick={() => setMobileDateTimeTarget("pickup")}
@@ -1858,7 +1907,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   <div className="text-[12px] font-semibold text-slate-500 mt-1 truncate">{pickupTime}</div>
                 </div>
 
-                {/* Round Trip — Return card */}
                 {tripType === "outstation-round" && (
                   <div
                     onClick={() => setMobileDateTimeTarget("return")}
@@ -1879,12 +1927,15 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 )}
               </div>
 
-              {/* Exact Road Distance Display */}
               {routeDistance != null && routeDistance > 0 && fromCity && toCity && (
-                <div className="flex items-center justify-between px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-200/80 text-[11px] font-semibold text-amber-950">
+                <div className="flex items-center justify-between px-3 py-1.5 mb-2.5 bg-amber-50 rounded-lg border border-amber-200/80 text-[11px] font-semibold text-amber-950">
                   <span className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Exact Road Distance:</span>
+                    <span>
+                      {tripType.includes("outstation") && stops.some((s) => s.city.trim())
+                        ? "Multi-Stop Distance:"
+                        : "Exact Road Distance:"}
+                    </span>
                   </span>
                   <span className="font-extrabold font-mono text-slate-900">
                     {routeDistance.toFixed(1)} km
@@ -1897,7 +1948,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 </div>
               )}
 
-              {/* Search Button */}
               <button
                 type="button"
                 onClick={handleSearchSubmit}
@@ -1916,7 +1966,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
             </div>
           </div>
 
-          {/* Mobile Date & Time Picker — driven by mobileDateTimeTarget */}
           {mobileDateTimeTarget && (
             <MobileDateTimePicker
               title={
@@ -1931,7 +1980,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               onChangeDate={(d) => {
                 if (mobileDateTimeTarget === "pickup") {
                   setPickupDate(d);
-                  // Keep return on/after pickup
                   if (returnDate < d) setReturnDate(d);
                 } else {
                   setReturnDate(d);
@@ -1962,10 +2010,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         {/* =============================== DESKTOP VIEW =================================== */}
         {/* ================================================================================= */}
         <div className="hidden md:block">
-          {/* Main card */}
           <div
-            style={{ zIndex: openDropdown ? 50 : 20 }}
-            className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-amber-200/90 pt-3 sm:pt-4 pb-12 sm:pb-10 px-2.5 sm:px-6 lg:px-8 transition-all ${openDropdown ? "z-40" : "z-20"}`}
+            style={{ zIndex: hasAnyDropdownOpen ? 50 : 20 }}
+            className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-amber-200/90 pt-3 sm:pt-4 pb-12 sm:pb-10 px-2.5 sm:px-6 lg:px-8 transition-all ${hasAnyDropdownOpen ? "z-40" : "z-20"}`}
           >
             {/* Trip tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 sm:pb-5 gap-2.5 sm:gap-3 border-b border-amber-100/80 mb-3.5 sm:mb-5">
@@ -2018,14 +2065,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[21%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Pickup Location</div>
-                  <div className={value}>{fromCity}</div>
+                  <div className={value}>{fromCity || "Select City"}</div>
                   <div className={sub}>{fromState}</div>
                   {openDropdown === "from" && (
                     <CityPopover
-                      citiesList={combinedCities}
                       placeholder="Search pickup city..."
-                      query={searchFromQuery}
-                      onQueryChange={setSearchFromQuery}
                       selected={fromCity}
                       title="Select Pickup City"
                       onClose={() => setOpenDropdown(null)}
@@ -2035,7 +2079,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         if (coords) setFromCoords(coords);
                         setOpenDropdown(null);
                       }}
-                      inputRef={searchInputRef}
                     />
                   )}
                 </div>
@@ -2050,14 +2093,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <ArrowRightLeft className="w-3.5 h-3.5" />
                   </button>
                   <div className={label}>Drop Location</div>
-                  <div className={value}>{toCity}</div>
+                  <div className={value}>{toCity || "Select City"}</div>
                   <div className={sub}>{toState}</div>
                   {openDropdown === "to" && (
                     <CityPopover
-                      citiesList={combinedCities}
                       placeholder="Search destination city..."
-                      query={searchToQuery}
-                      onQueryChange={setSearchToQuery}
                       selected={toCity}
                       align="right"
                       title="Select Destination City"
@@ -2068,7 +2108,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         if (coords) setToCoords(coords);
                         setOpenDropdown(null);
                       }}
-                      inputRef={searchInputRef}
                     />
                   )}
                 </div>
@@ -2181,14 +2220,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[28%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Pickup Location</div>
-                  <div className={value}>{fromCity}</div>
+                  <div className={value}>{fromCity || "Select City"}</div>
                   <div className={sub}>{fromState}</div>
                   {openDropdown === "from" && (
                     <CityPopover
-                      citiesList={combinedCities}
                       placeholder="Search pickup city..."
-                      query={searchFromQuery}
-                      onQueryChange={setSearchFromQuery}
                       selected={fromCity}
                       title="Select Pickup City"
                       onClose={() => setOpenDropdown(null)}
@@ -2198,7 +2234,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         if (coords) setFromCoords(coords);
                         setOpenDropdown(null);
                       }}
-                      inputRef={searchInputRef}
                     />
                   )}
                 </div>
@@ -2213,14 +2248,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     <ArrowRightLeft className="w-3.5 h-3.5" />
                   </button>
                   <div className={label}>Drop Location</div>
-                  <div className={value}>{toCity}</div>
+                  <div className={value}>{toCity || "Select City"}</div>
                   <div className={sub}>{toState}</div>
                   {openDropdown === "to" && (
                     <CityPopover
-                      citiesList={combinedCities}
                       placeholder="Search destination city..."
-                      query={searchToQuery}
-                      onQueryChange={setSearchToQuery}
                       selected={toCity}
                       align="right"
                       title="Select Destination City"
@@ -2231,7 +2263,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         if (coords) setToCoords(coords);
                         setOpenDropdown(null);
                       }}
-                      inputRef={searchInputRef}
                     />
                   )}
                 </div>
@@ -2307,14 +2338,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
                   <div className={label}>Pickup Location</div>
-                  <div className={value}>{fromCity}</div>
+                  <div className={value}>{fromCity || "Select City"}</div>
                   <div className={sub}>{fromState}</div>
                   {openDropdown === "from" && (
                     <CityPopover
-                      citiesList={combinedCities}
                       placeholder="Search pickup city..."
-                      query={searchFromQuery}
-                      onQueryChange={setSearchFromQuery}
                       selected={fromCity}
                       title="Select Pickup Location"
                       onClose={() => setOpenDropdown(null)}
@@ -2324,7 +2352,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                         if (coords) setFromCoords(coords);
                         setOpenDropdown(null);
                       }}
-                      inputRef={searchInputRef}
                     />
                   )}
                 </div>
@@ -2419,10 +2446,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               </div>
             )}
 
-            {/* ============ AIRPORT (with To/From toggle + swap + resized fields) ============ */}
+            {/* ============ AIRPORT ============ */}
             {tripType === "airport" && (
               <>
-                {/* To Airport / From Airport toggle */}
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex border border-slate-300 rounded-lg p-0.5 bg-white h-[40px]">
                     <button
@@ -2456,7 +2482,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   style={{ zIndex: openDropdown ? 60 : 10 }}
                   className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
                 >
-                  {/* Pickup — 38% */}
                   <div
                     data-field-trigger
                     onClick={() => toggle("from")}
@@ -2464,14 +2489,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     className={`w-[38%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}
                   >
                     <div className={label}>Pickup Location</div>
-                    <div className={value}>{fromCity}</div>
+                    <div className={value}>{fromCity || "Select Location"}</div>
                     <div className={sub}>{fromState}</div>
                     {openDropdown === "from" && (
                       <CityPopover
-                        citiesList={combinedCities}
                         placeholder="Search pickup location..."
-                        query={searchFromQuery}
-                        onQueryChange={setSearchFromQuery}
                         selected={fromCity}
                         title="Select Pickup Location"
                         onClose={() => setOpenDropdown(null)}
@@ -2481,12 +2503,10 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                           if (coords) setFromCoords(coords);
                           setOpenDropdown(null);
                         }}
-                        inputRef={searchInputRef}
                       />
                     )}
                   </div>
 
-                  {/* Drop — 38% with swap button */}
                   <div
                     data-field-trigger
                     onClick={() => toggle("to")}
@@ -2505,14 +2525,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                       <ArrowRightLeft className="w-3.5 h-3.5" />
                     </button>
                     <div className={label}>Drop Location</div>
-                    <div className={value}>{toCity}</div>
+                    <div className={value}>{toCity || "Select Location"}</div>
                     <div className={sub}>{toState}</div>
                     {openDropdown === "to" && (
                       <CityPopover
-                        citiesList={combinedCities}
                         placeholder="Search drop location..."
-                        query={searchToQuery}
-                        onQueryChange={setSearchToQuery}
                         selected={toCity}
                         align="right"
                         title="Select Drop Location"
@@ -2523,12 +2540,10 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                           if (coords) setToCoords(coords);
                           setOpenDropdown(null);
                         }}
-                        inputRef={searchInputRef}
                       />
                     )}
                   </div>
 
-                  {/* Date — 12% */}
                   <div
                     data-field-trigger
                     onClick={() => toggle("pickupDate")}
@@ -2557,7 +2572,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     )}
                   </div>
 
-                  {/* Time — 12% */}
                   <div
                     data-field-trigger
                     onClick={() => toggle("pickupTime")}
@@ -2587,22 +2601,110 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               </>
             )}
 
+            {/* ============ DESKTOP MULTI-STOP ROUTE STRIP ============ */}
+            {tripType.includes("outstation") && stops.length > 0 && (
+              <div
+                style={{ zIndex: activeStopDropdownId ? 70 : 15 }}
+                className="mt-3 p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl flex flex-wrap items-center gap-2 relative"
+              >
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-900 px-1.5 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Route Stops:</span>
+                </span>
+
+                <span className="text-xs font-bold text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 truncate max-w-[160px]">
+                  {fromCity || "Pickup"}
+                </span>
+
+                <ChevronRight className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+
+                {stops.map((stop, idx) => (
+                  <React.Fragment key={stop.id}>
+                    <div
+                      data-field-trigger
+                      onClick={() => toggleStopDropdown(stop)}
+                      style={{ zIndex: activeStopDropdownId === stop.id ? 90 : 1 }}
+                      className="relative flex items-center gap-2 bg-white hover:bg-amber-50 border-2 border-amber-400 rounded-lg px-2.5 py-1.5 cursor-pointer shadow-xs transition"
+                    >
+                      <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <span
+                        className={`text-xs font-extrabold max-w-[190px] truncate ${
+                          stop.city ? "text-slate-950" : "text-amber-700"
+                        }`}
+                      >
+                        {stop.city || `Select Stop ${idx + 1}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveStop(stop.id);
+                        }}
+                        className="w-4 h-4 rounded-full hover:bg-red-100 text-slate-400 hover:text-red-600 flex items-center justify-center transition cursor-pointer"
+                        title="Remove Stop"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+
+                      {activeStopDropdownId === stop.id && (
+                        <CityPopover
+                          placeholder={`Search stop ${idx + 1} city...`}
+                          selected={stop.city}
+                          title={`Select Stop ${idx + 1}`}
+                          onClose={() => setActiveStopDropdownId(null)}
+                          onSelect={(n, st, coords) => handleSelectStop(stop.id, n, st, coords)}
+                        />
+                      )}
+                    </div>
+
+                    <ChevronRight className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  </React.Fragment>
+                ))}
+
+                <span className="text-xs font-bold text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 truncate max-w-[160px]">
+                  {toCity || "Drop"}
+                </span>
+
+                {stops.length < MAX_STOPS && (
+                  <button
+                    type="button"
+                    onClick={handleAddStop}
+                    className="ml-auto flex items-center gap-1 text-xs font-extrabold text-amber-700 hover:text-amber-900 bg-amber-200/70 hover:bg-amber-300/80 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Add Stop ({stops.length}/{MAX_STOPS})</span>
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Footer row with Add Stops & Exact Road Distance */}
             <div className="mt-5 flex flex-row items-center justify-between gap-3 text-xs pb-0">
-              <button
-                type="button"
-                className="flex items-center gap-1.5 text-amber-600 hover:text-amber-700 font-bold transition group self-auto"
-              >
-                <span className="text-[13px] font-bold">+ Add Stops</span>
-                <span className="text-[8px] bg-amber-400 text-slate-950 font-black px-1.5 py-0.5 rounded uppercase">
-                  new
-                </span>
-              </button>
+              {tripType.includes("outstation") && stops.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={handleAddStop}
+                  className="flex items-center gap-1.5 text-amber-600 hover:text-amber-700 font-bold transition group self-auto cursor-pointer"
+                >
+                  <span className="text-[13px] font-bold">+ Add Stops</span>
+                  <span className="text-[8px] bg-amber-400 text-slate-950 font-black px-1.5 py-0.5 rounded uppercase">
+                    new
+                  </span>
+                </button>
+              ) : (
+                <div />
+              )}
 
               {routeDistance != null && routeDistance > 0 && fromCity && toCity && (
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-50 rounded-full border border-amber-300 text-[12px] font-bold text-amber-950 shadow-xs">
                   <MapPin className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Exact Road Distance:</span>
+                  <span>
+                    {tripType.includes("outstation") && stops.some((s) => s.city.trim())
+                      ? "Multi-Stop Road Distance:"
+                      : "Exact Road Distance:"}
+                  </span>
                   <span className="font-extrabold text-slate-900 font-mono">{routeDistance.toFixed(1)} km</span>
                   {routeDurationMinutes != null && routeDurationMinutes > 0 && (
                     <span className="text-slate-500 font-medium">
@@ -2633,7 +2735,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
             </div>
           </div>
 
-          {/* Laurel pill: "India's Top Rated Car Rental Service" */}
+          {/* Laurel pill */}
           <div className="mt-10 sm:mt-10 mb-0 flex items-center justify-center gap-2 text-white text-[11px] sm:text-[13px] font-semibold tracking-wide drop-shadow-sm select-none">
             <svg className="w-4 h-5 sm:w-5 sm:h-6 text-white fill-current drop-shadow-sm" viewBox="0 0 24 32" aria-hidden="true">
               <path d="M18 2C16 5 13 7 9 7C11 9 12 11 11 14C8 13 6 11 5 8C5 11 4 14 2 16C4 16 6 15 8 13C8 17 7 20 5 22C7 21 9 19 10 17C11 20 11 23 9 26C11 24 13 21 14 18C16 21 17 24 16 28C18 25 19 22 19 19C21 21 23 23 24 25C24 22 23 19 21 17C23 18 25 18 26 18C24 15 22 14 20 13C22 13 24 12 25 10C22 10 20 10 18 11C19 8 20 5 18 2Z" />
@@ -2648,10 +2750,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         </div>
       </div>
 
-      {/* =============================== REVIEWS/RATING PILL (SHOWN ON ALL) ==================================== */}
+      {/* =============================== REVIEWS/RATING PILL ==================================== */}
       <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-10 w-full px-2 sm:px-4 pointer-events-none flex justify-center" style={{ zIndex: 10 }}>
         <div className="pointer-events-auto bg-white rounded-2xl sm:rounded-full px-2.5 sm:px-8 py-2 sm:py-3 shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 flex items-center justify-between sm:justify-center gap-1 sm:gap-8 md:gap-11 w-full sm:w-auto max-w-[96vw] sm:max-w-fit overflow-hidden">
-          
           {/* App Store */}
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#007aff] flex items-center justify-center shadow-xs shrink-0 p-1 sm:p-2">
