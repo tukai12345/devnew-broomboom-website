@@ -323,7 +323,7 @@ export default function ContactPage() {
                   <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold text-white block">Headquarters</span>
-                    Set the address: Majhi Enclave, 7, T.C.Mukherjee St, Kali Tala, Bangur Park, Rishra, West Bengal, 712248
+                    <span className="text-slate-400">Majhi Enclave, 7, T.C.Mukherjee St, Kali Tala, Bangur Park, Rishra, West Bengal, 712248</span>
                   </div>
                 </div>
 

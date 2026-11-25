@@ -452,7 +452,7 @@ export default function TermsAndConditionsPage() {
                 <Mail className="w-4 h-4 text-amber-600" />
                 <a href="mailto:support@broomboomcabs.com" className="hover:text-amber-600 font-medium">support@broomboomcabs.com</a>
               </p>
-              <p>Registered Jurisdiction: Chinsurah, West Bengal, India</p>
+              <p>Registered Jurisdiction: Majhi Enclave, 7, T.C.Mukherjee St, Kali Tala, Bangur Park, Rishra, West Bengal, 712248</p>
             </div>
           </section>
 

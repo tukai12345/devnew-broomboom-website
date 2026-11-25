@@ -35,12 +35,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `Taxi & Cab Service in ${cityData.cityName} | Lowest Fares — BroomBoom Cabs`,
     description: `Book 24x7 verified cabs in ${cityData.cityName}. One-way outstation cabs, airport drops, and hourly car rentals with professional chauffeurs.`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/${cityData.cityId}`,
+      canonical: `https://www.broomboomcabs.com/${cityData.cityId}`,
     },
     openGraph: {
       title: `Taxi & Cab Service in ${cityData.cityName} | BroomBoom Cabs`,
       description: `Book outstation, airport, and local cabs in ${cityData.cityName} at lowest rates.`,
-      url: `https://dev.broomboomcabs.com/${cityData.cityId}`,
+      url: `https://www.broomboomcabs.com/${cityData.cityId}`,
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",

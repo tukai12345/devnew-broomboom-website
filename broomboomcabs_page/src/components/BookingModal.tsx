@@ -57,6 +57,7 @@ export function BookingModal({
     newVehicle: 262,
     refundable: 751,
   });
+  const [addonDetails, setAddonDetails] = useState<NonNullable<import("@/services/api").AddonPricingMap["details"]>>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -69,6 +70,9 @@ export function BookingModal({
           newVehicle: pricing.newVehicle || 262,
           refundable: pricing.refundable || 751,
         });
+        if (pricing.details) {
+          setAddonDetails(pricing.details);
+        }
       }
     }).catch(() => {});
     return () => {
@@ -188,11 +192,11 @@ export function BookingModal({
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-sm text-slate-800">Travel with Pet</span>
+                      <span className="font-semibold text-sm text-slate-800">{addonDetails.petAllowance?.name || "Travel with Pet"}</span>
                       <span className="text-sm font-bold text-slate-900">+₹{addonPricing.petAllowance}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Sanitized pet-friendly cab with protective seat covers
+                      {addonDetails.petAllowance?.description || "Sanitized pet-friendly cab with protective seat covers"}
                     </p>
                   </div>
                 </label>
@@ -207,11 +211,11 @@ export function BookingModal({
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-sm text-slate-800">Luggage Roof Carrier</span>
+                      <span className="font-semibold text-sm text-slate-800">{addonDetails.roofCarrier?.name || "Luggage Roof Carrier"}</span>
                       <span className="text-sm font-bold text-slate-900">+₹{addonPricing.roofCarrier}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Extra top carrier space for large family bags
+                      {addonDetails.roofCarrier?.description || "Extra top carrier space for large family bags"}
                     </p>
                   </div>
                 </label>
@@ -226,11 +230,11 @@ export function BookingModal({
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-sm text-slate-800">Preferred Driver Language</span>
+                      <span className="font-semibold text-sm text-slate-800">{addonDetails.language?.name || "Preferred Driver Language"}</span>
                       <span className="text-sm font-bold text-slate-900">+₹{addonPricing.language}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Assigns driver fluent in English, Hindi, or Bengali
+                      {addonDetails.language?.description || "Assigns driver fluent in English, Hindi, or Bengali"}
                     </p>
                   </div>
                 </label>
@@ -245,11 +249,11 @@ export function BookingModal({
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-sm text-slate-800">New Vehicle (2023+)</span>
+                      <span className="font-semibold text-sm text-slate-800">{addonDetails.newVehicle?.name || "New Vehicle (2023+)"}</span>
                       <span className="text-sm font-bold text-slate-900">+₹{addonPricing.newVehicle}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Promised latest 2023 or newer car model with pristine interior
+                      {addonDetails.newVehicle?.description || "Promised latest 2023 or newer car model with pristine interior"}
                     </p>
                   </div>
                 </label>
@@ -264,11 +268,11 @@ export function BookingModal({
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-sm text-slate-800">Upgrade to Refundable booking</span>
+                      <span className="font-semibold text-sm text-slate-800">{addonDetails.refundable?.name || "Upgrade to Refundable booking"}</span>
                       <span className="text-sm font-bold text-slate-900">+₹{addonPricing.refundable}</span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      100% full refund guarantee on cancellation up to 6 hours before pickup
+                      {addonDetails.refundable?.description || "100% full refund guarantee on cancellation up to 6 hours before pickup"}
                     </p>
                   </div>
                 </label>

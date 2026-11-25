@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description:
     "Learn about BroomBoom Cabs — our mission, verified fleet chauffeurs, zero return fare oneway drops, transparent pricing, and 24x7 pan-India travel support.",
   alternates: {
-    canonical: "https://dev.broomboomcabs.com/about",
+    canonical: "https://www.broomboomcabs.com/about",
   },
 };
 

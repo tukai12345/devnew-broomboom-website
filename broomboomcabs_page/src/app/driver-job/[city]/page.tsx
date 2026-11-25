@@ -16,12 +16,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `Driver Job & Partner Registration in ${formattedCity} | BroomBoom Pilot`,
     description: `Drive and earn in ${formattedCity} with BroomBoom Cabs. Daily instant payouts, zero commission, free accidental insurance, and 24x7 support. Attach your Sedan, SUV, Hatchback, or Auto today.`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/driver-job/${city.toLowerCase()}`,
+      canonical: `https://www.broomboomcabs.com/driver-job/${city.toLowerCase()}`,
     },
     openGraph: {
       title: `Driver Job & Partner Registration in ${formattedCity} | BroomBoom Cabs`,
       description: `Drive with BroomBoom in ${formattedCity}. Daily instant payouts, zero commission, and verified intercity return trips.`,
-      url: `https://dev.broomboomcabs.com/driver-job/${city.toLowerCase()}`,
+      url: `https://www.broomboomcabs.com/driver-job/${city.toLowerCase()}`,
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",

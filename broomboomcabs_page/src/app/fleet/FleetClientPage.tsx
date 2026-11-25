@@ -547,7 +547,8 @@ const FleetPageContent: React.FC = () => {
               r.to.toLowerCase() === toCity.trim().toLowerCase()
           );
           if (route) {
-            const match = route.distance.match(/(\d+\.?\d*)/);
+            const routeDistance = (route as unknown as { distance?: string }).distance;
+            const match = routeDistance?.match(/(\d+\.?\d*)/);
             if (match) {
               currentDistance = parseFloat(match[1]);
               currentDuration = Math.round(currentDistance * 0.8);
@@ -1392,7 +1393,7 @@ const FleetPageContent: React.FC = () => {
             >
               <FieldLabel>{isHourly ? "PICKUP LOCATION" : "FROM"}</FieldLabel>
               <div className="flex items-center justify-between font-bold text-slate-900 text-xs sm:text-[13px] mt-0.5 group-hover:text-amber-600 transition truncate">
-                <span className="truncate">{fromCity || "Select City"}</span>
+                <span className="truncate">{fromCity || "Pickup Location"}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-1" />
               </div>
               {openDropdown === "from" && (

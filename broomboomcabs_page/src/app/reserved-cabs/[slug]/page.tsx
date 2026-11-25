@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const canonicalUrl = `https://dev.broomboomcabs.com/reserved-cabs/${encodeURIComponent(
+  const canonicalUrl = `https://www.broomboomcabs.com/reserved-cabs/${encodeURIComponent(
     route.slug
   )}`;
   const title = `${route.name} | Private Airport Taxi Fare & Booking - BroomBoom Cabs`;

@@ -16,7 +16,7 @@ export const WhyChooseUs: React.FC = () => {
   const pillars = [
     {
       icon: Receipt,
-      title: "Zero Hidden Charges",
+      title: "Transparent Pricing",
       description: "Toll taxes, state entry taxes, driver allowance, and GST are shown upfront. No last minute driver disputes.",
       badge: "100% Transparent",
       color: "text-amber-600 bg-amber-100/80 border-amber-300",
@@ -25,14 +25,14 @@ export const WhyChooseUs: React.FC = () => {
     {
       icon: Clock,
       title: "On-Time Arrival Guarantee",
-      description: "Our chauffeurs arrive at your pickup location 15 minutes before scheduled departure or get ₹100 instant refund credit.",
+      description: "Our chauffeurs arrive at your pickup location 15 minutes before scheduled departure",
       badge: "Punctuality Promise",
       color: "text-emerald-700 bg-emerald-100/80 border-emerald-300",
       bgGradient: "from-white via-[#fafefb] to-emerald-50/90 border-emerald-200/90",
     },
     {
       icon: UserCheck,
-      title: "Police-Verified Drivers",
+      title: "Professional and Verified Drivers",
       description: "Every driver undergoes strict background verification, commercial license check, and highway safety training.",
       badge: "Verified Chauffeurs",
       color: "text-blue-700 bg-blue-100/80 border-blue-300",
@@ -49,7 +49,7 @@ export const WhyChooseUs: React.FC = () => {
     {
       icon: HeartHandshake,
       title: "Free Cancellation up to 6 Hrs",
-      description: "Change in plans? Cancel effortlessly with zero penalty charges and instant refund back to your original source.",
+      description: "Change in plans? Cancel effortlessly with add on benefits of upgradable free cancellation.",
       badge: "Zero Penalty",
       color: "text-rose-700 bg-rose-100/80 border-rose-300",
       bgGradient: "from-white via-[#fffbfc] to-rose-50/90 border-rose-200/90",

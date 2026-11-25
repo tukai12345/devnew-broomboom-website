@@ -425,7 +425,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
               <div className="overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm bg-slate-100">
                 <Image
                   src="/images/driver-job/refer-drivers.jpg"
-                  alt="Taxi Driver Job BroomBoomCabs"
+                  alt="Taxi Driver Job BroomBoom Cabs"
                   width={600}
                   height={380}
                   className="w-full h-[280px] sm:h-[350px] lg:h-[380px] object-cover"
@@ -435,11 +435,11 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
             <div className="lg:col-span-6 order-2">
               <h2 className="text-2xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight mb-5">
                 <span className="text-amber-500">TAXI DRIVER JOB-</span>
-                <span className="text-slate-900">BroomBoomCabs</span>
+                <span className="text-slate-900">BroomBoom Cabs</span>
               </h2>
               <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
-                  Be a full-time driver or a part time driver at your flexible time and hour of the day to earn huge earnings. BroomBoomCabs bring huge opportunities for the driver who needs driving jobs in India. Be it male driver or female driver, all get equal chance to drive in India at their own convenience at any hour of the day or night. More than thousands of riders request rides from BroomBoomCabs everyday, grab the chance and use your vehicle to earn as a driver in your city by dropping the riders wherever they want to go. There are so many ways to earn here. You can also earn by referring your other driver friends or driver partners to drive in India in BroomBoomCabs.
+                  Be a full-time driver or a part time driver at your flexible time and hour of the day to earn huge earnings. BroomBoom Cabs bring huge opportunities for the driver who needs driving jobs in India. Be it male driver or female driver, all get equal chance to drive in India at their own convenience at any hour of the day or night. More than thousands of riders request rides from BroomBoom Cabs everyday, grab the chance and use your vehicle to earn as a driver in your city by dropping the riders wherever they want to go. There are so many ways to earn here. You can also earn by referring your other driver friends or driver partners to drive in India in BroomBoom Cabs.
                 </p>
               </div>
             </div>
@@ -454,7 +454,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
               </h2>
               <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
-                  Invite friends and families by referring them to join the BroomBoomCabs Community in India. Share your refer code when they register in the BroomBoom Pilot App and earn when they complete a certain number of trips with BroomBoomCabs. Refer drivers (be it cab driver, taxi driver or bike-taxi driver) or your driver partners in the BroomBoom Pilot App and earn a huge reward!
+                  Invite friends and families by referring them to join the BroomBoom Cabs Community in India. Share your refer code when they register in the BroomBoom Pilot App and earn when they complete a certain number of trips with BroomBoom Cabs. Refer drivers (be it cab driver, taxi driver or bike-taxi driver) or your driver partners in the BroomBoom Pilot App and earn a huge reward!
                 </p>
               </div>
             </div>
@@ -478,11 +478,11 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                 <span className="text-amber-500">Procedures to be a</span>
                 <br />
                 <span className="text-amber-500">Taxi Driver for </span>
-                <span className="text-slate-900">BroomBoomCabs</span>
+                <span className="text-slate-900">BroomBoom Cabs</span>
               </h2>
               <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
-                  BroomBoomCabs offer driver job alternatives in all major rural and urban areas of India, including Kolkata, Delhi, Chandigarh, Bangalore and many more of all sizes across the Country.If you are looking for driver jobs in India, &ldquo;install BroomBoom Pilot App&rdquo; from the play store and get paid to drive whenever you want from anywhere on this platform. This platform helps in connecting huge number of active riders 24/7 with full assistance and support. There are many traditional driving jobs in India but driving with BroomBoomCabs in India offers a flexible earning opportunity for all who are looking for full-time driver jobs, part-time driver jobs, or seasonal employment, or a rideshare driver who want to increase their monthly income by becoming a driver(pilot) using the BroomBoomCabs platform.
+                  BroomBoom Cabs offer driver job alternatives in all major rural and urban areas of India, including Kolkata, Delhi, Chandigarh, Bangalore and many more of all sizes across the Country.If you are looking for driver jobs in India, &ldquo;install BroomBoom Pilot App&rdquo; from the play store and get paid to drive whenever you want from anywhere on this platform. This platform helps in connecting huge number of active riders 24/7 with full assistance and support. There are many traditional driving jobs in India but driving with BroomBoom Cabs in India offers a flexible earning opportunity for all who are looking for full-time driver jobs, part-time driver jobs, or seasonal employment, or a rideshare driver who want to increase their monthly income by becoming a driver(pilot) using the BroomBoom Cabs platform.
                 </p>
               </div>
             </div>
@@ -520,7 +520,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                   <span className="text-amber-500">procedure to be a</span>
                   <br />
                   <span className="text-amber-500">taxi driver in </span>
-                  <span className="text-slate-900">BroomBoomCabs:</span>
+                  <span className="text-slate-900">BroomBoom Cabs:</span>
                 </h2>
                 <ul className="space-y-3 text-slate-700 text-xs sm:text-sm font-normal">
                   <li className="flex items-start gap-2.5">
@@ -533,15 +533,15 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-slate-900 font-bold shrink-0">•</span>
-                    <span>Choose the City where you will drive with BroomBoomCabs.</span>
+                    <span>Choose the City where you will drive with BroomBoom Cabs.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-slate-900 font-bold shrink-0">•</span>
-                    <span>Choose your Vehicle to register as a Pilot in BroomBoomCabs.</span>
+                    <span>Choose your Vehicle to register as a Pilot in BroomBoom Cabs.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-slate-900 font-bold shrink-0">•</span>
-                    <span>Submit your profile details and proper valid documents for registration as a driver with BroomBoomCabs.</span>
+                    <span>Submit your profile details and proper valid documents for registration as a driver with BroomBoom Cabs.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-slate-900 font-bold shrink-0">•</span>
@@ -552,7 +552,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
             </div>
 
             <p className="text-center text-slate-600 text-xs sm:text-sm max-w-3xl mx-auto pt-4 font-normal leading-relaxed">
-              Follow the above said steps to register and drive with BroomBoomCabs and help your other driver friends by referring them with your referral code to register and earn huge incentives and bonus on this driving platform.
+              Follow the above said steps to register and drive with BroomBoom Cabs and help your other driver friends by referring them with your referral code to register and earn huge incentives and bonus on this driving platform.
             </p>
           </div>
 
@@ -567,7 +567,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
               </h2>
               <div className="border-l-4 border-amber-400 pl-4 sm:pl-6">
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
-                  Drivers using BroomBoomCabs are independent contractors coming from all backgrounds and industries, to work independently by setting their own schedule with flexible driving hours and huge driver salary to make their life easy. You must meet certain requirements to drive with BroomBoom. We welcome drivers from any driving industry like commercial drivers, rideshare drivers and other drivers also who have been active on other driving apps and services.
+                  Drivers using BroomBoom Cabs are independent contractors coming from all backgrounds and industries, to work independently by setting their own schedule with flexible driving hours and huge driver salary to make their life easy. You must meet certain requirements to drive with BroomBoom. We welcome drivers from any driving industry like commercial drivers, rideshare drivers and other drivers also who have been active on other driving apps and services.
                 </p>
               </div>
             </div>
@@ -633,7 +633,7 @@ export function DriverJobClient({ initialCity = "" }: DriverJobClientProps) {
             </div>
 
             <p className="text-center text-slate-700 text-xs sm:text-sm max-w-3xl mx-auto pt-4 font-semibold leading-relaxed">
-              Driving with BroomBoomCabs is the best way to earn additional money for the drivers. Register and Join now to be a part of BroomBoom Drivers Community!
+              Driving with BroomBoom Cabs is the best way to earn additional money for the drivers. Register and Join now to be a part of BroomBoom Drivers Community!
             </p>
           </div>
 

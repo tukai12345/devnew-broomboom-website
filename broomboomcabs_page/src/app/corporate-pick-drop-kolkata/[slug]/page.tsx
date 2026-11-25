@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const canonicalUrl = `https://dev.broomboomcabs.com/corporate-pick-drop-kolkata/${encodeURIComponent(
+  const canonicalUrl = `https://www.broomboomcabs.com/corporate-pick-drop-kolkata/${encodeURIComponent(
     corp.slug
   )}`;
   const title = `${corp.name} Corporate Pick & Drop Cabs Kolkata | Employee Commute - BroomBoom Cabs`;

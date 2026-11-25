@@ -3,7 +3,7 @@
 import React from "react";
 import { ArrowRight, Clock, Navigation } from "lucide-react";
 import { POPULAR_ROUTES } from "@/data/cabsData";
-
+import Link from "next/link";
 interface PopularRoutesProps {
   onSelectRoute: (from: string, to: string) => void;
 }
@@ -27,13 +27,6 @@ export const PopularRoutes: React.FC<PopularRoutesProps> = ({ onSelectRoute }) =
             </p>
           </div>
 
-          <button
-            type="button"
-            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-black text-amber-700 hover:text-amber-800 transition-colors group"
-          >
-            <span>View All 500+ Routes</span>
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-          </button>
         </div>
 
         {/* Routes Grid - Full width 4 columns matching search bar bounds */}
@@ -47,7 +40,7 @@ export const PopularRoutes: React.FC<PopularRoutesProps> = ({ onSelectRoute }) =
               <div className="relative h-48 w-full overflow-hidden bg-slate-100">
                 <img
                   src={route.image}
-                  alt={`${route.from} to ${route.to}`}
+                  alt={`${route.from.toLowerCase()}-${route.to.toLowerCase()}-broomboom-cabs`}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
@@ -77,21 +70,19 @@ export const PopularRoutes: React.FC<PopularRoutesProps> = ({ onSelectRoute }) =
                 <div className="flex items-center justify-between text-[13px] text-slate-600 font-bold">
                   <span className="flex items-center gap-1.5">
                     <Navigation className="w-4 h-4 text-amber-500" />
-                    {route.distance}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Clock className="w-4 h-4 text-amber-600" />
-                    {route.duration}
                   </span>
                 </div>
 
-                <button
-                  onClick={() => onSelectRoute(route.from, route.to)}
-                  className="mt-auto w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm shadow-sm hover:shadow-md border border-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] transition-all duration-200 group/btn cursor-pointer"
-                >
-                  <span>Explore Now</span>
-                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/btn:translate-x-1" />
-                </button>
+<Link
+  href={route.href}
+  className="mt-auto w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm shadow-sm hover:shadow-md border border-amber-300 transition-all duration-200 group/btn"
+>
+  <span>Explore Now</span>
+  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/btn:translate-x-1" />
+</Link>
               </div>
             </div>
           ))}

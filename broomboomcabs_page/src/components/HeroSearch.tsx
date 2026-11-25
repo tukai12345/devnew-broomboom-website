@@ -14,7 +14,6 @@ import {
   Check,
   XCircle,
   X,
-  Star,
   Loader2,
   Plane,
   Car,
@@ -2064,9 +2063,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[21%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>Pickup Location</div>
-                  <div className={value}>{fromCity || "Select City"}</div>
-                  <div className={sub}>{fromState}</div>
+                  <div className={`${label} ${!fromCity ? "!mb-0" : ""}`}>Pickup Location</div>
+                  {fromCity && <div className={value}>{fromCity}</div>}
+                  {fromCity && fromState && <div className={sub}>{fromState}</div>}
                   {openDropdown === "from" && (
                     <CityPopover
                       placeholder="Search pickup city..."
@@ -2092,9 +2091,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   >
                     <ArrowRightLeft className="w-3.5 h-3.5" />
                   </button>
-                  <div className={label}>Drop Location</div>
-                  <div className={value}>{toCity || "Select City"}</div>
-                  <div className={sub}>{toState}</div>
+                  <div className={`${label} ${!toCity ? "!mb-0" : ""}`}>Drop Location</div>
+                  {toCity && <div className={value}>{toCity}</div>}
+                  {toCity && toState && <div className={sub}>{toState}</div>}
                   {openDropdown === "to" && (
                     <CityPopover
                       placeholder="Search destination city..."
@@ -2219,9 +2218,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[28%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>Pickup Location</div>
-                  <div className={value}>{fromCity || "Select City"}</div>
-                  <div className={sub}>{fromState}</div>
+                  <div className={`${label} ${!fromCity ? "!mb-0" : ""}`}>Pickup Location</div>
+                  {fromCity && <div className={value}>{fromCity}</div>}
+                  {fromCity && fromState && <div className={sub}>{fromState}</div>}
                   {openDropdown === "from" && (
                     <CityPopover
                       placeholder="Search pickup city..."
@@ -2247,9 +2246,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                   >
                     <ArrowRightLeft className="w-3.5 h-3.5" />
                   </button>
-                  <div className={label}>Drop Location</div>
-                  <div className={value}>{toCity || "Select City"}</div>
-                  <div className={sub}>{toState}</div>
+                  <div className={`${label} ${!toCity ? "!mb-0" : ""}`}>Drop Location</div>
+                  {toCity && <div className={value}>{toCity}</div>}
+                  {toCity && toState && <div className={sub}>{toState}</div>}
                   {openDropdown === "to" && (
                     <CityPopover
                       placeholder="Search destination city..."
@@ -2337,9 +2336,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                 className={`border border-amber-200 hover:border-amber-300 rounded-xl flex flex-row bg-amber-200 gap-[1px] shadow-sm transition-colors relative ${openDropdown ? "z-40" : "z-10"}`}
               >
                 <div data-field-trigger onClick={() => toggle("from")} style={{ zIndex: openDropdown === "from" ? 80 : 1 }} className={`w-[40%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}>
-                  <div className={label}>Pickup Location</div>
-                  <div className={value}>{fromCity || "Select City"}</div>
-                  <div className={sub}>{fromState}</div>
+                  <div className={`${label} ${!fromCity ? "!mb-0" : ""}`}>Pickup Location</div>
+                  {fromCity && <div className={value}>{fromCity}</div>}
+                  {fromCity && fromState && <div className={sub}>{fromState}</div>}
                   {openDropdown === "from" && (
                     <CityPopover
                       placeholder="Search pickup city..."
@@ -2488,9 +2487,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     style={{ zIndex: openDropdown === "from" ? 80 : 1 }}
                     className={`w-[38%] rounded-l-xl ${openDropdown === "from" ? "relative z-40" : ""} ${field}`}
                   >
-                    <div className={label}>Pickup Location</div>
-                    <div className={value}>{fromCity || "Select Location"}</div>
-                    <div className={sub}>{fromState}</div>
+                    <div className={`${label} ${!fromCity ? "!mb-0" : ""}`}>Pickup Location</div>
+                    {fromCity && <div className={value}>{fromCity}</div>}
+                    {fromCity && fromState && <div className={sub}>{fromState}</div>}
                     {openDropdown === "from" && (
                       <CityPopover
                         placeholder="Search pickup location..."
@@ -2524,9 +2523,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
                     >
                       <ArrowRightLeft className="w-3.5 h-3.5" />
                     </button>
-                    <div className={label}>Drop Location</div>
-                    <div className={value}>{toCity || "Select Location"}</div>
-                    <div className={sub}>{toState}</div>
+                    <div className={`${label} ${!toCity ? "!mb-0" : ""}`}>Drop Location</div>
+                    {toCity && <div className={value}>{toCity}</div>}
+                    {toCity && toState && <div className={sub}>{toState}</div>}
                     {openDropdown === "to" && (
                       <CityPopover
                         placeholder="Search drop location..."
@@ -2750,76 +2749,28 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
         </div>
       </div>
 
-      {/* =============================== REVIEWS/RATING PILL ==================================== */}
+      {/* =============================== RECOGNITION & TRUST LOGOS PILL ==================================== */}
       <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-10 w-full px-2 sm:px-4 pointer-events-none flex justify-center" style={{ zIndex: 10 }}>
-        <div className="pointer-events-auto bg-white rounded-2xl sm:rounded-full px-2.5 sm:px-8 py-2 sm:py-3 shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 flex items-center justify-between sm:justify-center gap-1 sm:gap-8 md:gap-11 w-full sm:w-auto max-w-[96vw] sm:max-w-fit overflow-hidden">
-          {/* App Store */}
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#007aff] flex items-center justify-center shadow-xs shrink-0 p-1 sm:p-2">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 sm:w-6 sm:h-6 fill-none stroke-white stroke-[2.4] stroke-linecap-round stroke-linejoin-round" aria-hidden="true">
-                <line x1="8" y1="18" x2="16" y2="18" />
-                <line x1="5.5" y1="18" x2="11.5" y2="5" />
-                <line x1="18.5" y1="18" x2="12.5" y2="5" />
-              </svg>
+        <div className="pointer-events-auto bg-white rounded-2xl sm:rounded-full px-3 sm:px-8 py-2.5 sm:py-3 shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 flex items-center justify-around sm:justify-center gap-2 sm:gap-7 md:gap-10 w-full sm:w-auto max-w-[96vw] sm:max-w-fit overflow-hidden">
+          {[
+            { src: "/images/trust/gst.png", alt: "broomboom-cabs-gst-recognition" },
+            { src: "/images/trust/mca.png", alt: "broomboom-cabs-mca-recognition" },
+            { src: "/images/trust/msme.png", alt: "broomboom-cabs-msme-recognition" },
+            { src: "/images/trust/dpiit.png", alt: "broomboom-cabs-dpiit-startup-india-recognition" },
+            { src: "/images/trust/bhaskar.png", alt: "broomboom-cabs-bhaskar-bharat-startup-recognition" },
+          ].map((item) => (
+            <div
+              key={item.src}
+              className="flex items-center justify-center shrink-0 px-0.5 sm:px-1"
+            >
+              <img
+                src={item.src}
+                alt={item.alt}
+                className="h-7 sm:h-10 md:h-11 w-auto object-contain select-none"
+                loading="eager"
+              />
             </div>
-            <div className="text-left">
-              <div className="text-[9px] sm:text-[13px] font-black text-slate-900 leading-tight">App Store</div>
-              <div className="flex items-center gap-0.5 mt-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-2 h-2 sm:w-3.5 sm:h-3.5 fill-[#f5a623] text-[#f5a623]" />
-                ))}
-              </div>
-              <div className="text-[8px] sm:text-[11px] font-bold text-slate-900 mt-0.5 whitespace-nowrap">
-                (4.2K+ <span className="hidden sm:inline">Reviews</span>)
-              </div>
-            </div>
-          </div>
-
-          {/* Google */}
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-[#f8fafc] border border-slate-200/80 flex items-center justify-center shrink-0 p-1 sm:p-2 shadow-xs">
-              <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-              </svg>
-            </div>
-            <div className="text-left">
-              <div className="text-[9px] sm:text-[13px] font-black text-slate-900 leading-tight">Google</div>
-              <div className="flex items-center gap-0.5 mt-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-2 h-2 sm:w-3.5 sm:h-3.5 fill-[#f5a623] text-[#f5a623]" />
-                ))}
-              </div>
-              <div className="text-[8px] sm:text-[11px] font-bold text-slate-900 mt-0.5 whitespace-nowrap">
-                (6.1K+ <span className="hidden sm:inline">Reviews</span>)
-              </div>
-            </div>
-          </div>
-
-          {/* Play Store */}
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-            <div className="w-6 h-6 sm:w-10 sm:h-10 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-8 sm:h-8" aria-hidden="true">
-                <path fill="#00D2FF" d="M3.6 2.4c-.2.2-.3.6-.3 1v17.2c0 .4.1.8.3 1l9.4-9.6L3.6 2.4z" />
-                <path fill="#00E676" d="M13 12l3.1-3.2L5.4 2c-.4-.2-.9-.3-1.2 0-.2.1-.4.3-.6.4L13 12z" />
-                <path fill="#FF3D00" d="M13 12l-9.4 9.6c.2.1.4.3.6.4.3.3.8.2 1.2 0l10.7-6.8L13 12z" />
-                <path fill="#FFC107" d="M16.1 8.8L13 12l3.1 3.2 4.1-2.6c.8-.5.8-1.7 0-2.2l-4.1-2.6z" />
-              </svg>
-            </div>
-            <div className="text-left">
-              <div className="text-[9px] sm:text-[13px] font-black text-slate-900 leading-tight">Play Store</div>
-              <div className="flex items-center gap-0.5 mt-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-2 h-2 sm:w-3.5 sm:h-3.5 fill-[#f5a623] text-[#f5a623]" />
-                ))}
-              </div>
-              <div className="text-[8px] sm:text-[11px] font-bold text-slate-900 mt-0.5 whitespace-nowrap">
-                (4.8K+ <span className="hidden sm:inline">Reviews</span>)
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

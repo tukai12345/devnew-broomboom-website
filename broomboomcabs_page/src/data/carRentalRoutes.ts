@@ -32,7 +32,7 @@ export interface SpecialCarRentalInfo {
 
 export function parseSpecialCarRentalSlug(slug: string): SpecialCarRentalInfo | null {
   const clean = slug.toLowerCase().trim();
-  const canonicalUrl = `https://dev.broomboomcabs.com/car-rental/${clean}`;
+  const canonicalUrl = `https://www.broomboomcabs.com/car-rental/${clean}`;
 
   if (clean === "durga-puja-car-rental-packages") {
     return {

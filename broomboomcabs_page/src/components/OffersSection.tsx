@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   Calendar,
   Percent,
-  Sparkles,
 } from "lucide-react";
 
 interface OffersSectionProps {
@@ -23,8 +22,8 @@ interface OfferItem {
   alt: string;
   badge?: string;
   title: string;
-  validity: string;
   code: string;
+  validity: string;
   banks?: string[];
 }
 
@@ -45,9 +44,8 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       alt: "book-car-rental",
       badge: "MEGA CAB SALE",
       title: "Outstation Cabs @ up to 25% OFF*",
-      validity: "Ends Today",
-      code: "BROOMFIRST",
-      banks: ["DBS", "Federal Bank", "PNB", "RBL Bank"],
+      code: "CAB25",
+      validity: "Limited time",
     },
     {
       id: "cab-2",
@@ -58,9 +56,8 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       alt: "pre-schedule-ride",
       badge: "AIRPORT SPECIAL",
       title: "Flat ₹150 OFF on All Airport Transfers",
-      validity: "Valid till 31st Oct",
-      code: "AIRPORT150",
-      banks: ["HDFC Bank", "ICICI Bank", "Axis Bank"],
+      code: "AIR150",
+      validity: "Limited time",
     },
     {
       id: "cab-3",
@@ -71,9 +68,8 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       alt: "book-intercity-cabs",
       badge: "ZERO SURGE",
       title: "Book Hourly Rental Cabs & Enjoy Zero Surge!",
-      validity: "Valid all 7 days",
-      code: "HOURLY100",
-      banks: ["UPI & Cards", "Paytm", "GPay"],
+      code: "ZEROSURGE",
+      validity: "Limited time",
     },
     {
       id: "cab-4",
@@ -83,9 +79,8 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       alt: "outstation-round-trip-offer",
       badge: "WEEKEND GETAWAY",
       title: "Flat ₹500 OFF on Outstation Round Trips!",
-      validity: "Valid on Weekends",
-      code: "GETAWAY500",
-      banks: ["SBI Card", "Kotak", "Axis Bank"],
+      code: "WEEKEND500",
+      validity: "Limited time",
     },
     {
       id: "cab-5",
@@ -95,9 +90,8 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       alt: "eco-electric-cab-offer",
       badge: "ECO RIDES",
       title: "Save 15% on 100% Electric Eco Cabs",
-      validity: "Valid till 15th Nov",
-      code: "GOGREEN15",
-      banks: ["BroomBoom Wallet", "UPI"],
+      code: "ECO15",
+      validity: "Limited time",
     },
     {
       id: "cab-6",
@@ -107,9 +101,8 @@ export const OffersSection: React.FC<OffersSectionProps> = ({ onApplyPromo }) =>
       alt: "first-ride-airport-offer",
       badge: "FIRST RIDE",
       title: "Flat ₹200 OFF on Your First BroomBoom Ride",
-      validity: "New Users Only",
-      code: "NEWBROOM",
-      banks: ["All Major Banks", "UPI"],
+      code: "FIRST200",
+      validity: "Limited time",
     },
   ];
 

@@ -486,6 +486,7 @@ export const ReviewClientPage: React.FC = () => {
     sightseeing: 787,
     refundable: 751,
   });
+  const [addonDetails, setAddonDetails] = useState<NonNullable<import("@/services/api").AddonPricingMap["details"]>>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -499,6 +500,9 @@ export const ReviewClientPage: React.FC = () => {
           sightseeing: pricing.sightseeing,
           refundable: pricing.refundable,
         });
+        if (pricing.details) {
+          setAddonDetails(pricing.details);
+        }
       }
     }).catch((err) => {
       console.warn("Could not fetch live addons, using fallback pricing:", err);
@@ -1068,14 +1072,14 @@ export const ReviewClientPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs sm:text-sm font-bold text-slate-900">
-                          Travel with Pet (Pet Allowance)
+                          {addonDetails.petAllowance?.name || "Travel with Pet (Pet Allowance)"}
                         </span>
                         <span className="text-xs sm:text-sm font-black text-slate-900 whitespace-nowrap">
                           +{inr(PET_FEE * (addonPet ? petCount : 1))}
                         </span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                        Sanitized pet-friendly cab with protective seat covers (₹{PET_FEE.toLocaleString('en-IN')} per pet)
+                        {addonDetails.petAllowance?.description || `Sanitized pet-friendly cab with protective seat covers (₹${PET_FEE.toLocaleString('en-IN')} per pet)`}
                       </p>
                     </div>
                   </label>
@@ -1143,14 +1147,14 @@ export const ReviewClientPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs sm:text-sm font-bold text-slate-900">
-                        Upgrade to Refundable booking
+                        {addonDetails.refundable?.name || "Upgrade to Refundable booking"}
                       </span>
                       <span className="text-xs sm:text-sm font-black text-slate-900">
                         +{inr(REFUNDABLE_FEE)}
                       </span>
                     </div>
                     <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                      100% full refund guarantee on cancellation up to 6 hours before pickup
+                      {addonDetails.refundable?.description || "100% full refund guarantee on cancellation up to 6 hours before pickup"}
                     </p>
                   </div>
                 </label>
@@ -1172,14 +1176,14 @@ export const ReviewClientPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs sm:text-sm font-bold text-slate-900">
-                        Luggage Roof Carrier
+                        {addonDetails.roofCarrier?.name || "Luggage Roof Carrier"}
                       </span>
                       <span className="text-xs sm:text-sm font-black text-slate-900">
                         +{inr(CARRIER_FEE)}
                       </span>
                     </div>
                     <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                      Extra roof carrier space for large travel bags
+                      {addonDetails.roofCarrier?.description || "Extra roof carrier space for large travel bags"}
                     </p>
                   </div>
                 </label>
@@ -1201,14 +1205,14 @@ export const ReviewClientPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs sm:text-sm font-bold text-slate-900">
-                        Preferred Driver Language
+                        {addonDetails.language?.name || "Preferred Driver Language"}
                       </span>
                       <span className="text-xs sm:text-sm font-black text-slate-900">
                         +{inr(LANGUAGE_FEE)}
                       </span>
                     </div>
                     <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                      Assigns driver fluent in English, Hindi, or Bengali
+                      {addonDetails.language?.description || "Assigns driver fluent in English, Hindi, or Bengali"}
                     </p>
                   </div>
                 </label>
@@ -1230,14 +1234,14 @@ export const ReviewClientPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs sm:text-sm font-bold text-slate-900">
-                        New Vehicle (2023+)
+                        {addonDetails.newVehicle?.name || "New Vehicle (2023+)"}
                       </span>
                       <span className="text-xs sm:text-sm font-black text-slate-900">
                         +{inr(NEW_VEHICLE_FEE)}
                       </span>
                     </div>
                     <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                      Promised latest 2023 or newer car model with pristine interior
+                      {addonDetails.newVehicle?.description || "Promised latest 2023 or newer car model with pristine interior"}
                     </p>
                   </div>
                 </label>
@@ -1420,14 +1424,14 @@ export const ReviewClientPage: React.FC = () => {
                     <div className="text-[11px] text-slate-400 space-y-0.5 mt-0.5">
                       {addonPet && (
                         <div className="flex justify-between">
-                          <span>Pet Allowance ({petCount} {petCount === 1 ? "pet" : "pets"})</span>
+                          <span>{addonDetails.petAllowance?.name || "Pet Allowance"} ({petCount} {petCount === 1 ? "pet" : "pets"})</span>
                           <span>+{inr(PET_FEE * petCount)}</span>
                         </div>
                       )}
-                      {addonCarrier && <div className="flex justify-between"><span>Luggage Roof Carrier</span><span>+{inr(CARRIER_FEE)}</span></div>}
-                      {addonRefundable && <div className="flex justify-between"><span>Upgrade to Refundable Booking</span><span>+{inr(REFUNDABLE_FEE)}</span></div>}
-                      {addonLanguage && <div className="flex justify-between"><span>Driver Language</span><span>+{inr(LANGUAGE_FEE)}</span></div>}
-                      {addonNewVehicle && <div className="flex justify-between"><span>New Vehicle (2023+)</span><span>+{inr(NEW_VEHICLE_FEE)}</span></div>}
+                      {addonCarrier && <div className="flex justify-between"><span>{addonDetails.roofCarrier?.name || "Luggage Roof Carrier"}</span><span>+{inr(CARRIER_FEE)}</span></div>}
+                      {addonRefundable && <div className="flex justify-between"><span>{addonDetails.refundable?.name || "Upgrade to Refundable Booking"}</span><span>+{inr(REFUNDABLE_FEE)}</span></div>}
+                      {addonLanguage && <div className="flex justify-between"><span>{addonDetails.language?.name || "Driver Language"}</span><span>+{inr(LANGUAGE_FEE)}</span></div>}
+                      {addonNewVehicle && <div className="flex justify-between"><span>{addonDetails.newVehicle?.name || "New Vehicle (2023+)"}</span><span>+{inr(NEW_VEHICLE_FEE)}</span></div>}
                     </div>
                   </div>
                 )}

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: "BroomBoom Cabs - All India Car Rental App Nearby",
 
   description:
-    "BroomBoomCabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
+    "BroomBoom Cabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
 
   keywords:
     "outstation cab, car rental, book a cab in advance, cab booking app, all india cab, best outstation cab, best car rental service, cab near me",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   /* CUSTOM META TAGS */
   other: {
     brand: "BroomBoom Cabs",
-    copyright: "2023 BroomBoom Transportation Services Private Limited",
+    copyright: "2026 BroomBoom Transportation Services Private Limited",
     "facebook-domain-verification": "cn9ly9midci1qm2kb9tokwvglffd7g",
   },
 
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     title: "BroomBoom Cabs - All India Car Rental App Nearby",
 
     description:
-      "BroomBoomCabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
+      "BroomBoom Cabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
 
     siteName: "BroomBoom Cabs",
 
@@ -94,7 +94,7 @@ export const metadata: Metadata = {
     title: "BroomBoom Cabs - All India Car Rental App Nearby",
 
     description:
-      "BroomBoomCabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
+      "BroomBoom Cabs - All India Outstation Cab Booking App & Car Rental Services Nearby. Book Cab in Advance for City Ride, Outstation, Rental, Airport & Station.",
 
     images: ["https://www.broomboomcabs.com/logo.png"],
   },

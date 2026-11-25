@@ -42,12 +42,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: details.pageTitle,
       description: details.pageDescription,
       alternates: {
-        canonical: `https://dev.broomboomcabs.com/self-driven/${details.slug}`,
+        canonical: `https://www.broomboomcabs.com/self-driven/${details.slug}`,
       },
       openGraph: {
         title: details.pageTitle,
         description: details.pageDescription,
-        url: `https://dev.broomboomcabs.com/self-driven/${details.slug}`,
+        url: `https://www.broomboomcabs.com/self-driven/${details.slug}`,
         siteName: "BroomBoom Cabs",
         locale: "en_IN",
         type: "website",
@@ -62,12 +62,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `Self-Drive Car Rental in ${cityName} | Unlimited KMs & Doorstep Delivery | BroomBoom`,
     description: `Rent verified self-drive cars in ${cityName} starting from ₹1,199/day. Hatchback, Sedan, Creta, Thar 4x4, and Innova Crysta with zero security deposit options.`,
     alternates: {
-      canonical: `https://dev.broomboomcabs.com/self-driven/${city}`,
+      canonical: `https://www.broomboomcabs.com/self-driven/${city}`,
     },
     openGraph: {
       title: `Self-Drive Car Rental in ${cityName} — Drive Freedom | BroomBoom`,
       description: `Well-maintained, clean self-drive cars in ${cityName} with doorstep delivery and unlimited kilometers. Rent by day or month.`,
-      url: `https://dev.broomboomcabs.com/self-driven/${city}`,
+      url: `https://www.broomboomcabs.com/self-driven/${city}`,
       siteName: "BroomBoom Cabs",
       locale: "en_IN",
       type: "website",

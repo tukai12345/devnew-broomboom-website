@@ -108,10 +108,13 @@ function formatSelfDriveSlug(slug: string): string {
 }
 
 function SitemapLink({ href, label }: { href: string; label: string }) {
+  const isExternal = href.startsWith("http://") || href.startsWith("https://");
+
   return (
     <li>
       <Link
         href={href}
+        {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className="group flex items-start justify-between gap-2 rounded-lg px-2.5 py-1.5 -mx-2 text-slate-600 hover:text-amber-700 hover:bg-amber-50/70 font-medium transition-all"
       >
         <span className="line-clamp-1 text-xs sm:text-sm">{label}</span>
@@ -136,6 +139,7 @@ export default async function SitemapPage() {
     { label: "Airport Transfer Cabs", href: "/services/airport" },
     { label: "Hourly Cab Rentals", href: "/services/rental" },
     { label: "Become a Pilot / Driver Partner", href: "/driver-job" },
+    { label: "Vendor & Fleet Partner Portal", href: "https://vendor.broomboomcabs.com" },
   ];
 
   const featuredHubs = [

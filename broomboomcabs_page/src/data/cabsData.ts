@@ -178,112 +178,92 @@ export interface PopularRoute {
   id: string;
   from: string;
   to: string;
-  distance: string;
-  duration: string;
-  startingPrice: number;
   popularFor: string;
   image: string;
   tag?: string;
+  href: string;
 }
 
 export const POPULAR_ROUTES: PopularRoute[] = [
   {
-    id: "kol-digha",
+    id: "kolkata-digha",
     from: "Kolkata",
     to: "Digha",
-    distance: "185 km",
-    duration: "4.5 hrs",
-    startingPrice: 2299,
     popularFor: "Weekend Beach Getaway",
     image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
     tag: "Trending Weekend",
+    href: "/kolkata/kolkata-to-digha-cabs",
   },
   {
-    id: "kol-mandarmani",
+    id: "kolkata-mandarmani",
     from: "Kolkata",
     to: "Mandarmani",
-    distance: "172 km",
-    duration: "4.0 hrs",
-    startingPrice: 2499,
     popularFor: "Seaside Resorts & Serenity",
     image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=600&q=80",
     tag: "Popular",
+    href: "/kolkata/kolkata-to-mandarmani-cabs",
   },
   {
-    id: "kol-siliguri",
+    id: "kolkata-siliguri",
     from: "Kolkata",
     to: "Siliguri",
-    distance: "560 km",
-    duration: "11.5 hrs",
-    startingPrice: 9499,
     popularFor: "Gateway to Northeast & Hills",
     image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80",
     tag: "Scenic Route",
+    href: "/kolkata/kolkata-to-siliguri-cabs",
   },
   {
-    id: "del-agra",
+    id: "delhi-agra",
     from: "Delhi NCR",
     to: "Agra",
-    distance: "230 km",
-    duration: "3.5 hrs",
-    startingPrice: 2199,
     popularFor: "Taj Mahal Expressway Drive",
     image: "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=600&q=80",
     tag: "Fastest Highway",
+    href: "/outstation/delhi-to-agra",
   },
   {
-    id: "del-jaipur",
+    id: "delhi-jaipur",
     from: "Delhi NCR",
     to: "Jaipur",
-    distance: "280 km",
-    duration: "4.5 hrs",
-    startingPrice: 2799,
     popularFor: "Royal Heritage & Palaces",
     image: "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=600&q=80",
     tag: "Top Rated",
+    href: "/outstation/delhi-to-jaipur",
   },
   {
-    id: "mum-pune",
+    id: "mumbai-pune",
     from: "Mumbai",
     to: "Pune",
-    distance: "150 km",
-    duration: "2.5 hrs",
-    startingPrice: 1999,
     popularFor: "Expressway Daily Commute",
     image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=600&q=80",
     tag: "Expressway Special",
+    href: "/outstation/mumbai-to-pune",
   },
   {
-    id: "blr-mysore",
+    id: "bengaluru-mysore",
     from: "Bengaluru",
     to: "Mysuru",
-    distance: "145 km",
-    duration: "2.0 hrs",
-    startingPrice: 2199,
     popularFor: "Access-controlled Expressway",
     image: "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&w=600&q=80",
     tag: "Superfast",
+    href: "/outstation/bengaluru-to-mysore",
   },
   {
-    id: "kol-puri",
+    id: "kolkata-puri",
     from: "Kolkata",
     to: "Puri",
-    distance: "500 km",
-    duration: "9.5 hrs",
-    startingPrice: 7999,
     popularFor: "Spiritual Pilgrimage & Beach",
     image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=600&q=80",
     tag: "Pilgrimage Special",
+    href: "/outstation/kolkata-to-puri",
   },
 ];
 
 export interface PromoOffer {
   id: string;
-  code: string;
   discount: string;
   title: string;
   description: string;
-  validTill: string;
   tag: string;
   bgGradient: string;
 }
@@ -291,41 +271,33 @@ export interface PromoOffer {
 export const PROMO_OFFERS: PromoOffer[] = [
   {
     id: "broomfirst",
-    code: "BROOMFIRST",
     discount: "FLAT ₹500 OFF",
     title: "First Outstation Ride",
     description: "Valid on all Outstation one-way & round-trip bookings across India.",
-    validTill: "Valid till end of month",
     tag: "New Users",
     bgGradient: "from-amber-500 to-yellow-600",
   },
   {
     id: "airport100",
-    code: "AIRPORT100",
     discount: "FLAT ₹150 OFF",
     title: "Hassle-Free Airport Drop",
     description: "Guaranteed on-time pickup with flight tracking & 45 mins free wait time.",
-    validTill: "All 7 Days",
     tag: "Airport Special",
     bgGradient: "from-emerald-600 to-teal-700",
   },
   {
     id: "weekend800",
-    code: "WEEKEND800",
     discount: "UP TO ₹800 OFF",
     title: "Round Trip Vacation Cabs",
     description: "Book an SUV or Sedan round-trip for 2+ days and get massive savings.",
-    validTill: "Fri - Sun Travel",
     tag: "Weekend Getaway",
     bgGradient: "from-amber-600 to-orange-700",
   },
   {
     id: "electrify",
-    code: "ELECTRIFY",
     discount: "20% OFF",
     title: "Eco Green EV Rides",
     description: "Ride emission-free with zero surge & whisper-quiet modern electric fleet.",
-    validTill: "Limited time",
     tag: "Green Travel",
     bgGradient: "from-teal-600 to-emerald-700",
   },
@@ -371,7 +343,7 @@ export const FAQS: FaqItem[] = [
   {
     category: "Booking & Cancellation",
     question: "What is BroomBoom's cancellation policy?",
-    answer: "You get 100% FREE cancellation up to 6 hours before your scheduled pickup time! Any advance token paid is refunded instantly to your original payment method or BroomBoom wallet.",
+    answer: "You get 100% FREE cancellation up to 6 hours before your scheduled pickup time! Any advance token paid is refunded based on T&C",
   },
   {
     category: "Cab Safety & Hygiene",

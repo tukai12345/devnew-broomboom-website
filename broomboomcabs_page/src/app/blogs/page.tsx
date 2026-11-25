@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     "Explore travel guides, road trip itineraries, taxi fare saving tips, airport transfer advice, and outstation highway guides across India by BroomBoom Cabs.",
   alternates: {
-    canonical: "https://dev.broomboomcabs.com/blogs",
+    canonical: "https://www.broomboomcabs.com/blogs",
   },
 };
 
