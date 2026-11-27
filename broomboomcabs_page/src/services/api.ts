@@ -1265,7 +1265,7 @@ export const api = {
    */
   async getAddons(): Promise<AddonPricingMap> {
     const fallback: AddonPricingMap = {
-      petAllowance: 1001,
+      petAllowance: 0,
       roofCarrier: 157,
       language: 209,
       newVehicle: 262,

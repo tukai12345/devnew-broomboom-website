@@ -68,9 +68,28 @@ interface ActiveFilterChip {
   value: string;
 }
 
+interface StoredFleetState {
+  tripType: string;
+  fromCity: string;
+  toCity: string;
+  pickupCoords: { lat: number; lng: number } | null;
+  dropCoords: { lat: number; lng: number } | null;
+  hourlyPackage: string;
+  pickupDateIso: string;
+  dropDateIso: string;
+  pickupTime: string;
+  dropTime: string;
+  viaStops: string[];
+  selectedCabTypes: string[];
+  selectedModels: string[];
+  selectedFuelTypes: string[];
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                 CONSTANTS                                  */
 /* -------------------------------------------------------------------------- */
+
+const FLEET_STORAGE_KEY = "broomboom_fleet_search_state";
 
 const TIME_OPTIONS = [
   "06:00 AM", "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
@@ -103,6 +122,14 @@ const HOURLY_PACKAGES = [
 /* -------------------------------------------------------------------------- */
 /*                              PURE HELPERS                                  */
 /* -------------------------------------------------------------------------- */
+
+const normalizeTripType = (raw: string): string => {
+  const lower = raw.toLowerCase();
+  if (lower.includes("round")) return "Outstation Round-Trip";
+  if (lower.includes("hourly") || lower.includes("rental")) return "Hourly Rentals";
+  if (lower.includes("airport")) return "Airport Transfers";
+  return "Outstation One-Way";
+};
 
 const formatDisplayDate = (isoStr: string): string => {
   if (!isoStr) return "Select date";
@@ -285,20 +312,15 @@ const FilterSection: React.FC<{
 const FleetPageContent: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isStorageHydrated = useRef(false);
 
   /* ----------------------------- Search state ----------------------------- */
   const rawTripType = searchParams.get("type") || searchParams.get("tripType") || "Outstation One-Way";
-  const [tripType, setTripType] = useState<string>(() => {
-    const lower = rawTripType.toLowerCase();
-    if (lower.includes("round")) return "Outstation Round-Trip";
-    if (lower.includes("hourly") || lower.includes("rental")) return "Hourly Rentals";
-    if (lower.includes("airport")) return "Airport Transfers";
-    return "Outstation One-Way";
-  });
+  const [tripType, setTripType] = useState<string>(() => normalizeTripType(rawTripType));
   const [fromCity, setFromCity] = useState<string>(searchParams.get("from") || "");
   const [toCity, setToCity] = useState<string>(searchParams.get("to") || "");
 
-  const [sourceState, setSourceState] = useState<string>('');
+  const [sourceState, setSourceState] = useState<string>("");
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(() => {
     const lat = searchParams.get("pickupLat");
     const lng = searchParams.get("pickupLng");
@@ -310,7 +332,7 @@ const FleetPageContent: React.FC = () => {
     return lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
   });
 
-  // NEW: hourly package state
+  // Hourly package state
   const [hourlyPackage, setHourlyPackage] = useState<string>(
     searchParams.get("package") || HOURLY_PACKAGES[0]
   );
@@ -329,7 +351,7 @@ const FleetPageContent: React.FC = () => {
     const lower = fromCity.trim().toLowerCase();
     const byName = CITIES.find((c) => c.name.toLowerCase() === lower);
     const byId = CITIES.find((c) => c.id.toLowerCase() === lower);
-    setSourceState(byName?.state ?? byId?.state ?? '');
+    setSourceState(byName?.state ?? byId?.state ?? "");
   }, [fromCity]);
 
   const getTodayStr = () => {
@@ -375,6 +397,130 @@ const FleetPageContent: React.FC = () => {
   const [isModelOpen, setIsModelOpen] = useState(true);
   const [isFuelOpen, setIsFuelOpen] = useState(true);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  /* -------------------- Restore state from localStorage ------------------ */
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(FLEET_STORAGE_KEY);
+      if (raw) {
+        const saved: Partial<StoredFleetState> = JSON.parse(raw);
+        const today = getTodayStr();
+
+        const urlTripType = searchParams.get("type") || searchParams.get("tripType");
+        const urlFrom = searchParams.get("from");
+        const urlTo = searchParams.get("to");
+        const urlPickupLat = searchParams.get("pickupLat");
+        const urlPickupLng = searchParams.get("pickupLng");
+        const urlDropLat = searchParams.get("dropLat");
+        const urlDropLng = searchParams.get("dropLng");
+        const urlPackage = searchParams.get("package");
+        const urlPickupDate = searchParams.get("date") || searchParams.get("pickupDate");
+        const urlDropDate = searchParams.get("dropDate") || searchParams.get("returnDate");
+        const urlPickupTime = searchParams.get("time") || searchParams.get("pickupTime");
+        const urlDropTime = searchParams.get("dropTime") || searchParams.get("returnTime");
+
+        if (!urlTripType && saved.tripType) {
+          setTripType(normalizeTripType(saved.tripType));
+        }
+        if (!urlFrom && saved.fromCity) {
+          setFromCity(saved.fromCity);
+          if (!urlPickupLat && !urlPickupLng && saved.pickupCoords) {
+            setPickupCoords(saved.pickupCoords);
+          }
+        }
+        if (!urlTo && saved.toCity) {
+          setToCity(saved.toCity);
+          if (!urlDropLat && !urlDropLng && saved.dropCoords) {
+            setDropCoords(saved.dropCoords);
+          }
+        }
+        if (!urlPackage && saved.hourlyPackage && HOURLY_PACKAGES.includes(saved.hourlyPackage)) {
+          setHourlyPackage(saved.hourlyPackage);
+        }
+
+        let effectivePickupDate = urlPickupDate || today;
+        if (!urlPickupDate && saved.pickupDateIso) {
+          effectivePickupDate = saved.pickupDateIso >= today ? saved.pickupDateIso : today;
+          setPickupDateIso(effectivePickupDate);
+        }
+
+        if (!urlDropDate && saved.dropDateIso) {
+          const validDropDate =
+            saved.dropDateIso >= effectivePickupDate ? saved.dropDateIso : effectivePickupDate;
+          setDropDateIso(validDropDate);
+        }
+
+        if (!urlPickupTime && saved.pickupTime) {
+          const validPickupTime = !isTimeInPastForToday(saved.pickupTime, effectivePickupDate)
+            ? saved.pickupTime
+            : getCurrentTimeStr();
+          setPickupTime(validPickupTime);
+        }
+
+        if (!urlDropTime && saved.dropTime) {
+          setDropTime(saved.dropTime);
+        }
+
+        if (Array.isArray(saved.viaStops)) {
+          setViaStops(saved.viaStops);
+        }
+        if (Array.isArray(saved.selectedCabTypes)) {
+          setSelectedCabTypes(saved.selectedCabTypes);
+        }
+        if (Array.isArray(saved.selectedModels)) {
+          setSelectedModels(saved.selectedModels);
+        }
+        if (Array.isArray(saved.selectedFuelTypes)) {
+          setSelectedFuelTypes(saved.selectedFuelTypes);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to restore fleet state from localStorage:", err);
+    } finally {
+      isStorageHydrated.current = true;
+    }
+  }, [searchParams]);
+
+  /* --------------------- Persist state to localStorage ------------------- */
+  useEffect(() => {
+    if (!isStorageHydrated.current) return;
+    try {
+      const payload: StoredFleetState = {
+        tripType,
+        fromCity,
+        toCity,
+        pickupCoords,
+        dropCoords,
+        hourlyPackage,
+        pickupDateIso,
+        dropDateIso,
+        pickupTime,
+        dropTime,
+        viaStops,
+        selectedCabTypes,
+        selectedModels,
+        selectedFuelTypes,
+      };
+      window.localStorage.setItem(FLEET_STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.warn("Failed to save fleet state to localStorage:", err);
+    }
+  }, [
+    tripType,
+    fromCity,
+    toCity,
+    pickupCoords,
+    dropCoords,
+    hourlyPackage,
+    pickupDateIso,
+    dropDateIso,
+    pickupTime,
+    dropTime,
+    viaStops,
+    selectedCabTypes,
+    selectedModels,
+    selectedFuelTypes,
+  ]);
 
   const resolveState = (city: string) => {
     const lower = city.trim().toLowerCase();
@@ -447,7 +593,6 @@ const FleetPageContent: React.FC = () => {
         durationMinutes: queryDur ? parseInt(queryDur, 10) : Math.round(parseFloat(queryDist) * 0.8),
       };
     }
-    // For hourly, initial distance is package kms
     if (isHourly) {
       const kmsMatch = hourlyPackage.match(/(\d+)\s*kms/i);
       const hrsMatch = hourlyPackage.match(/(\d+)\s*hrs?/i);
@@ -506,7 +651,6 @@ const FleetPageContent: React.FC = () => {
     let cancelled = false;
 
     async function fetchBackendData() {
-      // For hourly: only fromCity is required. For others: both cities needed.
       if (!fromCity) return;
       if (!isHourly && !toCity) return;
       setIsCalculatingPrices(true);
@@ -514,7 +658,6 @@ const FleetPageContent: React.FC = () => {
       let currentDistance = 0;
       let currentDuration = 0;
 
-      // ---- HOURLY: distance comes from package, skip map API ----
       if (isHourly) {
         const kmsMatch = hourlyPackage.match(/(\d+)\s*kms/i);
         const hrsMatch = hourlyPackage.match(/(\d+)\s*hrs?/i);
@@ -524,7 +667,6 @@ const FleetPageContent: React.FC = () => {
           setBackendRoute({ distance: currentDistance, durationMinutes: currentDuration });
         }
       } else {
-        // 1. Calculate road distance & duration via map API
         try {
           const distRes = await api.calculateDistance({
             from: fromCity.trim(),
@@ -550,7 +692,6 @@ const FleetPageContent: React.FC = () => {
           console.warn("Backend distance fetch error:", err);
         }
 
-        // Fallback to static popular routes
         if (currentDistance === 0) {
           const { POPULAR_ROUTES } = await import("@/data/cabsData");
           const route = POPULAR_ROUTES.find(
@@ -593,7 +734,6 @@ const FleetPageContent: React.FC = () => {
         }
       }
 
-      // 2. Calculate dynamic fares per category
       try {
         const tLower = tripType.toLowerCase();
         const isRound = tLower.includes("round");
@@ -742,7 +882,6 @@ const FleetPageContent: React.FC = () => {
 
   /* ----------------------------- Fleet data ------------------------------ */
   const allVehicles: VehicleItem[] = useMemo(() => {
-    // 1. Resolve rental package FIRST
     const isRental =
       tripType.toLowerCase().includes("hourly") ||
       tripType.toLowerCase().includes("rental");
@@ -756,7 +895,6 @@ const FleetPageContent: React.FC = () => {
       if (matchK) currentPkgKms = parseInt(matchK[1], 10);
     }
 
-    // 2. Safe to reference them now
     const kms = isRental
       ? currentPkgKms
       : isAirport
@@ -864,7 +1002,6 @@ const FleetPageContent: React.FC = () => {
           };
         }
 
-        // Canonical admin airport defaults matching backend MongoDB rules (no outstation 1200 fallback)
         const adminAirportDefaults: Record<string, { fare0to15: number; fare15to25: number; extraKmRate: number; advance: number; waitingChargePerHour: number }> = {
           Sedan: { fare0to15: 750, fare15to25: 1050, extraKmRate: 15, advance: 500, waitingChargePerHour: 150 },
           SUV: { fare0to15: 1050, fare15to25: 1450, extraKmRate: 20, advance: 500, waitingChargePerHour: 200 },
@@ -1093,7 +1230,6 @@ const FleetPageContent: React.FC = () => {
     isAirport,
     fromCity,
     toCity,
-    airportRules,
     backendRoute,
     pickupTime,
   ]);
@@ -1193,9 +1329,15 @@ const FleetPageContent: React.FC = () => {
     setOpenDropdown(null);
     setShowAddStopModal(false);
 
+    const trimmedFrom = fromCity.trim();
+    const trimmedTo = toCity.trim();
+    const resolvedDistance = backendRoute?.distance || routeMeta.kms || undefined;
+    const resolvedDuration =
+      backendRoute?.durationMinutes || routeMeta.durationMinutes || undefined;
+
     const params = new URLSearchParams({
       tripType,
-      from: fromCity.trim(),
+      from: trimmedFrom,
       pickupDate: pickupDateIso,
       pickupTime,
     });
@@ -1203,7 +1345,7 @@ const FleetPageContent: React.FC = () => {
     if (isHourly) {
       params.set("package", hourlyPackage);
     } else {
-      params.set("to", toCity.trim());
+      params.set("to", trimmedTo);
       params.set("dropDate", dropDateIso);
       params.set("dropTime", dropTime);
     }
@@ -1213,9 +1355,11 @@ const FleetPageContent: React.FC = () => {
       params.set("returnTime", dropTime);
     }
 
-    if (backendRoute?.distance) {
-      params.set("distance", backendRoute.distance.toString());
-      params.set("duration", backendRoute.durationMinutes.toString());
+    if (resolvedDistance) {
+      params.set("distance", resolvedDistance.toString());
+      if (resolvedDuration) {
+        params.set("duration", resolvedDuration.toString());
+      }
     }
     if (pickupCoords) {
       params.set("pickupLat", pickupCoords.lat.toString());
@@ -1225,7 +1369,48 @@ const FleetPageContent: React.FC = () => {
       params.set("dropLat", dropCoords.lat.toString());
       params.set("dropLng", dropCoords.lng.toString());
     }
+
     router.replace(`/fleet?${params.toString()}`, { scroll: false });
+
+    api
+      .createBookingLead({
+        serviceType: tripType,
+        tripType,
+        fromCity: trimmedFrom,
+        toCity: isHourly ? undefined : trimmedTo,
+        pickupAddress: trimmedFrom,
+        dropAddress: isHourly ? undefined : trimmedTo,
+        pickupDate: pickupDateIso,
+        pickupTime,
+        returnDate: isRoundTrip ? dropDateIso : undefined,
+        returnTime: isRoundTrip ? dropTime : undefined,
+        dropTime: isHourly ? undefined : dropTime,
+        hourlyPackage: isHourly ? hourlyPackage : undefined,
+        airportMode: isAirport ? "airport" : undefined,
+        distanceKm: resolvedDistance,
+        durationMinutes: resolvedDuration,
+        source: "Fleet Search",
+        rawSearchParams: {
+          tripType,
+          fromCity: trimmedFrom,
+          toCity: isHourly ? "" : trimmedTo,
+          sourceState: resolveState(trimmedFrom) || sourceState,
+          pickupDateIso,
+          pickupTime,
+          dropDateIso,
+          dropTime,
+          hourlyPackage,
+          viaStops,
+          backendRoute,
+          pickupCoords,
+          dropCoords,
+          startingFare: filteredVehicles[0]?.discountedPrice,
+        },
+      })
+      .catch((err) => {
+        console.warn("Fleet search booking lead failed:", err);
+      });
+
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 

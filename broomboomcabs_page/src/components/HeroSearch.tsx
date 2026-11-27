@@ -127,7 +127,22 @@ const parseTimeDetails = (timeStr: string) => {
     return { hour: "10", minute: "00", meridiem: "AM" };
   }
 };
+const calculateDropTime = (pickupTime: string) => {
+  const { hour, minute, meridiem } = parseTimeDetails(pickupTime);
 
+  let hours = parseInt(hour, 10);
+
+  if (meridiem === "PM" && hours !== 12) hours += 12;
+  if (meridiem === "AM" && hours === 12) hours = 0;
+
+  // Add 3 hours
+  hours = (hours + 3) % 24;
+
+  const nextHour = hours % 12 || 12;
+  const nextMeridiem = hours >= 12 ? "PM" : "AM";
+
+  return `${String(nextHour).padStart(2, "0")}:${minute} ${nextMeridiem}`;
+};
 const formatDateDisplay = (dateStr: string) => {
   if (!dateStr) return "";
   const [year, month, day] = dateStr.split("-");
@@ -572,7 +587,7 @@ const CityPopover: React.FC<{
   onQueryChange: (v: string) => void;
   selected: string;
   onSelect: (name: string, state?: string, coords?: { lat: number; lng: number }) => void;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   presetCities?: { id: string; name: string; state: string }[];
   searchableCitiesList?: { id: string; name: string; state: string }[];
   isLoadingCities?: boolean;
@@ -1144,7 +1159,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   const [pickupDate, setPickupDate] = useState(() => getMinimumPickupDateStr(initialType));
   const [pickupTime, setPickupTime] = useState(() => getCurrentTimeStr(initialType));
   const [returnDate, setReturnDate] = useState(getTodayStr());
-  const [dropTime, setDropTime] = useState("09:45 PM");
+const [dropTime, setDropTime] = useState(() =>
+  calculateDropTime(getCurrentTimeStr(initialType))
+);
   const [hourlyPackage, setHourlyPackage] = useState("8 hrs 80 kms");
   const [hourlyPackagesList, setHourlyPackagesList] = useState(HOURLY_PACKAGES);
 

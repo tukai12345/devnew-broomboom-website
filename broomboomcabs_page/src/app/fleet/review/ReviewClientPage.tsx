@@ -25,6 +25,15 @@ import {
   ShieldCheck,
   Plus,
   Minus,
+  Gauge,
+  UserCheck,
+  Plane,
+  Fuel,
+  Receipt,
+  Ticket,
+  Timer,
+  Moon,
+  Percent,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { MyBookingsDrawer } from "@/components/MyBookingsDrawer";
@@ -301,23 +310,34 @@ export const ReviewClientPage: React.FC = () => {
           return {
             title: `${includedKms.toLocaleString("en-IN")} Kms Included`,
             desc: `₹${liveExtraKmRate}/km applies beyond included distance`,
+            icon: Gauge,
           };
         }
         if (itemLower.includes("driver")) {
           return {
             title: "Driver Allowance & Night Stay",
             desc: "Driver food, day allowance and accommodation charges included",
+            icon: UserCheck,
           };
         }
         if (itemLower.includes("airport")) {
           return {
             title: "Airport Transfer Assistance",
             desc: "Dedicated pickup & up to 60 mins complimentary waiting",
+            icon: Plane,
+          };
+        }
+        if (itemLower.includes("fuel") || itemLower.includes("ac") || itemLower.includes("vehicle") || itemLower.includes("cab")) {
+          return {
+            title: item,
+            desc: "Included in your base booking quote",
+            icon: Fuel,
           };
         }
         return {
           title: item,
           desc: "Included in your base booking quote",
+          icon: CheckCircle2,
         };
       });
     }
@@ -327,18 +347,22 @@ export const ReviewClientPage: React.FC = () => {
         {
           title: `${includedKms.toLocaleString("en-IN")} Kms `,
           desc: `₹${liveExtraKmRate}/km applies in distance`,
+          icon: Gauge,
         },
         {
           title: "Complimentary Airport Waiting",
           desc: "Up to 60 minutes free waiting time at the airport terminal",
+          icon: Plane,
         },
         {
           title: "Driver Allowance & Luggage Help",
           desc: "Dedicated chauffeur with luggage assistance and food charges included",
+          icon: UserCheck,
         },
         {
           title: "Clean AC Vehicle & Fuel",
           desc: "Pre-sanitized air-conditioned cab and all fuel expenses included",
+          icon: Fuel,
         },
       ];
     }
@@ -348,14 +372,17 @@ export const ReviewClientPage: React.FC = () => {
         {
           title: `Package: ${hourlyPackage || `${includedKms} Kms`}`,
           desc: "Dedicated chauffeur & cab at your disposal within package limits",
+          icon: Clock,
         },
         {
           title: "Driver Allowance",
           desc: "Chauffeur charges and meal allowance included for the rental hours",
+          icon: UserCheck,
         },
         {
           title: "Clean AC Vehicle & Fuel",
           desc: "Air-conditioned cab with all fuel included within package kilometers",
+          icon: Fuel,
         },
       ];
     }
@@ -365,14 +392,17 @@ export const ReviewClientPage: React.FC = () => {
         {
           title: `${includedKms.toLocaleString("en-IN")} Kms Roundtrip`,
           desc: `₹${liveExtraKmRate}/km applies in distance for return trip`,
+          icon: Gauge,
         },
         {
           title: "Driver Allowance & Night Stay",
           desc: "Driver food, day allowance, and night stay charges included",
+          icon: UserCheck,
         },
         {
           title: "Clean AC Vehicle & Fuel",
           desc: "Well-maintained sanitized AC cab with complete fuel charges included",
+          icon: Fuel,
         },
       ];
     }
@@ -382,14 +412,17 @@ export const ReviewClientPage: React.FC = () => {
       {
         title: `${includedKms.toLocaleString("en-IN")} Kms One-way`,
         desc: `₹${liveExtraKmRate}/km applies in distance`,
+        icon: Gauge,
       },
       {
         title: "Driver Allowance",
         desc: "Driver food and accommodation (night stay) charges are included",
+        icon: UserCheck,
       },
       {
         title: "Clean AC Vehicle & Fuel",
         desc: "Sanitized air-conditioned cab with all fuel expenses included",
+        icon: Fuel,
       },
     ];
   }, [backendInclusions, includedKms, liveExtraKmRate, isAirport, isRental, isRound, hourlyPackage]);
@@ -402,47 +435,55 @@ export const ReviewClientPage: React.FC = () => {
           return {
             title: "Toll & State Permit Taxes",
             desc: "Payable directly at toll plazas / state entry counters at actuals",
+            icon: Receipt,
           };
         }
         if (itemLower.includes("parking")) {
           return {
             title: "Parking Charges",
             desc: "Airport or venue parking payable directly as per actual receipts",
+            icon: Ticket,
           };
         }
         if (itemLower.includes("extra km") || itemLower.includes("kilometer")) {
           return {
             title: "Extra Kilometers",
             desc: `₹${liveExtraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km (not included in price)`,
+            icon: Gauge,
           };
         }
         if (itemLower.includes("extra hour") || itemLower.includes("hourly")) {
           return {
             title: "Extra Hours",
             desc: `₹${liveExtraHourRate}/hour applies beyond scheduled trip duration (not included in price)`,
+            icon: Clock,
           };
         }
         if (itemLower.includes("waiting")) {
           return {
             title: "Waiting Time",
             desc: `First ${liveWaitingTime} mins complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in base fare)`,
+            icon: Timer,
           };
         }
         if (itemLower.includes("night")) {
           return {
             title: "Night Driving Allowance",
             desc: "₹250/- applicable only if traveling between 11:00 PM and 6:00 AM",
+            icon: Moon,
           };
         }
         if (itemLower.includes("gst")) {
           return {
             title: "GST (5%)",
             desc: "Statutory government tax added at final payment step",
+            icon: Percent,
           };
         }
         return {
           title: item,
           desc: "To be paid as actuals during or after the journey",
+          icon: XCircle,
         };
       });
     }
@@ -452,22 +493,27 @@ export const ReviewClientPage: React.FC = () => {
         {
           title: "Airport Parking & Entry",
           desc: "Payable directly at airport pickup / terminal counter as per actual slip",
+          icon: Ticket,
         },
         {
           title: "Toll Taxes",
           desc: "Highway toll charges payable directly at toll plazas (if any)",
+          icon: Receipt,
         },
         {
           title: "Extra Kilometers",
           desc: `₹${liveExtraKmRate}/km applicable beyond the included ${includedKms} km (not included in price)`,
+          icon: Gauge,
         },
         {
           title: "Waiting Time",
           desc: `First ${liveWaitingTime} minutes complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in price)`,
+          icon: Timer,
         },
         {
           title: "Night Allowance (11 PM - 6 AM)",
           desc: "₹250/- applicable only if ride starts or runs between 11:00 PM and 6:00 AM",
+          icon: Moon,
         },
       ];
     }
@@ -477,22 +523,27 @@ export const ReviewClientPage: React.FC = () => {
         {
           title: "Toll & Parking Charges",
           desc: "Payable at actuals during the journey against official receipts",
+          icon: Receipt,
         },
         {
           title: "Extra Kilometers",
           desc: `₹${liveExtraKmRate}/km applicable beyond package distance (not included in price)`,
+          icon: Gauge,
         },
         {
           title: "Extra Rental Hours",
           desc: `₹${liveExtraHourRate}/hour applicable beyond booked package duration (not included in price)`,
+          icon: Clock,
         },
         {
           title: "Waiting Time",
           desc: `First ${liveWaitingTime} mins complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in price)`,
+          icon: Timer,
         },
         {
           title: "Night Driving Charges",
           desc: "₹250/- applicable if trip extends between 11:00 PM and 6:00 AM",
+          icon: Moon,
         },
       ];
     }
@@ -502,26 +553,32 @@ export const ReviewClientPage: React.FC = () => {
       {
         title: "Tolls & State Permit Taxes",
         desc: "Payable directly at toll plazas and interstate state-tax border counters at actuals",
+        icon: Receipt,
       },
       {
         title: "Parking Fees",
         desc: "Destination and sightseeing spot parking to be paid as per actual slips",
+        icon: Ticket,
       },
       {
         title: "Extra Kilometers",
         desc: `₹${liveExtraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km (not included in price)`,
+        icon: Gauge,
       },
       {
         title: "Extra Hours",
         desc: `₹${liveExtraHourRate}/hour applies beyond scheduled trip duration (not included in price)`,
+        icon: Clock,
       },
       {
         title: "Waiting Time",
         desc: `First ${liveWaitingTime} mins complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in price)`,
+        icon: Timer,
       },
       {
         title: "Night Allowance (11 PM - 6 AM)",
         desc: "₹250/- applicable if journey continues between 11:00 PM and 6:00 AM",
+        icon: Moon,
       },
     ];
   }, [backendExclusions, liveExtraKmRate, liveExtraHourRate, liveWaitingTime, includedKms, isAirport, isRental]);
@@ -562,7 +619,7 @@ export const ReviewClientPage: React.FC = () => {
 
   // Dynamic Addon Pricing loaded from live backend / admin settings
   const [addonPricing, setAddonPricing] = useState({
-    petAllowance: 1001,
+    petAllowance: 0,
     roofCarrier: 157,
     language: 209,
     newVehicle: 262,
@@ -634,7 +691,7 @@ export const ReviewClientPage: React.FC = () => {
 
   // Hidden GST (5%) & Payment Gateway Charges (2%) added at Cashfree checkout
   const gstCharge = Math.round(finalTotal * 0.05);
-  const gatewayCharge = Math.round(finalTotal * 0.02);
+  const gatewayCharge = Math.round(finalTotal * 0.03);
   const totalExtraCharges = gstCharge + gatewayCharge; // 7% extra (e.g. ₹60 + ₹24 = ₹84)
 
   // Amount sent to Cashfree gateway with GST & Gateway charges included
@@ -1073,19 +1130,25 @@ export const ReviewClientPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-3">
-                        {inclusionsList.map((inc, i) => (
-                          <div key={i} className="flex items-start gap-2.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                            <div className="min-w-0">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                                {inc.title}
+                        {inclusionsList.map((inc, i) => {
+                          const IconComp = inc.icon || CheckCircle2;
+                          return (
+                            <div key={i} className="flex items-start gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-100/80 border border-emerald-200/80 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                                <IconComp className="w-3.5 h-3.5" />
                               </div>
-                              <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                                {inc.desc}
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs sm:text-sm font-bold text-slate-900 leading-snug flex items-center gap-1.5">
+                                  <span>{inc.title}</span>
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                </div>
+                                <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                  {inc.desc}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1106,19 +1169,25 @@ export const ReviewClientPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-3">
-                        {exclusionsList.map((exc, i) => (
-                          <div key={i} className="flex items-start gap-2.5">
-                            <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                            <div className="min-w-0">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                                {exc.title}
+                        {exclusionsList.map((exc, i) => {
+                          const IconComp = exc.icon || XCircle;
+                          return (
+                            <div key={i} className="flex items-start gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-rose-100/80 border border-rose-200/80 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                                <IconComp className="w-3.5 h-3.5" />
                               </div>
-                              <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                                {exc.desc}
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs sm:text-sm font-bold text-slate-900 leading-snug flex items-center gap-1.5">
+                                  <span>{exc.title}</span>
+                                  <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                </div>
+                                <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                  {exc.desc}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1560,7 +1629,7 @@ export const ReviewClientPage: React.FC = () => {
                   </label>
                   {!agreedToTerms && (
                     <div className="text-[10px] text-amber-600 font-semibold mt-1.5 ml-6">
-                      * Please check this box to agree before proceeding to payment
+- Please check this box to agree before proceeding to payment
                     </div>
                   )}
                 </div>
