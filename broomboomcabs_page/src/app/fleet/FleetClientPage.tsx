@@ -56,6 +56,7 @@ interface VehicleItem {
   imageType: "sedan" | "suv" | "suv-plus" | "minibus" | "tempo";
   extraKmRate?: number;
   extraHourRate?: number;
+  waitingFreeMins?: number;
   advanceAmount?: number;
   dueAmount?: number;
 }
@@ -462,24 +463,35 @@ const FleetPageContent: React.FC = () => {
   >({});
   const [isCalculatingPrices, setIsCalculatingPrices] = useState(false);
   const [airportRules, setAirportRules] = useState<AirportRuleItem[]>([]);
+  const [stateRules, setStateRules] = useState<any[]>([]);
 
-  // Load live admin airport rules on mount and listen for real-time changes
+  // Load live admin airport & outstation state rules on mount and listen for real-time changes
   useEffect(() => {
     let mounted = true;
     const loadRules = async () => {
       try {
-        const rules = await api.getAirportRules();
-        if (mounted && Array.isArray(rules) && rules.length > 0) {
-          setAirportRules(rules);
+        const [aRules, sRules] = await Promise.all([
+          api.getAirportRules(),
+          api.getStateRules(),
+        ]);
+        if (mounted && Array.isArray(aRules) && aRules.length > 0) {
+          setAirportRules(aRules);
+        }
+        if (mounted && Array.isArray(sRules) && sRules.length > 0) {
+          setStateRules(sRules);
         }
       } catch (e) {
-        console.warn("Unable to load airport rules:", e);
+        console.warn("Unable to load rules:", e);
       }
     };
     loadRules();
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "broomboom_airport_pricing_updated" || e.key === "broomboom_airport_fares") {
+      if (
+        e.key === "broomboom_airport_pricing_updated" ||
+        e.key === "broomboom_airport_fares" ||
+        e.key === "broomboom_outstation_fares"
+      ) {
         loadRules();
       }
     };
@@ -780,6 +792,16 @@ const FleetPageContent: React.FC = () => {
           : categoryName.includes("25")
           ? backendPrices["24 Seater Traveller"]
           : undefined);
+      const isRoundTripCalc = tripType.toLowerCase().includes("round");
+      const matchedStateRule = !isRental && !isAirport
+        ? api.findMatchingStateRule(stateRules, {
+            category: categoryName,
+            rideType: isRoundTripCalc ? "Roundtrip" : "Oneway",
+            city: fromCity,
+            state: sourceState,
+          })
+        : null;
+
       if (live && live.fare > 0) {
         return {
           discountedPrice: live.fare,
@@ -787,8 +809,22 @@ const FleetPageContent: React.FC = () => {
           discountPercent: live.discountPercent || defaultDiscount,
           advance: live.advance,
           dueFare: live.dueFare,
-          extraKmRate: (live.details as any)?.extraKmRate || (live.details as any)?.ratePerKm || perKmFallback,
-          extraHourRate: (live.details as any)?.extraHourRate || (live.details as any)?.waitingChargePerHour || (live.details as any)?.hourlyRate || (isRental ? 200 : isAirport ? 150 : 120),
+          extraKmRate:
+            matchedStateRule?.extraKmRate ??
+            (live.details as any)?.extraKmRate ??
+            (live.details as any)?.ratePerKm ??
+            perKmFallback,
+          extraHourRate:
+            matchedStateRule?.hourlyRate ??
+            (live.details as any)?.extraHourRate ??
+            (live.details as any)?.hourlyRate ??
+            (live.details as any)?.waitingChargePerHour ??
+            (isRental ? 200 : isAirport ? 150 : 120),
+          waitingFreeMins:
+            matchedStateRule?.waitingFreeMins ??
+            (live.details as any)?.waitingFreeMins ??
+            (live.details as any)?.waitingTime ??
+            60,
         };
       }
 
@@ -802,6 +838,7 @@ const FleetPageContent: React.FC = () => {
           dueFare: Math.round(matrixFare * 0.8),
           extraKmRate: categoryName.includes("Traveller") ? 40 : 20,
           extraHourRate: categoryName.includes("Traveller") ? 400 : 200,
+          waitingFreeMins: 60,
         };
       }
 
@@ -823,6 +860,7 @@ const FleetPageContent: React.FC = () => {
             dueFare: localAirportRes.dueFare,
             extraKmRate: (localAirportRes.details as any)?.extraKmRate || perKmFallback,
             extraHourRate: (localAirportRes.details as any)?.waitingChargePerHour || (localAirportRes.details as any)?.extraHourRate || 150,
+            waitingFreeMins: (localAirportRes.details as any)?.waitingFreeMins ?? 60,
           };
         }
 
@@ -852,11 +890,11 @@ const FleetPageContent: React.FC = () => {
           dueFare: Math.max(0, adminFare - def.advance),
           extraKmRate: def.extraKmRate,
           extraHourRate: def.waitingChargePerHour,
+          waitingFreeMins: 60,
         };
       }
 
-      const perKmRate = sourceState === "West Bengal" ? 10 : perKmFallback;
-      const isRoundTripCalc = tripType.toLowerCase().includes("round");
+      const perKmRate = matchedStateRule?.ratePerKm || (sourceState === "West Bengal" ? 10 : perKmFallback);
       const fallbackAdvancePct = isRoundTripCalc ? 0.25 : 0.2;
       const fallbackFare = Math.max(1200, roundTo10(kms * perKmRate));
       return {
@@ -865,8 +903,9 @@ const FleetPageContent: React.FC = () => {
         discountPercent: defaultDiscount,
         advance: Math.round(fallbackFare * fallbackAdvancePct),
         dueFare: Math.round(fallbackFare * (1 - fallbackAdvancePct)),
-        extraKmRate: perKmRate,
-        extraHourRate: isRoundTripCalc ? 120 : 150,
+        extraKmRate: matchedStateRule?.extraKmRate ?? perKmRate,
+        extraHourRate: matchedStateRule?.hourlyRate ?? (isRoundTripCalc ? 120 : 150),
+        waitingFreeMins: matchedStateRule?.waitingFreeMins ?? 60,
       };
     };
 
@@ -898,6 +937,7 @@ const FleetPageContent: React.FC = () => {
         dueAmount: sedanPricing.dueFare,
         extraKmRate: sedanPricing.extraKmRate,
         extraHourRate: sedanPricing.extraHourRate,
+        waitingFreeMins: sedanPricing.waitingFreeMins,
         roofCarrierFee: 157,
         imageType: "sedan",
       },
@@ -921,6 +961,7 @@ const FleetPageContent: React.FC = () => {
         dueAmount: suvPlusPricing.dueFare,
         extraKmRate: suvPlusPricing.extraKmRate,
         extraHourRate: suvPlusPricing.extraHourRate,
+        waitingFreeMins: suvPlusPricing.waitingFreeMins,
         roofCarrierFee: 262,
         imageType: "suv-plus",
       },
@@ -944,6 +985,7 @@ const FleetPageContent: React.FC = () => {
         dueAmount: suvPricing.dueFare,
         extraKmRate: suvPricing.extraKmRate,
         extraHourRate: suvPricing.extraHourRate,
+        waitingFreeMins: suvPricing.waitingFreeMins,
         roofCarrierFee: 262,
         imageType: "suv",
       },
@@ -967,6 +1009,7 @@ const FleetPageContent: React.FC = () => {
         dueAmount: traveller17Pricing.dueFare,
         extraKmRate: traveller17Pricing.extraKmRate,
         extraHourRate: traveller17Pricing.extraHourRate,
+        waitingFreeMins: traveller17Pricing.waitingFreeMins,
         imageType: "minibus",
       },
       {
@@ -989,6 +1032,7 @@ const FleetPageContent: React.FC = () => {
         dueAmount: traveller24Pricing.dueFare,
         extraKmRate: traveller24Pricing.extraKmRate,
         extraHourRate: traveller24Pricing.extraHourRate,
+        waitingFreeMins: traveller24Pricing.waitingFreeMins,
         imageType: "minibus",
       },
       {
@@ -1011,6 +1055,7 @@ const FleetPageContent: React.FC = () => {
         dueAmount: traveller13Pricing.dueFare,
         extraKmRate: traveller13Pricing.extraKmRate,
         extraHourRate: traveller13Pricing.extraHourRate,
+        waitingFreeMins: traveller13Pricing.waitingFreeMins,
         imageType: "tempo",
       },
       {
@@ -1033,12 +1078,15 @@ const FleetPageContent: React.FC = () => {
         dueAmount: traveller17Pricing.dueFare,
         extraKmRate: traveller17Pricing.extraKmRate,
         extraHourRate: traveller17Pricing.extraHourRate,
+        waitingFreeMins: traveller17Pricing.waitingFreeMins,
         imageType: "tempo",
       },
     ];
   }, [
     routeMeta,
     backendPrices,
+    stateRules,
+    airportRules,
     tripType,
     hourlyPackage,
     sourceState,
@@ -1222,6 +1270,7 @@ const FleetPageContent: React.FC = () => {
       modelBadgeText: vehicle.modelBadgeText || "",
       extraKmRate: (vehicle.extraKmRate || 15).toString(),
       extraHourRate: (vehicle.extraHourRate || 150).toString(),
+      waitingTime: (vehicle.waitingFreeMins ?? 60).toString(),
       distance: (routeMeta.kms || "").toString(),
       oneWayDistance: (routeMeta.oneWayKms || "").toString(),
       duration: (routeMeta.durationMinutes || "").toString(),

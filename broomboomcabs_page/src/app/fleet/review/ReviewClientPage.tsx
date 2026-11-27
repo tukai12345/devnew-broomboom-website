@@ -106,6 +106,7 @@ export const ReviewClientPage: React.FC = () => {
   const carImageParam = searchParams.get("carImage");
   const extraKmRate = searchParams.get("extraKmRate") || "15";
   const extraHourRate = searchParams.get("extraHourRate") || "150";
+  const waitingTimeParam = searchParams.get("waitingTime") || "60";
 
   // Exact car image selection based on passed carImage, imageType, or vehicle details
   const selectedCarImage =
@@ -155,19 +156,72 @@ export const ReviewClientPage: React.FC = () => {
   );
   const [liveExtraKmRate, setLiveExtraKmRate] = useState<string>(extraKmRate);
   const [liveExtraHourRate, setLiveExtraHourRate] = useState<string>(extraHourRate);
+  const [liveWaitingTime, setLiveWaitingTime] = useState<string>(waitingTimeParam);
   const [backendInclusions, setBackendInclusions] = useState<string[]>([]);
   const [backendExclusions, setBackendExclusions] = useState<string[]>([]);
   const [incTab, setIncTab] = useState<"all" | "inclusions" | "exclusions">("all");
 
   useEffect(() => {
     const isStaleAirportFallback = isAirport && (baseFareParam === 1200 || baseFareParam === 2499 || baseFareParam === 500);
-    if (baseFareParam > 0 && !isStaleAirportFallback) {
+    const hasValidBaseFare = baseFareParam > 0 && !isStaleAirportFallback;
+    if (hasValidBaseFare) {
       setLiveBaseFare(baseFareParam);
       if (advanceParam > 0) setLiveAdvance(advanceParam);
       if (dueFareParam > 0) setLiveDueFare(dueFareParam);
       if (includedKmsParam > 0) setLiveKms(includedKmsParam);
-      return;
     }
+
+    async function syncExclusionRatesFromAdmin() {
+      try {
+        const sourceState = CITIES.find(
+          (c) =>
+            c.name.toLowerCase() === fromCity.trim().toLowerCase() ||
+            c.id.toLowerCase() === fromCity.trim().toLowerCase()
+        )?.state;
+
+        if (!isAirport && !isRental) {
+          const sRules = await api.getStateRules();
+          const matchedRule = api.findMatchingStateRule(sRules, {
+            category: cabCategory || "Sedan",
+            rideType: isRound ? "Roundtrip" : "Oneway",
+            city: fromCity,
+            state: sourceState,
+          });
+          if (matchedRule) {
+            if (matchedRule.extraKmRate !== undefined && matchedRule.extraKmRate !== null) {
+              setLiveExtraKmRate(String(matchedRule.extraKmRate));
+            }
+            if (matchedRule.hourlyRate !== undefined && matchedRule.hourlyRate !== null) {
+              setLiveExtraHourRate(String(matchedRule.hourlyRate));
+            }
+            if (matchedRule.waitingFreeMins !== undefined && matchedRule.waitingFreeMins !== null) {
+              setLiveWaitingTime(String(matchedRule.waitingFreeMins));
+            }
+          }
+        } else if (isAirport) {
+          const aRules = await api.getAirportRules();
+          const localRes = api.calculateAirportPriceLocally(aRules, {
+            category: cabCategory || "Sedan",
+            sourceCity: fromCity,
+            destinationCity: toCity,
+            state: sourceState,
+            distance: distanceParam > 0 ? distanceParam : 15,
+            pickupTime,
+          });
+          const dAny = localRes?.details as any;
+          if (dAny?.extraKmRate) setLiveExtraKmRate(String(dAny.extraKmRate));
+          if (dAny?.extraHourRate || dAny?.waitingChargePerHour) {
+            setLiveExtraHourRate(String(dAny.extraHourRate || dAny.waitingChargePerHour));
+          }
+          if (dAny?.waitingFreeMins !== undefined && dAny?.waitingFreeMins !== null) {
+            setLiveWaitingTime(String(dAny.waitingFreeMins));
+          }
+        }
+      } catch {}
+    }
+
+    syncExclusionRatesFromAdmin();
+    if (hasValidBaseFare) return;
 
     async function fetchLiveFare() {
       try {
@@ -214,6 +268,11 @@ export const ReviewClientPage: React.FC = () => {
           }
           if (dAny?.extraHourRate || dAny?.waitingChargePerHour || dAny?.hourlyRate) {
             setLiveExtraHourRate(String(dAny.extraHourRate || dAny.waitingChargePerHour || dAny.hourlyRate));
+          }
+          if (dAny?.waitingFreeMins !== undefined && dAny?.waitingFreeMins !== null) {
+            setLiveWaitingTime(String(dAny.waitingFreeMins));
+          } else if (dAny?.waitingTime !== undefined && dAny?.waitingTime !== null) {
+            setLiveWaitingTime(String(dAny.waitingTime));
           }
           if (Array.isArray(dAny?.inclusions) && dAny.inclusions.length > 0) {
             setBackendInclusions(dAny.inclusions);
@@ -351,10 +410,22 @@ export const ReviewClientPage: React.FC = () => {
             desc: "Airport or venue parking payable directly as per actual receipts",
           };
         }
+        if (itemLower.includes("extra km") || itemLower.includes("kilometer")) {
+          return {
+            title: "Extra Kilometers",
+            desc: `₹${liveExtraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km (not included in price)`,
+          };
+        }
+        if (itemLower.includes("extra hour") || itemLower.includes("hourly")) {
+          return {
+            title: "Extra Hours",
+            desc: `₹${liveExtraHourRate}/hour applies beyond scheduled trip duration (not included in price)`,
+          };
+        }
         if (itemLower.includes("waiting")) {
           return {
-            title: "Extra Waiting Charges",
-            desc: `₹${liveExtraHourRate}/hour applicable after complimentary waiting period`,
+            title: "Waiting Time",
+            desc: `First ${liveWaitingTime} mins complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in base fare)`,
           };
         }
         if (itemLower.includes("night")) {
@@ -388,11 +459,11 @@ export const ReviewClientPage: React.FC = () => {
         },
         {
           title: "Extra Kilometers",
-          desc: `₹${liveExtraKmRate}/km applicable beyond the included ${includedKms} km`,
+          desc: `₹${liveExtraKmRate}/km applicable beyond the included ${includedKms} km (not included in price)`,
         },
         {
-          title: "Extended Waiting Time",
-          desc: `₹${liveExtraHourRate}/hour applicable after the first 60 minutes of complimentary waiting`,
+          title: "Waiting Time",
+          desc: `First ${liveWaitingTime} minutes complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in price)`,
         },
         {
           title: "Night Allowance (11 PM - 6 AM)",
@@ -409,11 +480,15 @@ export const ReviewClientPage: React.FC = () => {
         },
         {
           title: "Extra Kilometers",
-          desc: `₹${liveExtraKmRate}/km applicable beyond package distance`,
+          desc: `₹${liveExtraKmRate}/km applicable beyond package distance (not included in price)`,
         },
         {
           title: "Extra Rental Hours",
-          desc: `₹${liveExtraHourRate}/hour applicable beyond booked package duration`,
+          desc: `₹${liveExtraHourRate}/hour applicable beyond booked package duration (not included in price)`,
+        },
+        {
+          title: "Waiting Time",
+          desc: `First ${liveWaitingTime} mins complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in price)`,
         },
         {
           title: "Night Driving Charges",
@@ -434,14 +509,22 @@ export const ReviewClientPage: React.FC = () => {
       },
       {
         title: "Extra Kilometers",
-        desc: `₹${liveExtraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km`,
+        desc: `₹${liveExtraKmRate}/km applies beyond ${includedKms.toLocaleString("en-IN")} included km (not included in price)`,
+      },
+      {
+        title: "Extra Hours",
+        desc: `₹${liveExtraHourRate}/hour applies beyond scheduled trip duration (not included in price)`,
+      },
+      {
+        title: "Waiting Time",
+        desc: `First ${liveWaitingTime} mins complimentary; ₹${liveExtraHourRate}/hour applies thereafter (not included in price)`,
       },
       {
         title: "Night Allowance (11 PM - 6 AM)",
         desc: "₹250/- applicable if journey continues between 11:00 PM and 6:00 AM",
       },
     ];
-  }, [backendExclusions, liveExtraKmRate, liveExtraHourRate, includedKms, isAirport, isRental]);
+  }, [backendExclusions, liveExtraKmRate, liveExtraHourRate, liveWaitingTime, includedKms, isAirport, isRental]);
 
   /* ------------------------------- State -------------------------------- */
   // User Form
@@ -1408,9 +1491,11 @@ export const ReviewClientPage: React.FC = () => {
                   <div className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
                     <span>{includedKms} km included</span>
                     <span>•</span>
-                    <span>Extra km: ₹{liveExtraKmRate}/km</span>
+                    <span>Excl: Extra km ₹{liveExtraKmRate}/km</span>
                     <span>•</span>
-                    <span>Extra hr: ₹{liveExtraHourRate}/hr</span>
+                    <span>Extra hr ₹{liveExtraHourRate}/hr</span>
+                    <span>•</span>
+                    <span>Waiting {liveWaitingTime} mins</span>
                   </div>
                 </div>
 

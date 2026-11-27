@@ -730,6 +730,107 @@ export const api = {
   },
 
   /**
+   * Fetch canonical outstation state rules configured by admin
+   */
+  async getStateRules(): Promise<any[]> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetchWithTimeout(`${baseUrl}/pricing-rules/state`, {}, 5000);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || []);
+        if (Array.isArray(list) && list.length > 0) {
+          try {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("broomboom_state_rules_cache", JSON.stringify(list));
+            }
+          } catch {}
+          return list;
+        }
+      }
+    } catch (e) {
+      console.warn("Unable to fetch outstation state rules from backend:", e);
+    }
+
+    try {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("broomboom_state_rules_cache");
+        if (cached) return JSON.parse(cached);
+        const adminFares = localStorage.getItem("broomboom_outstation_fares");
+        if (adminFares) return JSON.parse(adminFares);
+      }
+    } catch {}
+
+    return [];
+  },
+
+  /**
+   * Match an outstation state rule by category, rideType (Oneway/Roundtrip), city, and state
+   */
+  findMatchingStateRule(
+    rules: any[],
+    params: {
+      category: string;
+      rideType?: "Oneway" | "Roundtrip" | string;
+      city?: string;
+      state?: string;
+    }
+  ): any | null {
+    if (!Array.isArray(rules) || rules.length === 0) return null;
+
+    const catClean = (params.category || "Sedan").trim().toLowerCase();
+    const isRound = (params.rideType || "").toLowerCase().includes("round");
+    const targetWay = isRound ? "round" : "one";
+    const sCity = (params.city || "").toLowerCase().trim();
+    const sState = (params.state || "").toLowerCase().trim();
+
+    const matchesCategory = (ruleCat: string) => {
+      const rc = (ruleCat || "").trim().toLowerCase();
+      if (rc === catClean) return true;
+      if (catClean.includes("suv+") && rc.includes("suv+")) return true;
+      if (!catClean.includes("+") && catClean.includes("suv") && !rc.includes("+") && rc.includes("suv")) return true;
+      if (catClean.includes("sedan") && rc.includes("sedan")) return true;
+      if (catClean.includes("13") && rc.includes("13")) return true;
+      if (catClean.includes("17") && rc.includes("17")) return true;
+      if ((catClean.includes("24") || catClean.includes("25")) && (rc.includes("24") || rc.includes("25"))) return true;
+      return false;
+    };
+
+    const filtered = rules.filter((r) => {
+      const cat = r.carCategory || r.vehicleType || "";
+      const way = (r.rideCategory || r.wayType || "oneway").toLowerCase();
+      return matchesCategory(cat) && way.includes(targetWay);
+    });
+
+    if (filtered.length === 0) return null;
+
+    // 1. Exact city match
+    if (sCity) {
+      const cityMatch = filtered.find((r) => {
+        const rc = (r.city || "").toLowerCase().trim();
+        return rc && rc !== "default" && (sCity.includes(rc) || rc.includes(sCity));
+      });
+      if (cityMatch) return cityMatch;
+    }
+
+    // 2. State match
+    if (sState) {
+      const stateMatch = filtered.find((r) => {
+        const rs = (r.state || "").toLowerCase().trim();
+        return rs && rs !== "default" && (sState.includes(rs) || rs.includes(sState));
+      });
+      if (stateMatch) return stateMatch;
+    }
+
+    // 3. Default fallback
+    return (
+      filtered.find((r) => (r.city || "").toLowerCase().trim() === "default") ||
+      filtered.find((r) => (r.state || "").toLowerCase().trim() === "default") ||
+      filtered[0]
+    );
+  },
+
+  /**
    * Fetch canonical airport pricing rules configured by admin
    */
   async getAirportRules(): Promise<AirportRuleItem[]> {
