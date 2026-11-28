@@ -58,6 +58,7 @@ import {
   Briefcase,
   Mountain,
   ShoppingBag,
+  ExternalLink,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -104,7 +105,13 @@ function formatCarRentalSlug(slug: string): string {
 function formatSelfDriveSlug(slug: string): string {
   const parsed = parseSelfDriveSlug(slug);
   if (parsed) return parsed.heading;
-  return "Self-Drive in " + slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return (
+    "Self-Drive in " +
+    slug
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ")
+  );
 }
 
 function SitemapLink({ href, label }: { href: string; label: string }) {
@@ -198,6 +205,45 @@ export default async function SitemapPage() {
     { label: "Blog Archive", href: "/blog" },
   ];
 
+  const vendorPages = [
+    {
+      city: "Kolkata",
+      region: "West Bengal HQ",
+      label: "Cab Vendor & Fleet Attachment in Kolkata",
+      href: "https://vendor.broomboomcabs.com/kolkata",
+    },
+    {
+      city: "Delhi NCR",
+      region: "North India Hub",
+      label: "Cab Vendor & Fleet Attachment in Delhi",
+      href: "https://vendor.broomboomcabs.com/delhi",
+    },
+    {
+      city: "Mumbai",
+      region: "Maharashtra Hub",
+      label: "Cab Vendor & Fleet Attachment in Mumbai",
+      href: "https://vendor.broomboomcabs.com/mumbai",
+    },
+    {
+      city: "Bangalore",
+      region: "Karnataka Hub",
+      label: "Cab Vendor & Fleet Attachment in Bangalore",
+      href: "https://vendor.broomboomcabs.com/bangalore",
+    },
+    {
+      city: "Pune",
+      region: "Western Corridor",
+      label: "Cab Vendor & Fleet Attachment in Pune",
+      href: "https://vendor.broomboomcabs.com/pune",
+    },
+    {
+      city: "Hyderabad",
+      region: "Telangana Hub",
+      label: "Cab Vendor & Fleet Attachment in Hyderabad",
+      href: "https://vendor.broomboomcabs.com/hyderabad",
+    },
+  ];
+
   const specializedCorridors = [
     {
       label: "Cab Attachment in Pune (Attach Taxi & Car)",
@@ -265,6 +311,7 @@ export default async function SitemapPage() {
     corePages.length +
     featuredHubs.length +
     companyPages.length +
+    vendorPages.length +
     specializedCorridors.length +
     INITIAL_BLOG_DATA.posts.length +
     TOP_10_CITIES_SERVICES.length * 4 +
@@ -409,6 +456,70 @@ export default async function SitemapPage() {
               </div>
             </section>
           </div>
+
+          {/* ─── Vendor Partner & Fleet Attachment Hubs ──────────────────────── */}
+          <section className="mt-8 relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-600" />
+            <div className="p-5 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-slate-900">
+                      Vendor Partner &amp; Fleet Attachment Portals
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Attach commercial cabs, fleet vehicles, and travel agency cars across major metro hubs
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <Link
+                    href="https://vendor.broomboomcabs.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 hover:text-indigo-800 underline"
+                  >
+                    <span>Main Vendor Portal</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                    {vendorPages.length} City Hubs
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {vendorPages.map((vendor) => (
+                  <Link
+                    key={vendor.href}
+                    href={vendor.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group p-3.5 rounded-xl border border-slate-200/80 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/40 transition flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-bold text-indigo-700">
+                        <span>{vendor.region}</span>
+                        <span className="inline-flex items-center gap-1 text-slate-400 group-hover:text-indigo-600 font-semibold transition-colors">
+                          <span>Attach Fleet</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </span>
+                      </div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-800 transition mt-1">
+                        {vendor.label}
+                      </h3>
+                    </div>
+                    <div className="mt-2.5 text-[10px] text-slate-400 pt-1.5 border-t border-slate-100 truncate">
+                      {vendor.href}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
 
           {/* ─── Specialized Regional Corridors & Driver Attachments ──────────────────────── */}
           <section className="mt-8 relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300">
@@ -882,8 +993,13 @@ export default async function SitemapPage() {
                     >
                       <div>
                         <div className="flex items-center justify-between text-[11px] font-bold text-amber-700">
-                          <span>{temple.distanceFromKolkata.split(" ")[0]} {temple.distanceFromKolkata.split(" ")[1]}</span>
-                          <span className="text-slate-500 font-medium">Starts ₹{temple.startingPrice}</span>
+                          <span>
+                            {temple.distanceFromKolkata.split(" ")[0]}{" "}
+                            {temple.distanceFromKolkata.split(" ")[1]}
+                          </span>
+                          <span className="text-slate-500 font-medium">
+                            Starts ₹{temple.startingPrice}
+                          </span>
                         </div>
                         <h3 className="text-xs font-bold text-slate-900 group-hover:text-amber-800 transition mt-1 line-clamp-1">
                           {temple.name}
@@ -948,7 +1064,9 @@ export default async function SitemapPage() {
                       <div>
                         <div className="flex items-center justify-between text-[11px] font-bold text-sky-700">
                           <span>{corp.zone}</span>
-                          <span className="text-slate-500 font-medium">Pass ₹{corp.monthlyPassEstimate}/mo</span>
+                          <span className="text-slate-500 font-medium">
+                            Pass ₹{corp.monthlyPassEstimate}/mo
+                          </span>
                         </div>
                         <h3 className="text-xs font-bold text-slate-900 group-hover:text-sky-800 transition mt-1 line-clamp-1">
                           {corp.name}
@@ -1013,7 +1131,9 @@ export default async function SitemapPage() {
                       <div>
                         <div className="flex items-center justify-between text-[11px] font-bold text-emerald-700">
                           <span>{route.originCode} Airport</span>
-                          <span className="text-slate-500 font-medium">Starts ₹{route.startingPrice}</span>
+                          <span className="text-slate-500 font-medium">
+                            Starts ₹{route.startingPrice}
+                          </span>
                         </div>
                         <h3 className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 transition mt-1 line-clamp-1">
                           {route.name}
@@ -1021,7 +1141,9 @@ export default async function SitemapPage() {
                         <p className="text-[11px] text-slate-500 line-clamp-1">{route.destination}</p>
                       </div>
                       <div className="mt-2 text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
-                        <span>{route.duration} • {route.distance}</span>
+                        <span>
+                          {route.duration} • {route.distance}
+                        </span>
                         <span className="text-emerald-600 font-semibold group-hover:translate-x-0.5 transition-transform">
                           Reserve &rarr;
                         </span>
@@ -1078,7 +1200,9 @@ export default async function SitemapPage() {
                       <div>
                         <div className="flex items-center justify-between text-[11px] font-bold text-rose-700">
                           <span>{mall.zone}</span>
-                          <span className="text-slate-500 font-medium">Starts ₹{mall.startingPrice}</span>
+                          <span className="text-slate-500 font-medium">
+                            Starts ₹{mall.startingPrice}
+                          </span>
                         </div>
                         <h3 className="text-xs font-bold text-slate-900 group-hover:text-rose-800 transition mt-1 line-clamp-1">
                           {mall.name}
