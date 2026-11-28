@@ -171,6 +171,16 @@ const nextConfig = {
         destination: "/car-rental",
         permanent: true,
       },
+      {
+        source: "/driver-job",
+        destination: "/driver-jobs",
+        permanent: true,
+      },
+      {
+        source: "/driver-job/:city",
+        destination: "/driver-jobs/:city",
+        permanent: true,
+      },
     ];
   },
 };
