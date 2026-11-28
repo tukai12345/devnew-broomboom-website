@@ -587,7 +587,7 @@ const CityPopover: React.FC<{
   onQueryChange: (v: string) => void;
   selected: string;
   onSelect: (name: string, state?: string, coords?: { lat: number; lng: number }) => void;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
+  inputRef?: React.RefObject<HTMLInputElement>;
   presetCities?: { id: string; name: string; state: string }[];
   searchableCitiesList?: { id: string; name: string; state: string }[];
   isLoadingCities?: boolean;
