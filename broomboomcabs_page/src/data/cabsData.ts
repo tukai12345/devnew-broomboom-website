@@ -192,7 +192,7 @@ export const POPULAR_ROUTES: PopularRoute[] = [
     popularFor: "Weekend Beach Getaway",
     image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
     tag: "Trending Weekend",
-    href: "/kolkata/kolkata-to-digha-cabs",
+    href: "/outstation/kolkata-to-digha",
   },
   {
     id: "kolkata-mandarmani",
@@ -201,7 +201,7 @@ export const POPULAR_ROUTES: PopularRoute[] = [
     popularFor: "Seaside Resorts & Serenity",
     image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=600&q=80",
     tag: "Popular",
-    href: "/kolkata/kolkata-to-mandarmani-cabs",
+    href: "/outstation/kolkata-to-mandarmani",
   },
   {
     id: "kolkata-siliguri",
@@ -210,7 +210,7 @@ export const POPULAR_ROUTES: PopularRoute[] = [
     popularFor: "Gateway to Northeast & Hills",
     image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80",
     tag: "Scenic Route",
-    href: "/kolkata/kolkata-to-siliguri-cabs",
+    href: "/outstation/kolkata-to-siliguri",
   },
   {
     id: "delhi-agra",

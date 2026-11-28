@@ -41,7 +41,7 @@ interface VehicleItem {
   name: string;
   modelType: string;
   modelBadgeText: string;
-  category: "Sedan" | "Suv" | "Minibus";
+  category: "Sedan" | "Suv" | "Tempo";
   modelName: string;
   fuelType: "Cng/diesel" | "Diesel";
   fuelLabel: string;
@@ -53,7 +53,7 @@ interface VehicleItem {
   discountedPrice: number;
   taxAndFee: number;
   roofCarrierFee?: number;
-  imageType: "sedan" | "suv" | "suv-plus" | "minibus" | "tempo";
+  imageType: "sedan" | "suv" | "suv-plus" | "tempo";
   extraKmRate?: number;
   extraHourRate?: number;
   waitingFreeMins?: number;
@@ -109,7 +109,7 @@ const TRIP_TYPES = [
   "Hourly Rentals",
 ];
 
-const CAB_TYPE_OPTIONS = ["Sedan", "Suv", "Minibus"] as const;
+const CAB_TYPE_OPTIONS = ["Sedan", "Suv", "Tempo"] as const;
 const FUEL_TYPE_OPTIONS = ["Cng/diesel", "Diesel"] as const;
 
 const HOURLY_PACKAGES = [
@@ -1079,15 +1079,39 @@ const FleetPageContent: React.FC = () => {
         imageType: "sedan",
       },
       {
-        id: "innova-crysta",
-        name: "Innova Crysta",
-        modelType: "exact model",
+        id: "Ertiga, Xylo",
+        name: "Ertiga, Xylo",
+        modelType: "or similar",
         modelBadgeText: "NEW",
         category: "Suv",
-        modelName: "Innova Crysta",
+        modelName: "Ertiga, Xylo",
+        fuelType: "Cng/diesel",
+        fuelLabel: "CNG/Diesel",
+        seats: 6,
+        ac: true,
+        includedKms: displayIncludedKms,
+        discountPercent: suvPricing.discountPercent,
+        originalPrice: suvPricing.originalPrice,
+        discountedPrice: suvPricing.discountedPrice,
+        taxAndFee: calcTax(suvPricing.discountedPrice),
+        advanceAmount: suvPricing.advance,
+        dueAmount: suvPricing.dueFare,
+        extraKmRate: suvPricing.extraKmRate,
+        extraHourRate: suvPricing.extraHourRate,
+        waitingFreeMins: suvPricing.waitingFreeMins,
+        roofCarrierFee: 262,
+        imageType: "suv",
+      },
+            {
+        id: "Innova, Crysta",
+        name: "Innova, Crysta",
+        modelType: "or similar",
+        modelBadgeText: "NEW",
+        category: "Suv",
+        modelName: "Innova, Crysta",
         fuelType: "Diesel",
         fuelLabel: "Diesel",
-        seats: 6,
+        seats: 7,
         ac: true,
         includedKms: displayIncludedKms,
         discountPercent: suvPlusPricing.discountPercent,
@@ -1103,85 +1127,15 @@ const FleetPageContent: React.FC = () => {
         imageType: "suv-plus",
       },
       {
-        id: "toyota-innova",
-        name: "Toyota Innova",
-        modelType: "exact model",
+        id: "13 Seater Tempo Traveller",
+        name: "13 Seater Tempo Traveller",
+        modelType: "or similar",
         modelBadgeText: "NEW",
-        category: "Suv",
-        modelName: "Toyota Innova",
+        category: "Tempo",
+        modelName: "13 Seater Tempo Traveller",
         fuelType: "Diesel",
         fuelLabel: "Diesel",
-        seats: 7,
-        ac: true,
-        includedKms: displayIncludedKms,
-        discountPercent: suvPricing.discountPercent,
-        originalPrice: suvPricing.originalPrice,
-        discountedPrice: suvPricing.discountedPrice,
-        taxAndFee: calcTax(suvPricing.discountedPrice),
-        advanceAmount: suvPricing.advance,
-        dueAmount: suvPricing.dueFare,
-        extraKmRate: suvPricing.extraKmRate,
-        extraHourRate: suvPricing.extraHourRate,
-        waitingFreeMins: suvPricing.waitingFreeMins,
-        roofCarrierFee: 262,
-        imageType: "suv",
-      },
-      {
-        id: "minibus-20",
-        name: "Minibus (20 + 1)",
-        modelType: "exact model",
-        modelBadgeText: "NEW",
-        category: "Minibus",
-        modelName: "Minibus (20 + 1)",
-        fuelType: "Diesel",
-        fuelLabel: "Diesel",
-        seats: 20,
-        ac: true,
-        includedKms: displayIncludedKms,
-        discountPercent: traveller17Pricing.discountPercent,
-        originalPrice: traveller17Pricing.originalPrice,
-        discountedPrice: traveller17Pricing.discountedPrice,
-        taxAndFee: calcTax(traveller17Pricing.discountedPrice),
-        advanceAmount: traveller17Pricing.advance,
-        dueAmount: traveller17Pricing.dueFare,
-        extraKmRate: traveller17Pricing.extraKmRate,
-        extraHourRate: traveller17Pricing.extraHourRate,
-        waitingFreeMins: traveller17Pricing.waitingFreeMins,
-        imageType: "minibus",
-      },
-      {
-        id: "minibus-24",
-        name: "Minibus / Traveller (24 + 1)",
-        modelType: "exact model",
-        modelBadgeText: "NEW",
-        category: "Minibus",
-        modelName: "Minibus / Traveller (24 + 1)",
-        fuelType: "Diesel",
-        fuelLabel: "Diesel",
-        seats: 24,
-        ac: true,
-        includedKms: displayIncludedKms,
-        discountPercent: traveller24Pricing.discountPercent,
-        originalPrice: traveller24Pricing.originalPrice,
-        discountedPrice: traveller24Pricing.discountedPrice,
-        taxAndFee: calcTax(traveller24Pricing.discountedPrice),
-        advanceAmount: traveller24Pricing.advance,
-        dueAmount: traveller24Pricing.dueFare,
-        extraKmRate: traveller24Pricing.extraKmRate,
-        extraHourRate: traveller24Pricing.extraHourRate,
-        waitingFreeMins: traveller24Pricing.waitingFreeMins,
-        imageType: "minibus",
-      },
-      {
-        id: "tempo-12",
-        name: "Tempo traveller (12 + 1)",
-        modelType: "exact model",
-        modelBadgeText: "NEW",
-        category: "Minibus",
-        modelName: "Tempo traveller (12 + 1)",
-        fuelType: "Diesel",
-        fuelLabel: "Diesel",
-        seats: 12,
+        seats: 13,
         ac: true,
         includedKms: displayIncludedKms,
         discountPercent: traveller13Pricing.discountPercent,
@@ -1196,15 +1150,15 @@ const FleetPageContent: React.FC = () => {
         imageType: "tempo",
       },
       {
-        id: "tempo-16",
-        name: "Tempo traveller (16 + 1)",
-        modelType: "exact model",
+        id: "17 Seater Tempo Traveller",
+        name: "17 Seater Tempo Traveller",
+        modelType: "or similar",
         modelBadgeText: "NEW",
-        category: "Minibus",
-        modelName: "Tempo traveller (16 + 1)",
+        category: "Tempo",
+        modelName: "17 Seater Tempo Traveller",
         fuelType: "Diesel",
         fuelLabel: "Diesel",
-        seats: 16,
+        seats: 17,
         ac: true,
         includedKms: displayIncludedKms,
         discountPercent: traveller17Pricing.discountPercent,
@@ -1216,6 +1170,29 @@ const FleetPageContent: React.FC = () => {
         extraKmRate: traveller17Pricing.extraKmRate,
         extraHourRate: traveller17Pricing.extraHourRate,
         waitingFreeMins: traveller17Pricing.waitingFreeMins,
+        imageType: "tempo",
+      },
+      {
+        id: "24 Seater Tempo Traveller",
+        name: "24 Seater Tempo Traveller",
+        modelType: "or similar",
+        modelBadgeText: "NEW",
+        category: "Tempo",
+        modelName: "24 Seater Tempo Traveller",
+        fuelType: "Diesel",
+        fuelLabel: "Diesel",
+        seats: 24,
+        ac: true,
+        includedKms: displayIncludedKms,
+        discountPercent: traveller24Pricing.discountPercent,
+        originalPrice: traveller24Pricing.originalPrice,
+        discountedPrice: traveller24Pricing.discountedPrice,
+        taxAndFee: calcTax(traveller24Pricing.discountedPrice),
+        advanceAmount: traveller24Pricing.advance,
+        dueAmount: traveller24Pricing.dueFare,
+        extraKmRate: traveller24Pricing.extraKmRate,
+        extraHourRate: traveller24Pricing.extraHourRate,
+        waitingFreeMins: traveller24Pricing.waitingFreeMins,
         imageType: "tempo",
       },
     ];
@@ -1489,10 +1466,6 @@ const FleetPageContent: React.FC = () => {
       src: "/cars/suv-plus-innova-crysta.png",
       alt: "SUV+ — Innova Crysta",
     },
-    minibus: {
-      src: "/cars/tempo-traveller.png",
-      alt: "Minibus (20+1)",
-    },
     tempo: {
       src: "/cars/tempo-traveller.png",
       alt: "Tempo Traveller",
@@ -1519,7 +1492,7 @@ const FleetPageContent: React.FC = () => {
         category:
           selectedVehicle.category === "Suv"
             ? ("SUV" as const)
-            : selectedVehicle.category === "Minibus"
+            : selectedVehicle.category === "Tempo"
             ? ("Tempo" as const)
             : selectedVehicle.category,
         image:
@@ -1527,7 +1500,7 @@ const FleetPageContent: React.FC = () => {
             ? "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=600&q=80"
             : selectedVehicle.category === "Suv"
             ? "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80"
-            : selectedVehicle.category === "Minibus"
+            : selectedVehicle.category === "Tempo"
             ? "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=600&q=80"
             : "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80",
         models: `${selectedVehicle.modelType} ${selectedVehicle.name}`,
@@ -2154,7 +2127,7 @@ const FleetPageContent: React.FC = () => {
                             </div>
                             {cab.extraKmRate && (
                               <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                                Exact fare: ₹{cab.extraKmRate}/km
+                                Extra KM: ₹{cab.extraKmRate}/km
                               </div>
                             )}
                           </>

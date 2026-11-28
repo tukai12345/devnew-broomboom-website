@@ -24,7 +24,7 @@ const serviceLinks = [
   { label: "Outstation Cab Booking", href: "/outstation-cabs" },
   { label: "Airport Transfer Cabs", href: "/airport-cabs" },
   { label: "Hourly Cab Rentals", href: "/car-rental" },
-  { label: "Become a Pilot / Driver", href: "/driver-job" },
+  { label: "Become a Pilot / Driver", href: "/driver-jobs" },
 ];
 
 const legalLinks = [

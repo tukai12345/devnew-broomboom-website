@@ -585,7 +585,7 @@ export const ReviewClientPage: React.FC = () => {
 
   /* ------------------------------- State -------------------------------- */
   // User Form
-  const [pickupAddress, setPickupAddress] = useState("");
+  const [pickupAddress, setPickupAddress] = useState(fromCity);
   const [pickupPincode, setPickupPincode] = useState("");
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("Male");
@@ -606,6 +606,13 @@ export const ReviewClientPage: React.FC = () => {
       if (user.email) setEmailId(user.email);
     }
   }, []);
+
+  // Pre-fill Pickup Details with the 'from' location passed from the fleet page
+  useEffect(() => {
+    if (fromCity) {
+      setPickupAddress((prev) => prev || fromCity);
+    }
+  }, [fromCity]);
 
   // Add-ons
   const [addonPet, setAddonPet] = useState<boolean>(() => {
@@ -767,6 +774,7 @@ export const ReviewClientPage: React.FC = () => {
           language: addonLanguage,
           newVehicle: addonNewVehicle,
           refundableBooking: addonRefundable,
+          refundable: addonRefundable,
         },
         source: "BroomBoom Web",
         searchDetails: {
@@ -782,6 +790,10 @@ export const ReviewClientPage: React.FC = () => {
           baseFare,
           discountPercent,
           petFee: addonPet ? PET_FEE * petCount : 0,
+          roofCarrierFee: addonCarrier ? CARRIER_FEE : 0,
+          languageFee: addonLanguage ? LANGUAGE_FEE : 0,
+          newVehicleFee: addonNewVehicle ? NEW_VEHICLE_FEE : 0,
+          refundableFee: addonRefundable ? REFUNDABLE_FEE : 0,
         },
         pickupDate: pickupDate || new Date().toISOString().split("T")[0],
         pickupTime: pickupTime || "10:00 AM",

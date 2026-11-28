@@ -9,13 +9,13 @@ export const metadata: Metadata = {
   keywords:
     "driver job, cab attachment, attach car with cab company, taxi driver registration, driver partner signup, attach taxi daily payout, broomboom pilot registration, commercial driver job india, car attachment for outstation",
   alternates: {
-    canonical: "https://www.broomboomcabs.com/driver-job",
+    canonical: "https://www.broomboomcabs.com/driver-jobs",
   },
   openGraph: {
     title: "Become a BroomBoom Pilot | Driver Job & Partner Registration",
     description:
       "Drive with BroomBoom on your own terms. Daily instant payouts, zero commission, and verified intercity return trips.",
-    url: "https://www.broomboomcabs.com/driver-job",
+    url: "https://www.broomboomcabs.com/driver-jobs",
     siteName: "BroomBoom Cabs",
     locale: "en_IN",
     type: "website",

@@ -329,9 +329,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               Contact
             </Link>
             <Link
-              href="/driver-job"
+              href="/driver-jobs"
               className={`px-3.5 py-1.5 rounded-full border text-xs font-black transition-all shadow-xs whitespace-nowrap shrink-0 ${
-                pathname === "/driver-job"
+                pathname?.startsWith("/driver-jobs")
                   ? "bg-amber-400 text-slate-950 border-amber-400"
                   : "border-amber-400/90 bg-amber-400/10 hover:bg-amber-400 text-amber-300 hover:text-slate-950"
               }`}
@@ -654,7 +654,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMyBookingsClick }) => {
               </Link>
 
               <Link
-                href="/driver-job"
+                href="/driver-jobs"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-3 p-3 rounded-xl bg-amber-400/10 border border-amber-400/30 hover:bg-amber-400/20 transition text-amber-300"
               >

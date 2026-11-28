@@ -101,7 +101,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     },
     {
-      url: `${siteUrl}/driver-job`,
+      url: `${siteUrl}/driver-jobs`,
       lastModified: currentDate,
       changeFrequency: "weekly",
       priority: 0.85,
@@ -146,6 +146,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 2. Service Category Landing Pages (/outstation-cabs, /services/rental, /services/airport)
   const serviceCategoryPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/outstation`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
     {
       url: `${siteUrl}/outstation-cabs`,
       lastModified: currentDate,
@@ -344,12 +350,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.88,
     },
-    {
-      url: `${siteUrl}/driver-job/mumbai`,
+    ...[
+      "kolkata-to-digha",
+      "kolkata-to-mandarmani",
+      "kolkata-to-siliguri",
+      "delhi-to-agra",
+      "delhi-to-jaipur",
+      "mumbai-to-pune",
+      "bengaluru-to-mysore",
+      "kolkata-to-puri",
+    ].map((slug) => ({
+      url: `${siteUrl}/outstation/${slug}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.9,
+    })),
+    ...[
+      "kolkata",
+      "delhi",
+      "mumbai",
+      "bangalore",
+      "ahmedabad",
+      "pune",
+      "hyderabad",
+      "kochi",
+      "chandigarh",
+    ].map((city) => ({
+      url: `${siteUrl}/driver-jobs/${city}`,
       lastModified: currentDate,
       changeFrequency: "weekly" as const,
       priority: 0.88,
-    },
+    })),
     {
       url: `${siteUrl}/durga-puja/kolkata-durga-puja-pandal-2024`,
       lastModified: currentDate,
